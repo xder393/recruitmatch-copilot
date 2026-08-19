@@ -40,13 +40,19 @@ def test_ai_status_is_disabled_without_disabling_core(tmp_path):
     with TestClient(create_app(_settings(tmp_path))) as client:
         body = client.get("/api/v1/ai/status").json()
         assert body == {
+            "configured": False,
             "enabled": False,
+            "available": False,
             "degraded": True,
             "fallback_mode": "rules-v1",
             "provider": "openai-compatible",
             "model": "deepseek-chat",
             "embedding_model": "BAAI/bge-small-zh-v1.5",
             "core_available": True,
+            "latest_status": None,
+            "latest_error": None,
+            "latest_latency_ms": None,
+            "failed_source_indexes": 0,
         }
         assert client.get("/api/v1/health/ready").status_code == 200
 

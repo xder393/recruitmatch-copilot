@@ -5,6 +5,15 @@ from fastapi.testclient import TestClient
 
 from app.config import Settings
 from app.main import create_app
+from app.ai.gateway import ModelGatewayError
+from app.ai.contracts import ModelRequest
+from pydantic import BaseModel
+from app.models.identity import Tenant
+from app.services.ai_tracing import AITraceSink
+
+
+class _Answer(BaseModel):
+    value: str
 
 
 @pytest.fixture
@@ -49,6 +58,58 @@ def test_ai_status_reports_safe_degradation_without_credentials(operations_clien
     assert body["fallback_mode"] == "rules-v1"
     assert "api_key" not in response.text.casefold()
     assert "sk-" not in response.text.casefold()
+
+
+def test_ai_status_uses_recent_trace_health(tmp_path):
+    settings = Settings(
+        api_key="test-key",
+        ai_enabled=True,
+        database_url=f"sqlite:///{tmp_path / 'ai-health.db'}",
+        artifact_dir=str(tmp_path / "artifacts"),
+        knowledge_artifact_dir=str(tmp_path / "knowledge"),
+        jwt_secret="a-test-secret-that-is-at-least-32-bytes",
+    )
+
+    class NoCallModel:
+        def generate(self, request):
+            raise AssertionError("status endpoint must not probe a paid model")
+
+    class Embedder:
+        def embed_documents(self, texts):
+            return [[1.0] for _ in texts]
+
+        def embed_query(self, text):
+            return [1.0]
+
+    app = create_app(settings, structured_model=NoCallModel(), knowledge_embedder=Embedder())
+    with TestClient(app) as client:
+        with app.state.session_factory() as session:
+            tenant = Tenant(name="Acme")
+            session.add(tenant)
+            session.commit()
+            tenant_id = tenant.id
+        request = ModelRequest(
+            operation="semantic_project_match",
+            prompt_version="semantic-project-v1",
+            system="private",
+            user="private",
+            schema=_Answer,
+        )
+        AITraceSink(app.state.session_factory).failed(
+            tenant_id,
+            "semantic_match",
+            "resume-id",
+            ["resume-id", "job-id"],
+            request,
+            ModelGatewayError("timeout", True, attempts=2),
+            20000,
+        )
+        body = client.get("/api/v1/ai/status").json()
+        assert body["available"] is False
+        assert body["degraded"] is True
+        assert body["latest_status"] == "failed"
+        assert body["latest_error"] == "timeout"
+        assert body["latest_latency_ms"] == 20000
 
 
 def test_analytics_are_tenant_scoped_and_never_return_resume_text(operations_client):

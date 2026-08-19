@@ -5,8 +5,9 @@ from sqlalchemy.orm import Session
 
 from app.api.v1.deps import get_current_principal, get_db
 from app.domain.enums import ResumeStatus
-from app.models.jobs import Job
+from app.models.jobs import Job, JobVersion
 from app.models.matching import Feedback, MatchRun
+from app.models.operations import ModelTrace
 from app.models.resumes import Resume
 from app.security.tokens import Principal
 
@@ -25,16 +26,36 @@ def readiness(session: Session = Depends(get_db)):
 
 
 @router.get("/ai/status")
-def ai_status(request: Request):
+def ai_status(request: Request, session: Session = Depends(get_db)):
     settings = request.app.state.settings
+    latest = session.scalar(select(ModelTrace).order_by(ModelTrace.created_at.desc()).limit(1))
+    failed_indexes = (
+        session.scalar(
+            select(func.count()).select_from(Resume).where(Resume.search_index_status == "failed")
+        )
+        or 0
+    ) + (
+        session.scalar(
+            select(func.count()).select_from(JobVersion).where(JobVersion.search_index_status == "failed")
+        )
+        or 0
+    )
+    latest_failed = latest is not None and latest.status == "failed"
+    degraded = not settings.ai_enabled or latest_failed or failed_indexes > 0
     return {
+        "configured": bool(settings.api_key),
         "enabled": settings.ai_enabled,
-        "degraded": not settings.ai_enabled,
-        "fallback_mode": None if settings.ai_enabled else "rules-v1",
+        "available": False if not settings.ai_enabled else (None if latest is None else not latest_failed),
+        "degraded": degraded,
+        "fallback_mode": "rules-v1" if degraded else None,
         "provider": settings.model_provider,
         "model": settings.chat_model,
         "embedding_model": settings.embedding_model,
         "core_available": True,
+        "latest_status": latest.status if latest else None,
+        "latest_error": latest.error_code if latest else None,
+        "latest_latency_ms": latest.latency_ms if latest else None,
+        "failed_source_indexes": failed_indexes,
     }
 
 
