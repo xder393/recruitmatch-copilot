@@ -51,10 +51,26 @@ class HeuristicResumeParser:
                 )
         found.sort(key=lambda item: item[0])
 
-        years = [float(value) for value in re.findall(r"(\d+(?:\.\d+)?)\s*年", text)]
+        year_matches = list(re.finditer(r"(\d+(?:\.\d+)?)\s*年", text))
+        year_match = max(year_matches, key=lambda item: float(item.group(1))) if year_matches else None
         education = next((level for level in _EDUCATION_LEVELS if level in text), None)
+        education_start = text.find(education) if education else -1
         return ResumeProfile(
             skills=[item[1] for item in found],
-            experience_years=max(years) if years else None,
+            experience_years=float(year_match.group(1)) if year_match else None,
+            experience_evidence=(
+                Evidence(
+                    start=year_match.start(),
+                    end=year_match.end(),
+                    text=year_match.group(0),
+                )
+                if year_match
+                else None
+            ),
             education_level=education,
+            education_evidence=(
+                Evidence(start=education_start, end=education_start + len(education), text=education)
+                if education
+                else None
+            ),
         )

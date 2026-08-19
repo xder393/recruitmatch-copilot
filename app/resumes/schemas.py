@@ -17,8 +17,17 @@ class SkillEvidence(BaseModel):
     evidence: Evidence
 
 
+class ProjectEvidence(BaseModel):
+    name: str
+    description: str = ""
+    evidence: Evidence
+
+
 class ResumeProfile(BaseModel):
     schema_version: str = "1.0"
     skills: List[SkillEvidence] = Field(default_factory=list)
     experience_years: Optional[float] = None
+    experience_evidence: Optional[Evidence] = None
     education_level: Optional[str] = None
+    education_evidence: Optional[Evidence] = None
+    projects: List[ProjectEvidence] = Field(default_factory=list)
