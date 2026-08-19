@@ -1,4 +1,5 @@
 """Add AI trace metadata and versioned prompt metadata."""
+
 from alembic import op
 import sqlalchemy as sa
 
@@ -21,20 +22,21 @@ def upgrade() -> None:
         batch.create_index("ix_model_traces_tenant_created", ["tenant_id", "created_at"])
         batch.create_index("ix_model_traces_tenant_operation_status", ["tenant_id", "operation", "status"])
 
-    op.create_table(
-        "prompt_versions",
-        sa.Column("id", sa.String(36), primary_key=True),
-        sa.Column("tenant_id", sa.String(36), sa.ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("operation", sa.String(100), nullable=False),
-        sa.Column("version", sa.String(100), nullable=False),
-        sa.Column("schema_version", sa.String(50), nullable=False),
-        sa.Column("template_fingerprint", sa.String(64), nullable=False),
-        sa.Column("is_active", sa.Boolean(), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.UniqueConstraint("tenant_id", "operation", "version", name="uq_prompt_version"),
-    )
-    op.create_index("ix_prompt_versions_tenant_id", "prompt_versions", ["tenant_id"])
-    op.create_index("ix_prompt_versions_operation", "prompt_versions", ["operation"])
+    if not sa.inspect(op.get_bind()).has_table("prompt_versions"):
+        op.create_table(
+            "prompt_versions",
+            sa.Column("id", sa.String(36), primary_key=True),
+            sa.Column("tenant_id", sa.String(36), sa.ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False),
+            sa.Column("operation", sa.String(100), nullable=False),
+            sa.Column("version", sa.String(100), nullable=False),
+            sa.Column("schema_version", sa.String(50), nullable=False),
+            sa.Column("template_fingerprint", sa.String(64), nullable=False),
+            sa.Column("is_active", sa.Boolean(), nullable=False),
+            sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+            sa.UniqueConstraint("tenant_id", "operation", "version", name="uq_prompt_version"),
+        )
+        op.create_index("ix_prompt_versions_tenant_id", "prompt_versions", ["tenant_id"])
+        op.create_index("ix_prompt_versions_operation", "prompt_versions", ["operation"])
 
 
 def downgrade() -> None:

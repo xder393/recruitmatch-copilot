@@ -1,4 +1,5 @@
 """Store privacy-safe comparative AI evaluation metadata."""
+
 from alembic import op
 import sqlalchemy as sa
 
@@ -9,38 +10,50 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.create_table(
-        "ai_evaluation_runs",
-        sa.Column("id", sa.String(36), primary_key=True),
-        sa.Column("tenant_id", sa.String(36), sa.ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("dataset_version", sa.String(100), nullable=False),
-        sa.Column("algorithm_version", sa.String(100), nullable=False),
-        sa.Column("model_version", sa.String(200), nullable=False),
-        sa.Column("prompt_version", sa.String(100), nullable=False),
-        sa.Column("embedding_version", sa.String(200), nullable=False),
-        sa.Column("case_count", sa.Integer(), nullable=False),
-        sa.Column("metrics", sa.JSON(), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-    )
-    op.create_index("ix_ai_evaluation_runs_tenant_id", "ai_evaluation_runs", ["tenant_id"])
-    op.create_index(
-        "ix_ai_evaluation_version_set",
-        "ai_evaluation_runs",
-        ["tenant_id", "dataset_version", "algorithm_version", "model_version", "prompt_version", "embedding_version"],
-    )
-    op.create_table(
-        "ai_evaluation_cases",
-        sa.Column("id", sa.String(36), primary_key=True),
-        sa.Column("run_id", sa.String(36), sa.ForeignKey("ai_evaluation_runs.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("case_key", sa.String(100), nullable=False),
-        sa.Column("passed", sa.Boolean(), nullable=False),
-        sa.Column("failure_categories", sa.JSON(), nullable=False),
-        sa.Column("latency_ms", sa.Float(), nullable=False),
-        sa.Column("input_tokens", sa.Integer(), nullable=False),
-        sa.Column("output_tokens", sa.Integer(), nullable=False),
-        sa.Column("estimated_cost", sa.Float(), nullable=False),
-    )
-    op.create_index("ix_ai_evaluation_cases_run_id", "ai_evaluation_cases", ["run_id"])
+    inspector = sa.inspect(op.get_bind())
+    if not inspector.has_table("ai_evaluation_runs"):
+        op.create_table(
+            "ai_evaluation_runs",
+            sa.Column("id", sa.String(36), primary_key=True),
+            sa.Column("tenant_id", sa.String(36), sa.ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False),
+            sa.Column("dataset_version", sa.String(100), nullable=False),
+            sa.Column("algorithm_version", sa.String(100), nullable=False),
+            sa.Column("model_version", sa.String(200), nullable=False),
+            sa.Column("prompt_version", sa.String(100), nullable=False),
+            sa.Column("embedding_version", sa.String(200), nullable=False),
+            sa.Column("case_count", sa.Integer(), nullable=False),
+            sa.Column("metrics", sa.JSON(), nullable=False),
+            sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        )
+        op.create_index("ix_ai_evaluation_runs_tenant_id", "ai_evaluation_runs", ["tenant_id"])
+        op.create_index(
+            "ix_ai_evaluation_version_set",
+            "ai_evaluation_runs",
+            [
+                "tenant_id",
+                "dataset_version",
+                "algorithm_version",
+                "model_version",
+                "prompt_version",
+                "embedding_version",
+            ],
+        )
+    if not inspector.has_table("ai_evaluation_cases"):
+        op.create_table(
+            "ai_evaluation_cases",
+            sa.Column("id", sa.String(36), primary_key=True),
+            sa.Column(
+                "run_id", sa.String(36), sa.ForeignKey("ai_evaluation_runs.id", ondelete="CASCADE"), nullable=False
+            ),
+            sa.Column("case_key", sa.String(100), nullable=False),
+            sa.Column("passed", sa.Boolean(), nullable=False),
+            sa.Column("failure_categories", sa.JSON(), nullable=False),
+            sa.Column("latency_ms", sa.Float(), nullable=False),
+            sa.Column("input_tokens", sa.Integer(), nullable=False),
+            sa.Column("output_tokens", sa.Integer(), nullable=False),
+            sa.Column("estimated_cost", sa.Float(), nullable=False),
+        )
+        op.create_index("ix_ai_evaluation_cases_run_id", "ai_evaluation_cases", ["run_id"])
 
 
 def downgrade() -> None:

@@ -1,4 +1,5 @@
 """FastAPI 应用入口：组装配置、中间件、路由、异常处理与启动生命周期。"""
+
 from __future__ import annotations
 
 import os
@@ -23,7 +24,8 @@ from app.rag.retriever import Retriever
 from app.services.ingestion import IngestionService
 from app.storage.conversations import ConversationStore
 from app.storage.vector_store import VectorStore
-from app.database import Base, create_engine_and_session
+from app.database import create_engine_and_session
+from app.database_migrations import upgrade_database
 from app.models import AuditLog, Job, JobTemplate, JobVersion, ModelTrace, Tenant, User  # noqa: F401
 from app.security.tokens import TokenSettings
 from app.resumes.artifacts import LocalArtifactStore
@@ -94,8 +96,8 @@ def init_recruiting_state(app: FastAPI, settings: Settings, structured_model=Non
     """Initialize recruiting persistence once per application instance."""
     if getattr(app.state, "_recruiting_initialized", False):
         return
+    upgrade_database(settings.database_url)
     engine, session_factory = create_engine_and_session(settings.database_url)
-    Base.metadata.create_all(engine)
     app.state.database_engine = engine
     app.state.session_factory = session_factory
     app.state.token_settings = TokenSettings(
