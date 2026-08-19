@@ -171,7 +171,7 @@ git commit -m "feat: parse resumes with grounded llm output"
 - Modify: app/main.py
 - Modify: app/api/v1/operations.py
 - Modify: app/services/resume_processing.py
-- Modify: app/tasks/resume_tasks.py
+- Modify: app/tasks/celery_app.py
 - Test: tests/ai/test_ai_readiness.py
 - Modify: tests/resumes/test_resume_processing.py
 
@@ -204,6 +204,6 @@ Build LLMResumeParser only when AI is enabled; otherwise use HeuristicResumePars
 .venv/bin/pytest tests/ai tests/resumes tests/operations -q
 .venv/bin/ruff check app tests scripts
 git diff --check
-git add app/main.py app/api/v1/operations.py app/services/resume_processing.py app/tasks/resume_tasks.py tests/ai/test_ai_readiness.py tests/resumes/test_resume_processing.py
+git add app/main.py app/api/v1/operations.py app/services/resume_processing.py app/tasks/celery_app.py tests/ai/test_ai_readiness.py tests/resumes/test_resume_processing.py
 git commit -m "feat: wire resilient ai resume processing"
 ~~~
