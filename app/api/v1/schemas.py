@@ -50,6 +50,8 @@ class JobVersionResponse(BaseModel):
     jd_text: str
     profile: Dict[str, Any]
     created_by: Optional[str]
+    search_index_status: str
+    search_index_error: Optional[str]
 
 
 class JobResponse(BaseModel):
@@ -82,6 +84,8 @@ class ResumeResponse(BaseModel):
     profile: Dict[str, Any]
     error_code: Optional[str]
     error_message: Optional[str]
+    search_index_status: str
+    search_index_error: Optional[str]
 
 
 class ResumeListResponse(BaseModel):

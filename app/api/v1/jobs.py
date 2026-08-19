@@ -35,6 +35,8 @@ def _job_response(job: Job) -> JobResponse:
                 jd_text=version.jd_text,
                 profile=version.profile,
                 created_by=version.created_by,
+                search_index_status=version.search_index_status,
+                search_index_error=version.search_index_error,
             )
             for version in job.versions
         ],

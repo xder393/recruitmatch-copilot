@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from typing import Protocol
+from datetime import datetime, timezone
 
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -107,10 +108,11 @@ class ResumeProcessingService:
                     source_version,
                     chunk_document(text, "resume"),
                 )
+                self._mark_indexed(tenant_id, resume_id, "ready")
             except Exception:
                 # Search enrichment must never roll back an otherwise valid
                 # resume; re-indexing can repair this side effect later.
-                pass
+                self._mark_indexed(tenant_id, resume_id, "failed", "indexing_failed")
 
     def _mark_failed(self, tenant_id: str, resume_id: str, code: str, message: str) -> None:
         with self.session_factory() as session:
@@ -120,6 +122,16 @@ class ResumeProcessingService:
             resume.status = ResumeStatus.FAILED
             resume.error_code = code
             resume.error_message = message[:500]
+            session.commit()
+
+    def _mark_indexed(self, tenant_id: str, resume_id: str, status: str, error: str | None = None) -> None:
+        with self.session_factory() as session:
+            resume = self._get(session, tenant_id, resume_id)
+            if resume is None:
+                return
+            resume.search_index_status = status
+            resume.search_index_error = error
+            resume.search_indexed_at = datetime.now(timezone.utc) if status == "ready" else None
             session.commit()
 
     @staticmethod

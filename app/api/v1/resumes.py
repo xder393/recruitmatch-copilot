@@ -27,6 +27,8 @@ def _response(resume: Resume) -> ResumeResponse:
         profile=resume.profile,
         error_code=resume.error_code,
         error_message=resume.error_message,
+        search_index_status=resume.search_index_status,
+        search_index_error=resume.search_index_error,
     )
 
 

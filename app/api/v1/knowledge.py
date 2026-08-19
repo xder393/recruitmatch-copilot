@@ -11,6 +11,7 @@ from app.api.v1.deps import get_current_principal, get_db
 from app.models.knowledge import KnowledgeDocument
 from app.security.tokens import Principal
 from app.services.knowledge_documents import KnowledgeDocumentService
+from app.services.source_index_backfill import SourceIndexBackfillService
 
 router = APIRouter(prefix="/knowledge-documents", tags=["RecruitMatch Knowledge"])
 
@@ -30,6 +31,12 @@ class KnowledgeDocumentResponse(BaseModel):
 class KnowledgeDocumentListResponse(BaseModel):
     items: List[KnowledgeDocumentResponse]
     total: int
+
+
+class SourceBackfillResponse(BaseModel):
+    resumes_indexed: int
+    job_versions_indexed: int
+    failed: int
 
 
 def _response(document: KnowledgeDocument) -> KnowledgeDocumentResponse:
@@ -81,6 +88,15 @@ def list_documents(
 ):
     items = [_response(item) for item in _service(request, session).list(principal)]
     return KnowledgeDocumentListResponse(items=items, total=len(items))
+
+
+@router.post("/rebuild-sources", response_model=SourceBackfillResponse)
+def rebuild_sources(
+    request: Request,
+    principal: Principal = Depends(get_current_principal),
+    session: Session = Depends(get_db),
+):
+    return SourceIndexBackfillService(session, request.app.state.knowledge_index).rebuild(principal)
 
 
 @router.get("/{document_id}", response_model=KnowledgeDocumentResponse)

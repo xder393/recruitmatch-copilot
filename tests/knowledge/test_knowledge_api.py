@@ -2,10 +2,14 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+from sqlalchemy import delete
 from fastapi.testclient import TestClient
 
 from app.config import Settings
 from app.main import create_app
+from app.models.knowledge import KnowledgeChunk
+from app.models.jobs import JobVersion
+from app.models.resumes import Resume
 
 
 class HashEmbedder:
@@ -113,3 +117,31 @@ def test_oversized_knowledge_upload_is_rejected(client):
     response = _upload(client, b"x" * (10 * 1024 * 1024 + 2))
     assert response.status_code == 400
     assert response.json()["error"]["code"] == "unsupported_file"
+
+
+def test_source_backfill_repairs_existing_resume_and_job_indexes(client, knowledge_app):
+    tenant_id = _login(client, "Acme", "admin@acme.test")
+    resume = client.post(
+        "/api/v1/resumes",
+        files={"file": ("resume.txt", b"Python FastAPI", "text/plain")},
+    ).json()
+    job = client.post(
+        "/api/v1/jobs",
+        json={"title": "AI Engineer", "jd_text": "Python RAG", "profile": {}},
+    ).json()
+    with knowledge_app.state.session_factory() as session:
+        session.execute(delete(KnowledgeChunk).where(KnowledgeChunk.tenant_id == tenant_id))
+        stored_resume = session.get(Resume, resume["id"])
+        stored_job = session.get(JobVersion, job["versions"][0]["id"])
+        stored_resume.search_index_status = "pending"
+        stored_job.search_index_status = "pending"
+        session.commit()
+
+    response = client.post("/api/v1/knowledge-documents/rebuild-sources")
+    assert response.status_code == 200
+    assert response.json() == {"resumes_indexed": 1, "job_versions_indexed": 1, "failed": 0}
+    assert knowledge_app.state.knowledge_index.search(tenant_id, "Python", {"resume"}, 5, 0)
+    assert knowledge_app.state.knowledge_index.search(tenant_id, "RAG", {"job"}, 5, 0)
+    with knowledge_app.state.session_factory() as session:
+        assert session.get(Resume, resume["id"]).search_index_status == "ready"
+        assert session.get(JobVersion, job["versions"][0]["id"]).search_index_status == "ready"

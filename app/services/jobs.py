@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
+from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
@@ -127,5 +128,11 @@ class JobService:
                 str(version.version),
                 chunk_document(version.jd_text, "job"),
             )
+            version.search_index_status = "ready"
+            version.search_index_error = None
+            version.search_indexed_at = datetime.now(timezone.utc)
         except Exception:
-            pass
+            version.search_index_status = "failed"
+            version.search_index_error = "indexing_failed"
+            version.search_indexed_at = None
+        self.session.commit()
