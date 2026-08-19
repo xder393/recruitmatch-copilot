@@ -30,9 +30,9 @@
 复现：
 
 ```bash
-python scripts/generate_recruitment_eval.py
-python scripts/evaluate_recruitment.py
-python scripts/evaluate_ai_pipeline.py --mode hybrid-v1 --fake-model
+./.venv/bin/python scripts/generate_recruitment_eval.py
+./.venv/bin/python scripts/evaluate_recruitment.py
+./.venv/bin/python scripts/evaluate_ai_pipeline.py --mode hybrid-v1 --fake-model
 ```
 
 ## 架构
@@ -63,46 +63,56 @@ flowchart LR
 
 ## 快速启动
 
-### Docker Compose
+项目没有默认账号和密码。首次打开页面时选择“创建企业空间”，自行设置企业名称、邮箱和至少 12 位密码。
 
-```bash
-cp .env.example .env
-# 修改 JWT_SECRET；默认 AI_ENABLED=false，无需模型 Key
-docker compose up --build
-```
+| 方式 | 数据库 | 任务模式 | 默认地址 |
+|---|---|---|---|
+| 本机开发 | SQLite | inline | `http://127.0.0.1:8765` |
+| Docker Compose | PostgreSQL | Redis + Celery | `http://localhost:8000` |
 
-访问：
-
-- 招聘工作台：<http://localhost:8000>
-- OpenAPI：<http://localhost:8000/docs>
-- 就绪检查：<http://localhost:8000/api/v1/health/ready>
-
-首次进入工作台选择“创建企业空间”。Compose 启动时会自动执行迁移并初始化 10 个岗位族 × 3 个级别，共 30 个岗位模板。
-
-### 本地开发
+### 本机开发（推荐首次体验）
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
-export JWT_SECRET='replace-with-at-least-32-random-bytes'
-alembic upgrade head
-python scripts/seed_job_templates.py
-uvicorn app.main:app --reload
+./.venv/bin/python -m pip install -r requirements.txt
+cp .env.example .env
+# 编辑 .env，将 JWT_SECRET 替换为 openssl rand -hex 32 的输出
+./.venv/bin/python -m alembic upgrade head
+./.venv/bin/python scripts/seed_job_templates.py
+./.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8765 --reload
 ```
 
-默认数据库为 `data/recruitmatch.db`，任务以内联方式执行。生产式本地联调使用 Compose 的 PostgreSQL、Redis 和 Celery。
+访问：
+
+- 招聘工作台：<http://127.0.0.1:8765>
+- OpenAPI：<http://127.0.0.1:8765/docs>
+- 就绪检查：<http://127.0.0.1:8765/api/v1/health/ready>
+
+macOS 如果提示 `python: command not found`，继续使用上面的 `python3` 和 `./.venv/bin/python`，不要依赖系统中的 `python` 命令。默认数据库为 `data/recruitmatch.db`，任务在 API 进程内执行。
+
+### Docker Compose（生产式结构演示）
+
+```bash
+cp .env.example .env
+# 编辑 .env 并替换 JWT_SECRET；默认 AI_ENABLED=false，无需模型 Key
+docker compose up --build
+```
+
+访问 <http://localhost:8000>。Compose 会覆盖 `.env` 的本机数据库和任务设置，使用 PostgreSQL、Redis 与 Celery，并在 API 容器启动时执行迁移和初始化 30 个岗位模板。`docker compose down -v` 会删除数据卷，除非需要重置环境，否则不要运行。
 
 启用 AI 时配置：
 
-```bash
-export AI_ENABLED=true
-export OPENAI_API_KEY='your-key'
-export OPENAI_BASE_URL='https://api.deepseek.com'
-export OPENAI_MODEL='deepseek-chat'
+```dotenv
+AI_ENABLED=true
+OPENAI_API_KEY=your-key
+OPENAI_BASE_URL=https://api.deepseek.com
+OPENAI_MODEL=deepseek-chat
 ```
 
-模型网关使用 OpenAI-compatible 协议，可替换为其他兼容供应商。未配置或调用失败时，健康检查、岗位管理、简历处理和 `rules-v1` 仍可工作；`/api/v1/ai/status` 会显示降级状态。
+修改 `.env` 后重启服务。模型网关使用 OpenAI-compatible 协议；默认 Embedding 在本机运行，首次启用会下载约 95 MiB 模型。未配置或调用失败时，健康检查、岗位管理、简历处理和 `rules-v1` 仍可工作，Hybrid 会安全降级并由 `/api/v1/ai/status` 展示原因。
+
+完整操作顺序、状态说明、备份恢复和故障排查见 [使用与运行手册](docs/usage-guide.md)。
 
 ## 关键 API
 
@@ -129,10 +139,10 @@ export OPENAI_MODEL='deepseek-chat'
 ## 测试与质量门禁
 
 ```bash
-python -m pytest -q
-python -m ruff check app tests scripts
-DATABASE_URL=sqlite:////tmp/recruitmatch-ci.db alembic upgrade head
-python scripts/evaluate_ai_pipeline.py --mode hybrid-v1 --fake-model
+./.venv/bin/python -m pytest -q
+./.venv/bin/python -m ruff check app tests scripts
+DATABASE_URL=sqlite:////tmp/recruitmatch-ci.db ./.venv/bin/python -m alembic upgrade head
+./.venv/bin/python scripts/evaluate_ai_pipeline.py --mode hybrid-v1 --fake-model
 ```
 
 测试覆盖：密码/JWT、岗位版本、租户 IDOR、上传幂等、文件安全、PDF/DOCX 错误、画像证据、状态机、Top 3 算法、反馈、运营统计、迁移和 Web 入口。GitHub Actions 会执行 Ruff、全新数据库迁移、合成数据生成、评测和全量测试。
@@ -159,3 +169,12 @@ python scripts/evaluate_ai_pipeline.py --mode hybrid-v1 --fake-model
 ## 简历材料
 
 可验证的项目描述、面试讲解顺序和禁止夸大的边界见 [docs/resume-bullets.md](docs/resume-bullets.md)。
+
+## 文档导航
+
+- [使用与运行手册](docs/usage-guide.md)：账号、岗位、简历、Hybrid/RAG、反馈、备份与故障处理。
+- [GitHub 发布清单](docs/github-publish-checklist.md)：秘密扫描、远程仓库检查、提交与公开边界。
+- [架构说明](docs/architecture.md)：模块、数据流和降级原则。
+- [评测说明](docs/evaluation.md)：数据集、指标定义和真实上线缺口。
+
+准备推送前请先执行 GitHub 发布清单。本项目不会自动替换远程地址、强制推送或选择 License。
