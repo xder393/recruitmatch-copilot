@@ -102,7 +102,9 @@ def init_recruiting_state(app: FastAPI, settings: Settings, structured_model=Non
     )
     artifact_store = LocalArtifactStore(Path(settings.artifact_dir))
     fallback_parser = HeuristicResumeParser()
-    recruiting_model = structured_model or OpenAICompatibleGateway(settings)
+    recruiting_model = structured_model
+    if recruiting_model is None and settings.ai_enabled:
+        recruiting_model = OpenAICompatibleGateway(settings)
     parser = (
         LLMResumeParser(
             recruiting_model,
