@@ -30,8 +30,13 @@ from app.resumes.artifacts import LocalArtifactStore
 from app.resumes.parser import HeuristicResumeParser
 from app.services.resume_processing import ResumeProcessingService
 from app.tasks.dispatcher import CeleryTaskDispatcher, InlineTaskDispatcher
+from app.tasks.knowledge_tasks import CeleryKnowledgeDispatcher, InlineKnowledgeDispatcher
 from app.ai.gateway import OpenAICompatibleGateway
 from app.ai.resume_parser import LLMResumeParser
+from app.knowledge.artifacts import KnowledgeArtifactStore
+from app.knowledge.embeddings import BGEEmbedder
+from app.knowledge.index import RecruitingVectorIndex
+from app.services.knowledge_processing import KnowledgeProcessingService
 
 logger = get_logger(__name__)
 
@@ -80,7 +85,7 @@ def init_state(app: FastAPI, settings: Settings) -> None:
     logger.info("应用初始化完成，知识库共 %d 块", len(store))
 
 
-def init_recruiting_state(app: FastAPI, settings: Settings, structured_model=None) -> None:
+def init_recruiting_state(app: FastAPI, settings: Settings, structured_model=None, knowledge_embedder=None) -> None:
     """Initialize recruiting persistence once per application instance."""
     if getattr(app.state, "_recruiting_initialized", False):
         return
@@ -104,22 +109,40 @@ def init_recruiting_state(app: FastAPI, settings: Settings, structured_model=Non
         if settings.ai_enabled
         else fallback_parser
     )
-    processor = ResumeProcessingService(session_factory, artifact_store, parser)
+    knowledge_index = RecruitingVectorIndex(
+        session_factory,
+        knowledge_embedder or BGEEmbedder(settings.embedding_model),
+    )
+    # Automatic resume/JD indexing belongs to the AI feature. Keeping it off in
+    # rule-only mode also prevents an accidental model download in basic setups.
+    source_index = knowledge_index if settings.ai_enabled or knowledge_embedder is not None else None
+    processor = ResumeProcessingService(session_factory, artifact_store, parser, source_index=source_index)
+    knowledge_artifact_store = KnowledgeArtifactStore(Path(settings.knowledge_artifact_dir))
+    knowledge_processor = KnowledgeProcessingService(session_factory, knowledge_artifact_store, knowledge_index)
     app.state.artifact_store = artifact_store
     app.state.resume_processor = processor
+    app.state.knowledge_index = knowledge_index
+    app.state.recruiting_source_index = source_index
+    app.state.knowledge_artifact_store = knowledge_artifact_store
+    app.state.knowledge_processor = knowledge_processor
     app.state.task_dispatcher = (
         CeleryTaskDispatcher() if settings.task_mode == "celery" else InlineTaskDispatcher(processor)
+    )
+    app.state.knowledge_dispatcher = (
+        CeleryKnowledgeDispatcher()
+        if settings.task_mode == "celery"
+        else InlineKnowledgeDispatcher(knowledge_processor)
     )
     app.state._recruiting_initialized = True
 
 
-def create_app(settings: Settings | None = None, structured_model=None) -> FastAPI:
+def create_app(settings: Settings | None = None, structured_model=None, knowledge_embedder=None) -> FastAPI:
     settings = settings or Settings.load()
     setup_logging()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        init_recruiting_state(app, settings, structured_model)
+        init_recruiting_state(app, settings, structured_model, knowledge_embedder)
         if settings.legacy_rag_enabled:
             init_state(app, settings)
         yield

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import List
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.orm import Session
 
 from app.api.v1.deps import get_current_principal, get_db
@@ -63,11 +63,14 @@ def list_templates(
 @router.post("/jobs", response_model=JobResponse, status_code=status.HTTP_201_CREATED)
 def create_job(
     payload: JobCreateRequest,
+    request: Request,
     principal: Principal = Depends(get_current_principal),
     session: Session = Depends(get_db),
 ):
     return _job_response(
-        JobService(session).create_job(principal, payload.title, payload.jd_text, payload.profile)
+        JobService(session, request.app.state.recruiting_source_index).create_job(
+            principal, payload.title, payload.jd_text, payload.profile
+        )
     )
 
 
@@ -93,11 +96,12 @@ def get_job(
 def update_job(
     job_id: str,
     payload: JobUpdateRequest,
+    request: Request,
     principal: Principal = Depends(get_current_principal),
     session: Session = Depends(get_db),
 ):
     return _job_response(
-        JobService(session).update_job(
+        JobService(session, request.app.state.recruiting_source_index).update_job(
             principal,
             job_id,
             title=payload.title,

@@ -23,10 +23,11 @@ class ResumeParser(Protocol):
 
 
 class ResumeProcessingService:
-    def __init__(self, session_factory, artifact_store: ArtifactReader, parser: ResumeParser):
+    def __init__(self, session_factory, artifact_store: ArtifactReader, parser: ResumeParser, source_index=None):
         self.session_factory = session_factory
         self.artifact_store = artifact_store
         self.parser = parser
+        self.source_index = source_index
 
     def process(self, tenant_id: str, resume_id: str) -> None:
         with self.session_factory() as session:
@@ -41,6 +42,7 @@ class ResumeProcessingService:
             resume.error_message = None
             filename = resume.original_filename
             storage_key = resume.artifact.storage_key
+            source_version = resume.sha256
             session.commit()
 
         try:
@@ -93,6 +95,22 @@ class ResumeProcessingService:
                         parse_result.latency_ms,
                     )
             session.commit()
+
+        if self.source_index is not None:
+            try:
+                from app.knowledge.chunking import chunk_document
+
+                self.source_index.index_source(
+                    tenant_id,
+                    "resume",
+                    resume_id,
+                    source_version,
+                    chunk_document(text, "resume"),
+                )
+            except Exception:
+                # Search enrichment must never roll back an otherwise valid
+                # resume; re-indexing can repair this side effect later.
+                pass
 
     def _mark_failed(self, tenant_id: str, resume_id: str, code: str, message: str) -> None:
         with self.session_factory() as session:

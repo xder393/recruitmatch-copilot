@@ -16,9 +16,10 @@ _REQUIRED_PROFILE_KEYS = {"job_family", "level", "required_skills", "preferred_s
 
 
 class JobService:
-    def __init__(self, session: Session):
+    def __init__(self, session: Session, source_index=None):
         self.session = session
         self.jobs = JobRepository(session)
+        self.source_index = source_index
 
     def list_templates(self) -> List[JobTemplate]:
         return self.jobs.list_templates()
@@ -47,7 +48,9 @@ class JobService:
         )
         self.jobs.add(job)
         self.session.commit()
-        return self.get_job(principal, job.id)
+        stored = self.get_job(principal, job.id)
+        self._index_version(principal.tenant_id, stored.versions[-1])
+        return stored
 
     def update_job(
         self,
@@ -73,7 +76,9 @@ class JobService:
             )
         )
         self.session.commit()
-        return self.get_job(principal, job.id)
+        stored = self.get_job(principal, job.id)
+        self._index_version(principal.tenant_id, stored.versions[-1])
+        return stored
 
     def activate_job(self, principal: Principal, job_id: str) -> Job:
         self._require_mutation(principal)
@@ -108,3 +113,19 @@ class JobService:
     def _require_mutation(principal: Principal) -> None:
         if principal.role not in _MUTATING_ROLES:
             raise AuthorizationError("无权修改岗位")
+
+    def _index_version(self, tenant_id: str, version: JobVersion) -> None:
+        if self.source_index is None:
+            return
+        try:
+            from app.knowledge.chunking import chunk_document
+
+            self.source_index.index_source(
+                tenant_id,
+                "job",
+                version.id,
+                str(version.version),
+                chunk_document(version.jd_text, "job"),
+            )
+        except Exception:
+            pass
