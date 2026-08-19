@@ -1,0 +1,125 @@
+"""Tenant-scoped job catalog endpoints."""
+from __future__ import annotations
+
+from typing import List
+
+from fastapi import APIRouter, Depends, status
+from sqlalchemy.orm import Session
+
+from app.api.v1.deps import get_current_principal, get_db
+from app.api.v1.schemas import (
+    JobCreateRequest,
+    JobListResponse,
+    JobResponse,
+    JobTemplateResponse,
+    JobUpdateRequest,
+    JobVersionResponse,
+)
+from app.models.jobs import Job, JobTemplate
+from app.security.tokens import Principal
+from app.services.jobs import JobService
+
+router = APIRouter(tags=["RecruitMatch Jobs"])
+
+
+def _job_response(job: Job) -> JobResponse:
+    return JobResponse(
+        id=job.id,
+        title=job.title,
+        status=job.status,
+        current_version=job.current_version,
+        versions=[
+            JobVersionResponse(
+                id=version.id,
+                version=version.version,
+                jd_text=version.jd_text,
+                profile=version.profile,
+                created_by=version.created_by,
+            )
+            for version in job.versions
+        ],
+    )
+
+
+def _template_response(template: JobTemplate) -> JobTemplateResponse:
+    return JobTemplateResponse(
+        id=template.id,
+        slug=template.slug,
+        title=template.title,
+        jd_text=template.jd_text,
+        profile=template.profile,
+    )
+
+
+@router.get("/job-templates", response_model=List[JobTemplateResponse])
+def list_templates(
+    principal: Principal = Depends(get_current_principal),
+    session: Session = Depends(get_db),
+):
+    del principal
+    return [_template_response(item) for item in JobService(session).list_templates()]
+
+
+@router.post("/jobs", response_model=JobResponse, status_code=status.HTTP_201_CREATED)
+def create_job(
+    payload: JobCreateRequest,
+    principal: Principal = Depends(get_current_principal),
+    session: Session = Depends(get_db),
+):
+    return _job_response(
+        JobService(session).create_job(principal, payload.title, payload.jd_text, payload.profile)
+    )
+
+
+@router.get("/jobs", response_model=JobListResponse)
+def list_jobs(
+    principal: Principal = Depends(get_current_principal),
+    session: Session = Depends(get_db),
+):
+    items = [_job_response(item) for item in JobService(session).list_jobs(principal)]
+    return JobListResponse(items=items, total=len(items))
+
+
+@router.get("/jobs/{job_id}", response_model=JobResponse)
+def get_job(
+    job_id: str,
+    principal: Principal = Depends(get_current_principal),
+    session: Session = Depends(get_db),
+):
+    return _job_response(JobService(session).get_job(principal, job_id))
+
+
+@router.put("/jobs/{job_id}", response_model=JobResponse)
+def update_job(
+    job_id: str,
+    payload: JobUpdateRequest,
+    principal: Principal = Depends(get_current_principal),
+    session: Session = Depends(get_db),
+):
+    return _job_response(
+        JobService(session).update_job(
+            principal,
+            job_id,
+            title=payload.title,
+            jd_text=payload.jd_text,
+            profile=payload.profile,
+        )
+    )
+
+
+@router.post("/jobs/{job_id}/activate", response_model=JobResponse)
+def activate_job(
+    job_id: str,
+    principal: Principal = Depends(get_current_principal),
+    session: Session = Depends(get_db),
+):
+    return _job_response(JobService(session).activate_job(principal, job_id))
+
+
+@router.post("/jobs/{job_id}/deactivate", response_model=JobResponse)
+def deactivate_job(
+    job_id: str,
+    principal: Principal = Depends(get_current_principal),
+    session: Session = Depends(get_db),
+):
+    return _job_response(JobService(session).deactivate_job(principal, job_id))

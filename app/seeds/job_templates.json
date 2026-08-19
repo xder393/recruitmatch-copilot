@@ -1,0 +1,82 @@
+[
+  {
+    "slug": "ai-application",
+    "title": "AI 应用开发工程师",
+    "job_family": "ai_application",
+    "responsibilities": "设计并交付基于大模型、RAG 与 Agent 的企业 AI 应用。",
+    "required_skills": ["Python", "FastAPI", "LLM API"],
+    "preferred_skills": ["RAG", "LangChain", "向量数据库"]
+  },
+  {
+    "slug": "llm-algorithm",
+    "title": "大模型算法工程师",
+    "job_family": "llm_algorithm",
+    "responsibilities": "负责大模型训练、微调、评测与推理优化。",
+    "required_skills": ["Python", "PyTorch", "Transformer"],
+    "preferred_skills": ["PEFT", "分布式训练", "推理加速"]
+  },
+  {
+    "slug": "machine-learning",
+    "title": "机器学习工程师",
+    "job_family": "machine_learning",
+    "responsibilities": "构建、验证并部署机器学习模型与特征管线。",
+    "required_skills": ["Python", "机器学习", "SQL"],
+    "preferred_skills": ["Scikit-learn", "MLOps", "特征工程"]
+  },
+  {
+    "slug": "data-engineering",
+    "title": "数据工程师",
+    "job_family": "data_engineering",
+    "responsibilities": "建设可靠的数据采集、处理、质量与服务链路。",
+    "required_skills": ["SQL", "Python", "ETL"],
+    "preferred_skills": ["Spark", "Flink", "数据仓库"]
+  },
+  {
+    "slug": "data-analysis",
+    "title": "数据分析师",
+    "job_family": "data_analysis",
+    "responsibilities": "通过指标体系、分析模型和可视化支持业务决策。",
+    "required_skills": ["SQL", "统计学", "数据可视化"],
+    "preferred_skills": ["Python", "Tableau", "A/B 测试"]
+  },
+  {
+    "slug": "backend",
+    "title": "后端工程师",
+    "job_family": "backend",
+    "responsibilities": "设计高可用 API、领域服务和数据访问层。",
+    "required_skills": ["Python/Java", "数据库", "API 设计"],
+    "preferred_skills": ["微服务", "Redis", "消息队列"]
+  },
+  {
+    "slug": "frontend",
+    "title": "前端工程师",
+    "job_family": "frontend",
+    "responsibilities": "交付可访问、可维护且性能良好的 Web 产品。",
+    "required_skills": ["JavaScript", "HTML/CSS", "React/Vue"],
+    "preferred_skills": ["TypeScript", "前端工程化", "性能优化"]
+  },
+  {
+    "slug": "full-stack",
+    "title": "全栈工程师",
+    "job_family": "full_stack",
+    "responsibilities": "端到端交付 Web 产品并维护前后端工程质量。",
+    "required_skills": ["JavaScript", "后端开发", "数据库"],
+    "preferred_skills": ["TypeScript", "Python", "云部署"]
+  },
+  {
+    "slug": "test-development",
+    "title": "测试开发工程师",
+    "job_family": "test_development",
+    "responsibilities": "建设自动化测试、质量平台与持续交付质量门禁。",
+    "required_skills": ["自动化测试", "Python/Java", "接口测试"],
+    "preferred_skills": ["性能测试", "CI/CD", "测试平台"]
+  },
+  {
+    "slug": "devops-sre",
+    "title": "DevOps/SRE 工程师",
+    "job_family": "devops_sre",
+    "responsibilities": "建设交付平台、可观测性与高可用运行体系。",
+    "required_skills": ["Linux", "容器", "CI/CD"],
+    "preferred_skills": ["Kubernetes", "Terraform", "Prometheus"]
+  }
+]

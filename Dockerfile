@@ -9,6 +9,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app/ app/
 COPY web/ web/
 COPY scripts/ scripts/
+COPY alembic/ alembic/
+COPY alembic.ini .
 
 # 模型缓存卷：避免每次重建容器都重新下载 embedding 模型
 ENV HF_HOME=/root/.cache/huggingface
