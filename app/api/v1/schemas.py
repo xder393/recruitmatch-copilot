@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
-from app.domain.enums import JobStatus, ResumeStatus, Role
+from app.domain.enums import FeedbackAction, JobStatus, MatchStatus, ResumeStatus, Role
 
 
 class BootstrapRequest(BaseModel):
@@ -87,3 +87,42 @@ class ResumeResponse(BaseModel):
 class ResumeListResponse(BaseModel):
     items: List[ResumeResponse]
     total: int
+
+
+class MatchResultResponse(BaseModel):
+    id: str
+    rank: int
+    job_id: str
+    job_version_id: str
+    job_title: str
+    total_score: float
+    dimension_scores: Dict[str, Any]
+    matched_items: List[str]
+    missing_items: List[str]
+    uncertain_items: List[str]
+    evidence: List[Dict[str, Any]]
+    risk_flags: List[str]
+    summary: str
+
+
+class MatchRunResponse(BaseModel):
+    id: str
+    resume_id: str
+    status: MatchStatus
+    algorithm_version: str
+    prompt_version: str
+    results: List[MatchResultResponse]
+
+
+class FeedbackRequest(BaseModel):
+    action: FeedbackAction
+    corrected_job_version_id: Optional[str] = None
+    reason: Optional[str] = Field(default=None, max_length=500)
+
+
+class FeedbackResponse(BaseModel):
+    id: str
+    match_result_id: str
+    action: FeedbackAction
+    corrected_job_version_id: Optional[str]
+    reason: Optional[str]
