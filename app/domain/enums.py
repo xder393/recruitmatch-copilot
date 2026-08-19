@@ -12,3 +12,11 @@ class JobStatus(str, Enum):
     DRAFT = "draft"
     ACTIVE = "active"
     INACTIVE = "inactive"
+
+
+class ResumeStatus(str, Enum):
+    QUEUED = "queued"
+    RUNNING = "running"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+    DELETED = "deleted"

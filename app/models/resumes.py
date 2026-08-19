@@ -1,0 +1,62 @@
+"""Tenant-owned resume metadata and extracted artifacts."""
+from __future__ import annotations
+
+import uuid
+from datetime import datetime, timezone
+from typing import Any, Dict, Optional
+
+from sqlalchemy import DateTime, Enum, ForeignKey, Integer, JSON, String, Text, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.database import Base
+from app.domain.enums import ResumeStatus
+
+
+def _uuid() -> str:
+    return str(uuid.uuid4())
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+class Resume(Base):
+    __tablename__ = "resumes"
+    __table_args__ = (UniqueConstraint("tenant_id", "sha256", name="uq_resume_tenant_hash"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), index=True, nullable=False)
+    uploaded_by: Mapped[Optional[str]] = mapped_column(ForeignKey("users.id"), nullable=True)
+    sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    original_filename: Mapped[str] = mapped_column(String(500), nullable=False)
+    media_type: Mapped[str] = mapped_column(String(200), nullable=False)
+    size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[ResumeStatus] = mapped_column(
+        Enum(ResumeStatus, native_enum=False), default=ResumeStatus.QUEUED, index=True, nullable=False
+    )
+    profile: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+    error_code: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    error_message: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow, onupdate=_utcnow, nullable=False
+    )
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    artifact: Mapped[Optional["ResumeArtifact"]] = relationship(
+        back_populates="resume", cascade="all, delete-orphan", uselist=False
+    )
+
+
+class ResumeArtifact(Base):
+    __tablename__ = "resume_artifacts"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    resume_id: Mapped[str] = mapped_column(
+        ForeignKey("resumes.id", ondelete="CASCADE"), unique=True, index=True, nullable=False
+    )
+    storage_key: Mapped[str] = mapped_column(String(500), unique=True, nullable=False)
+    extracted_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+    resume: Mapped[Resume] = relationship(back_populates="artifact")
