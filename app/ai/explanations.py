@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
+import time
 
 from pydantic import BaseModel, Field
 
 from app.ai.citations import authorized_hits, citations_are_known, format_evidence
 from app.ai.contracts import ModelRequest, StructuredModel
+from app.ai.gateway import ModelGatewayError
 from app.knowledge.index import RetrievedChunk
 
 
@@ -51,12 +53,14 @@ class GroundedExplanationService:
         prompt_version: str = "match-explanation-v1",
         max_evidence_characters: int = 8000,
         citation_resolver=None,
+        trace_sink=None,
     ):
         self.model = model
         self.enabled = enabled
         self.prompt_version = prompt_version
         self.max_evidence_characters = max_evidence_characters
         self.citation_resolver = citation_resolver
+        self.trace_sink = trace_sink
 
     def generate(
         self,
@@ -87,11 +91,43 @@ class GroundedExplanationService:
             user=evidence,
             schema=GroundedModelOutput,
         )
+        started = time.perf_counter()
+        source_ids = [hit.source_id for hit in permitted]
         try:
-            output = self.model.generate(request).value
-        except Exception:
+            response = self.model.generate(request)
+        except ModelGatewayError as error:
+            self._trace_failed(tenant_id, resume_id, source_ids, request, error, started)
             return self._fallback(rule_result, "rules_fallback")
-        return self._validate(output, permitted)
+        except Exception:
+            error = ModelGatewayError("unexpected_model_error", retryable=False)
+            self._trace_failed(tenant_id, resume_id, source_ids, request, error, started)
+            return self._fallback(rule_result, "rules_fallback")
+        explanation = self._validate(response.value, permitted)
+        if self.trace_sink is not None:
+            self.trace_sink.succeeded(
+                tenant_id,
+                "match_explanation",
+                resume_id,
+                source_ids,
+                request,
+                response,
+                fallback_reason=(
+                    "unsupported_claims" if explanation.grounding_status == "rejected_unsupported_claims" else None
+                ),
+            )
+        return explanation
+
+    def _trace_failed(self, tenant_id, resume_id, source_ids, request, error, started):
+        if self.trace_sink is not None:
+            self.trace_sink.failed(
+                tenant_id,
+                "match_explanation",
+                resume_id,
+                source_ids,
+                request,
+                error,
+                (time.perf_counter() - started) * 1000,
+            )
 
     @staticmethod
     def _validate(output: GroundedModelOutput, hits: List[RetrievedChunk]) -> GroundedExplanation:

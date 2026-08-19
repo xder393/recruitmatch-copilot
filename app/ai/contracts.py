@@ -27,6 +27,7 @@ class ModelResponse(Generic[T]):
     output_tokens: int
     estimated_cost: float
     latency_ms: float
+    attempts: int = 1
 
 
 class StructuredModel(Protocol):

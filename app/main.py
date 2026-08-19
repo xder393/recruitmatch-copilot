@@ -41,6 +41,7 @@ from app.ai.semantic_matching import SemanticMatcher
 from app.matching.engine import MatchingEngine
 from app.matching.hybrid import HybridMatchingEngine
 from app.ai.explanations import GroundedExplanationService
+from app.services.ai_tracing import AITraceSink
 
 logger = get_logger(__name__)
 
@@ -126,6 +127,7 @@ def init_recruiting_state(app: FastAPI, settings: Settings, structured_model=Non
     processor = ResumeProcessingService(session_factory, artifact_store, parser, source_index=source_index)
     knowledge_artifact_store = KnowledgeArtifactStore(Path(settings.knowledge_artifact_dir))
     knowledge_processor = KnowledgeProcessingService(session_factory, knowledge_artifact_store, knowledge_index)
+    ai_trace_sink = AITraceSink(session_factory)
     app.state.artifact_store = artifact_store
     app.state.resume_processor = processor
     app.state.knowledge_index = knowledge_index
@@ -139,6 +141,7 @@ def init_recruiting_state(app: FastAPI, settings: Settings, structured_model=Non
             knowledge_index,
             enabled=settings.ai_enabled,
             max_evidence_characters=settings.max_evidence_characters,
+            trace_sink=ai_trace_sink,
         ),
     )
     app.state.grounded_explanation_service = GroundedExplanationService(
@@ -147,6 +150,7 @@ def init_recruiting_state(app: FastAPI, settings: Settings, structured_model=Non
         prompt_version=settings.explanation_prompt_version,
         max_evidence_characters=settings.max_evidence_characters,
         citation_resolver=knowledge_index.resolve_citations,
+        trace_sink=ai_trace_sink,
     )
     app.state.task_dispatcher = (
         CeleryTaskDispatcher() if settings.task_mode == "celery" else InlineTaskDispatcher(processor)

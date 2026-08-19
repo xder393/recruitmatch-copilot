@@ -52,4 +52,5 @@ class ModelTrace(Base):
     status: Mapped[str] = mapped_column(String(30), nullable=False)
     error_code: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     fallback_reason: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    attempt_count: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)

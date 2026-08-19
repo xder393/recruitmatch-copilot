@@ -33,6 +33,7 @@ class ModelTraceWriter:
         source_ids: list[str],
         request: ModelRequest,
         response: ModelResponse,
+        fallback_reason: str | None = None,
     ) -> ModelTrace:
         trace = ModelTrace(
             tenant_id=tenant_id,
@@ -47,7 +48,9 @@ class ModelTraceWriter:
             output_tokens=response.output_tokens,
             estimated_cost=response.estimated_cost,
             latency_ms=response.latency_ms,
-            status="succeeded",
+            status="rejected" if fallback_reason else "succeeded",
+            fallback_reason=fallback_reason,
+            attempt_count=response.attempts,
         )
         self.session.add(trace)
         return trace
@@ -78,6 +81,7 @@ class ModelTraceWriter:
             status="failed",
             error_code=error.code[:100],
             fallback_reason=error.code[:100],
+            attempt_count=error.attempts,
         )
         self.session.add(trace)
         return trace

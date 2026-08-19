@@ -21,10 +21,11 @@ from app.config import Settings
 
 
 class ModelGatewayError(Exception):
-    def __init__(self, code: str, retryable: bool):
+    def __init__(self, code: str, retryable: bool, attempts: int = 1):
         super().__init__(code)
         self.code = code
         self.retryable = retryable
+        self.attempts = attempts
 
 
 class OpenAICompatibleGateway:
@@ -69,8 +70,10 @@ class OpenAICompatibleGateway:
                     output_tokens=output_tokens,
                     estimated_cost=cost,
                     latency_ms=(time.perf_counter() - started) * 1000,
+                    attempts=attempt + 1,
                 )
-            except ModelGatewayError:
+            except ModelGatewayError as exc:
+                exc.attempts = attempt + 1
                 raise
             except AuthenticationError as exc:
                 raise ModelGatewayError("authentication_failed", retryable=False) from exc
@@ -97,5 +100,6 @@ class OpenAICompatibleGateway:
             except (ValueError, TypeError, IndexError, AttributeError) as exc:
                 raise ModelGatewayError("invalid_output", retryable=False) from exc
             if attempt + 1 >= attempts:
+                error.attempts = attempt + 1
                 raise error from cause
         raise RuntimeError("unreachable")

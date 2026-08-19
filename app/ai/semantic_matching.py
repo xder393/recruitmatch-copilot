@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 from typing import Dict, List, Optional
+import time
 
 from pydantic import BaseModel, Field
 
 from app.ai.citations import format_evidence
 from app.ai.contracts import ModelRequest, StructuredModel
+from app.ai.gateway import ModelGatewayError
 
 
 class SemanticProjectScore(BaseModel):
@@ -38,12 +40,14 @@ class SemanticMatcher:
         enabled: bool = True,
         prompt_version: str = "semantic-project-v1",
         max_evidence_characters: int = 8000,
+        trace_sink=None,
     ):
         self.model = model
         self.source_index = source_index
         self.enabled = enabled
         self.prompt_version = prompt_version
         self.max_evidence_characters = max_evidence_characters
+        self.trace_sink = trace_sink
 
     def score(self, tenant_id: str, resume_id: str, job_version_id: str) -> Optional[SemanticProjectScore]:
         if not self.enabled:
@@ -63,8 +67,40 @@ class SemanticMatcher:
             user=format_evidence(hits, self.max_evidence_characters),
             schema=SemanticProjectScore,
         )
+        started = time.perf_counter()
         try:
-            output = self.model.generate(request).value
-        except Exception:
+            response = self.model.generate(request)
+        except ModelGatewayError as error:
+            self._trace_failed(tenant_id, resume_id, job_version_id, request, error, started)
             return None
-        return validate_semantic_score(output, {hit.citation_id: hit.source_type for hit in hits})
+        except Exception:
+            error = ModelGatewayError("unexpected_model_error", retryable=False)
+            self._trace_failed(tenant_id, resume_id, job_version_id, request, error, started)
+            return None
+        validated = validate_semantic_score(
+            response.value,
+            {hit.citation_id: hit.source_type for hit in hits},
+        )
+        if self.trace_sink is not None:
+            self.trace_sink.succeeded(
+                tenant_id,
+                "semantic_match",
+                resume_id,
+                [resume_id, job_version_id],
+                request,
+                response,
+                fallback_reason=None if validated is not None else "invalid_semantic_citations",
+            )
+        return validated
+
+    def _trace_failed(self, tenant_id, resume_id, job_version_id, request, error, started):
+        if self.trace_sink is not None:
+            self.trace_sink.failed(
+                tenant_id,
+                "semantic_match",
+                resume_id,
+                [resume_id, job_version_id],
+                request,
+                error,
+                (time.perf_counter() - started) * 1000,
+            )
