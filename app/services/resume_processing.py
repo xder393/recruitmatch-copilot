@@ -34,7 +34,7 @@ class ResumeProcessingService:
 
     def process(self, tenant_id: str, resume_id: str) -> bool:
         with self.session_factory() as session:
-            resume = self._get(session, tenant_id, resume_id)
+            resume = self._get(session, tenant_id, resume_id, for_update=True)
             if resume is None or resume.status in {ResumeStatus.DELETED, ResumeStatus.SUCCEEDED, ResumeStatus.FAILED}:
                 return True
             if resume.status is ResumeStatus.RUNNING and not self._lease_expired(resume.updated_at):
@@ -147,9 +147,12 @@ class ResumeProcessingService:
             session.commit()
 
     @staticmethod
-    def _get(session, tenant_id: str, resume_id: str):
-        return session.scalar(
+    def _get(session, tenant_id: str, resume_id: str, for_update: bool = False):
+        statement = (
             select(Resume)
             .options(selectinload(Resume.artifact))
             .where(Resume.id == resume_id, Resume.tenant_id == tenant_id)
         )
+        if for_update:
+            statement = statement.with_for_update()
+        return session.scalar(statement)

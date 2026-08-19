@@ -4,9 +4,12 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from typing import Protocol
 
+from sqlalchemy import select
+
 from app.core.exceptions import AppError
 from app.knowledge.chunking import chunk_document
 from app.knowledge.schemas import ChunkInput
+from app.models.knowledge import KnowledgeDocument
 from app.repositories.knowledge import KnowledgeRepository
 from app.resumes.extractors import extract_text
 
@@ -25,8 +28,14 @@ class KnowledgeProcessingService:
 
     def process(self, tenant_id: str, document_id: str) -> bool:
         with self.session_factory() as session:
-            repository = KnowledgeRepository(session)
-            document = repository.get_document(tenant_id, document_id)
+            document = session.scalar(
+                select(KnowledgeDocument)
+                .where(
+                    KnowledgeDocument.id == document_id,
+                    KnowledgeDocument.tenant_id == tenant_id,
+                )
+                .with_for_update()
+            )
             if document is None or document.status in {"ready", "inactive", "failed"}:
                 return True
             if document.status == "processing" and not self._lease_expired(document.updated_at):

@@ -129,7 +129,9 @@ def test_artifact_cleanup_failure_is_recorded_and_delete_can_retry(resume_client
     original = resume_client.app.state.artifact_store
     resume_client.app.state.artifact_store = FailOnceStore(original)
 
-    assert resume_client.delete(f"/api/v1/resumes/{uploaded['id']}").status_code == 204
+    failed_cleanup = resume_client.delete(f"/api/v1/resumes/{uploaded['id']}")
+    assert failed_cleanup.status_code == 503
+    assert failed_cleanup.json()["error"]["code"] == "artifact_cleanup_pending"
     assert original.read(storage_key) == b"private Python resume"
     with resume_client.app.state.session_factory() as session:
         assert session.get(Resume, uploaded["id"]).error_code == "artifact_delete_failed"

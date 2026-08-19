@@ -9,7 +9,7 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.core.exceptions import ResourceNotFoundError
+from app.core.exceptions import AppError, ResourceNotFoundError
 from app.domain.enums import ResumeStatus
 from app.models.resumes import Resume, ResumeArtifact
 from app.models.knowledge import KnowledgeChunk
@@ -143,11 +143,15 @@ class ResumeService:
         if storage_key:
             try:
                 self.artifact_store.delete(storage_key)
-            except Exception:
+            except Exception as exc:
                 resume.error_code = "artifact_delete_failed"
                 resume.error_message = "原始简历文件清理失败，可重试删除"
                 self.session.commit()
-                return
+                raise AppError(
+                    "原始简历文件清理待重试",
+                    code="artifact_cleanup_pending",
+                    status_code=503,
+                ) from exc
         resume.error_code = None
         resume.error_message = None
         self.session.commit()
