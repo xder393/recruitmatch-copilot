@@ -37,6 +37,7 @@ class DeterministicFakeModel:
         self.calls: Counter[str] = Counter()
         self.input_tokens = 0
         self.output_tokens = 0
+        self.semantic_scores: list[float] = []
 
     def generate(self, request: ModelRequest) -> ModelResponse:
         self.calls[request.operation] += 1
@@ -72,9 +73,24 @@ class DeterministicFakeModel:
                     resume_citation_ids=job_ids[:1],
                     job_citation_ids=resume_ids[:1],
                 )
+            resume_line = next((line for line in request.user.splitlines() if "候选人技能：" in line), "")
+            job_line = next((line for line in request.user.splitlines() if "；技能：" in line), "")
+            resume_skills = {
+                item.strip()
+                for item in re.split(r"[、,，]", resume_line.split("候选人技能：", 1)[-1].split("；", 1)[0])
+                if item.strip()
+            }
+            job_skills = {
+                item.strip()
+                for item in re.split(r"[、,，]", job_line.split("；技能：", 1)[-1])
+                if item.strip()
+            }
+            overlap = len(resume_skills & job_skills) / max(1, len(job_skills))
+            score = round(0.1 + 0.9 * overlap, 4) if resume_ids and job_ids else 0.0
+            self.semantic_scores.append(score)
             return SemanticProjectScore(
-                score=0.75 if resume_ids and job_ids else 0,
-                rationale="两侧项目证据已提供" if resume_ids and job_ids else "证据不足",
+                score=score,
+                rationale=f"岗位技能证据重合度 {overlap:.2f}" if resume_ids and job_ids else "证据不足",
                 resume_citation_ids=resume_ids[:1],
                 job_citation_ids=job_ids[:1],
             )
@@ -182,6 +198,8 @@ def evaluate(dataset: list[dict], mode: str) -> dict:
     parser_outcomes: Counter[str] = Counter()
     grounding_outcomes: Counter[str] = Counter()
     semantic_fallbacks = 0
+    semantic_discriminated_cases = 0
+    semantic_ranking_changed_cases = 0
     safe_cases = []
     for case in dataset:
         before_input, before_output = model.input_tokens, model.output_tokens
@@ -197,12 +215,17 @@ def evaluate(dataset: list[dict], mode: str) -> dict:
             parser_status = parsed.outcome.mode
         index = EvaluationIndex(case["id"], case["resume_text"], jobs)
         if mode == "hybrid-v1":
+            rule_order = [item.job_id for item in rules.rank(profile, jobs, top_k=3)]
+            before_semantic_scores = len(model.semantic_scores)
             ranked = HybridMatchingEngine(rules, SemanticMatcher(model, index)).rank(
                 profile,
                 jobs,
                 HybridTenantContext("synthetic-tenant", case["id"]),
                 top_k=3,
             )
+            case_scores = model.semantic_scores[before_semantic_scores:]
+            semantic_discriminated_cases += int(len(set(case_scores)) > 1)
+            semantic_ranking_changed_cases += int([item.job_id for item in ranked] != rule_order)
         else:
             ranked = rules.rank(profile, jobs, top_k=3)
         semantic_fallbacks += sum(
@@ -284,6 +307,8 @@ def evaluate(dataset: list[dict], mode: str) -> dict:
             "parser": dict(sorted(parser_outcomes.items())),
             "grounding": dict(sorted(grounding_outcomes.items())),
             "semantic_fallback_results": semantic_fallbacks,
+            "semantic_discriminated_cases": semantic_discriminated_cases,
+            "semantic_ranking_changed_cases": semantic_ranking_changed_cases,
         },
         "metrics": evaluate_ai_cases(evaluated).model_dump(),
         "cases": safe_cases,

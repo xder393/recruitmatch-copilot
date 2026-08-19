@@ -24,7 +24,7 @@ class KnowledgeProcessingService:
         with self.session_factory() as session:
             repository = KnowledgeRepository(session)
             document = repository.get_document(tenant_id, document_id)
-            if document is None or document.status == "inactive":
+            if document is None or document.status != "uploaded":
                 return
             document.status = "processing"
             document.error_code = None

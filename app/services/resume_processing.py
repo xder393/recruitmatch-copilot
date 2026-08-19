@@ -33,7 +33,7 @@ class ResumeProcessingService:
     def process(self, tenant_id: str, resume_id: str) -> None:
         with self.session_factory() as session:
             resume = self._get(session, tenant_id, resume_id)
-            if resume is None or resume.status is ResumeStatus.DELETED:
+            if resume is None or resume.status is not ResumeStatus.QUEUED:
                 return
             if resume.artifact is None:
                 self._mark_failed(tenant_id, resume_id, "artifact_missing", "简历文件记录不存在")

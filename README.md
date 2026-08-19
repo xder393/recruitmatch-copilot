@@ -23,7 +23,7 @@
 | 数据集 | 标签来源 | 样本 | Top-1 Accuracy | Top-3 Recall | 证据覆盖率 |
 |---|---|---:|---:|---:|---:|
 | recruitmatch-v1 | synthetic_heuristic | 150 | 98.67% | 100% | 100% |
-| recruitmatch-ai-v1 / hybrid-v1 | synthetic_ai | 150 | 95.33% | 98% | 引用有效率 100% |
+| recruitmatch-ai-v1 / hybrid-v1 | synthetic_ai | 150 | 97.33% | 100% | 引用有效率 100% |
 
 这些数字只表示对应算法在固定合成基准上的回归表现，不代表真实招聘准确率。真实上线前必须由招聘专家对脱敏样本重新标注并审查公平性。
 

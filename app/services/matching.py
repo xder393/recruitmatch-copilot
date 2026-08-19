@@ -71,7 +71,7 @@ class MatchingService:
             created_by=principal.user_id,
             status=MatchStatus.RUNNING,
             algorithm_version=mode,
-            prompt_version="semantic-project-v1" if mode == "hybrid-v1" else "none",
+            prompt_version=self._prompt_version() if mode == "hybrid-v1" else "none",
         )
         self.repository.add_run(run)
         profile = ResumeProfile.model_validate(resume.profile)
@@ -123,6 +123,15 @@ class MatchingService:
             raise RuntimeError("match run disappeared after commit")
         return loaded
 
+    def _prompt_version(self) -> str:
+        semantic = getattr(
+            getattr(self.hybrid_engine, "semantic_matcher", None),
+            "prompt_version",
+            "semantic-project-v1",
+        )
+        explanation = getattr(self.explanation_service, "prompt_version", None)
+        return "+".join(item for item in [semantic, explanation] if item)
+
     def get_run(self, principal: Principal, run_id: str) -> MatchRun:
         run = self.repository.get_run(principal.tenant_id, run_id)
         if run is None:
@@ -137,26 +146,37 @@ class MatchingService:
         knowledge_types = {"policy", "interview_guide", "competency", "assessment_rubric"}
         for item in recommendations:
             job = by_version[item.job_version_id]
-            hits = self.source_index.source_chunks(tenant_id, "resume", resume_id)
-            hits += self.source_index.source_chunks(tenant_id, "job", item.job_version_id)
-            hits += self.source_index.search(
-                tenant_id,
-                job.jd_text,
-                knowledge_types,
-                self.retrieval_top_k,
-                self.retrieval_min_score,
-            )
-            explanation = self.explanation_service.generate(
-                tenant_id,
-                resume_id,
-                item.job_version_id,
-                {
-                    "matched": item.matched_items,
-                    "missing": item.missing_items,
-                    "uncertain": item.uncertain_items,
-                },
-                hits,
-            )
+            try:
+                hits = self.source_index.source_chunks(tenant_id, "resume", resume_id)
+                hits += self.source_index.source_chunks(tenant_id, "job", item.job_version_id)
+                hits += self.source_index.search(
+                    tenant_id,
+                    job.jd_text,
+                    knowledge_types,
+                    self.retrieval_top_k,
+                    self.retrieval_min_score,
+                )
+                explanation = self.explanation_service.generate(
+                    tenant_id,
+                    resume_id,
+                    item.job_version_id,
+                    {
+                        "matched": item.matched_items,
+                        "missing": item.missing_items,
+                        "uncertain": item.uncertain_items,
+                    },
+                    hits,
+                )
+            except Exception:
+                enriched.append(
+                    item.model_copy(
+                        update={
+                            "grounding_status": "rules_fallback",
+                            "fallback_reason": item.fallback_reason or "guidance_retrieval_unavailable",
+                        }
+                    )
+                )
+                continue
             used_ids = set(item.citations)
             used_ids.update(explanation.citations)
             citations = [self._citation_payload(hit) for hit in hits if hit.citation_id in used_ids]

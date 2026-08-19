@@ -52,8 +52,11 @@ class SemanticMatcher:
     def score(self, tenant_id: str, resume_id: str, job_version_id: str) -> Optional[SemanticProjectScore]:
         if not self.enabled:
             return None
-        resume_hits = self.source_index.source_chunks(tenant_id, "resume", resume_id)
-        job_hits = self.source_index.source_chunks(tenant_id, "job", job_version_id)
+        try:
+            resume_hits = self.source_index.source_chunks(tenant_id, "resume", resume_id)
+            job_hits = self.source_index.source_chunks(tenant_id, "job", job_version_id)
+        except Exception:
+            return None
         if not resume_hits or not job_hits:
             return None
         hits = resume_hits + job_hits
@@ -82,25 +85,31 @@ class SemanticMatcher:
             {hit.citation_id: hit.source_type for hit in hits},
         )
         if self.trace_sink is not None:
-            self.trace_sink.succeeded(
-                tenant_id,
-                "semantic_match",
-                resume_id,
-                [resume_id, job_version_id],
-                request,
-                response,
-                fallback_reason=None if validated is not None else "invalid_semantic_citations",
-            )
+            try:
+                self.trace_sink.succeeded(
+                    tenant_id,
+                    "semantic_match",
+                    resume_id,
+                    [resume_id, job_version_id],
+                    request,
+                    response,
+                    fallback_reason=None if validated is not None else "invalid_semantic_citations",
+                )
+            except Exception:
+                pass
         return validated
 
     def _trace_failed(self, tenant_id, resume_id, job_version_id, request, error, started):
         if self.trace_sink is not None:
-            self.trace_sink.failed(
-                tenant_id,
-                "semantic_match",
-                resume_id,
-                [resume_id, job_version_id],
-                request,
-                error,
-                (time.perf_counter() - started) * 1000,
-            )
+            try:
+                self.trace_sink.failed(
+                    tenant_id,
+                    "semantic_match",
+                    resume_id,
+                    [resume_id, job_version_id],
+                    request,
+                    error,
+                    (time.perf_counter() - started) * 1000,
+                )
+            except Exception:
+                pass

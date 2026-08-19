@@ -4,7 +4,7 @@ from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from app.api.v1.deps import get_current_principal, get_db
-from app.domain.enums import ResumeStatus
+from app.domain.enums import JobStatus, ResumeStatus
 from app.models.jobs import Job, JobVersion
 from app.models.matching import Feedback, MatchRun
 from app.models.operations import ModelTrace
@@ -26,22 +26,46 @@ def readiness(session: Session = Depends(get_db)):
 
 
 @router.get("/ai/status")
-def ai_status(request: Request, session: Session = Depends(get_db)):
+def ai_status(
+    request: Request,
+    principal: Principal = Depends(get_current_principal),
+    session: Session = Depends(get_db),
+):
     settings = request.app.state.settings
-    latest = session.scalar(select(ModelTrace).order_by(ModelTrace.created_at.desc()).limit(1))
+    tenant_id = principal.tenant_id
+    latest = session.scalar(
+        select(ModelTrace)
+        .where(ModelTrace.tenant_id == tenant_id)
+        .order_by(ModelTrace.created_at.desc())
+        .limit(1)
+    )
     failed_indexes = (
         session.scalar(
-            select(func.count()).select_from(Resume).where(Resume.search_index_status == "failed")
+            select(func.count())
+            .select_from(Resume)
+            .where(
+                Resume.tenant_id == tenant_id,
+                Resume.status != ResumeStatus.DELETED,
+                Resume.search_index_status == "failed",
+            )
         )
         or 0
     ) + (
         session.scalar(
-            select(func.count()).select_from(JobVersion).where(JobVersion.search_index_status == "failed")
+            select(func.count())
+            .select_from(JobVersion)
+            .join(Job, Job.id == JobVersion.job_id)
+            .where(
+                Job.tenant_id == tenant_id,
+                Job.status == JobStatus.ACTIVE,
+                JobVersion.version == Job.current_version,
+                JobVersion.search_index_status == "failed",
+            )
         )
         or 0
     )
     latest_failed = latest is not None and latest.status == "failed"
-    degraded = not settings.ai_enabled or latest_failed or failed_indexes > 0
+    degraded = not settings.ai_enabled or latest is None or latest_failed or failed_indexes > 0
     return {
         "configured": bool(settings.api_key),
         "enabled": settings.ai_enabled,

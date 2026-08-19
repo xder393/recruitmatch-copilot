@@ -35,6 +35,8 @@ def test_fake_model_evaluation_is_deterministic(tmp_path):
     assert result["pipeline_outcomes"]["parser"]["rules_fallback"] > 0
     assert result["pipeline_outcomes"]["grounding"]["rejected_unsupported_claims"] > 0
     assert result["pipeline_outcomes"]["semantic_fallback_results"] > 0
+    assert result["pipeline_outcomes"]["semantic_discriminated_cases"] > 0
+    assert result["pipeline_outcomes"]["semantic_ranking_changed_cases"] > 0
     assert len(result["cases"]) == 150
     assert "resume_text" not in json.dumps(result["cases"], ensure_ascii=False)
 

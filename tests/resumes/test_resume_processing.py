@@ -79,6 +79,28 @@ def test_processing_failure_records_stable_error_without_raising(tmp_path):
         assert "disk secret" not in (resume.error_message or "")
 
 
+def test_duplicate_worker_delivery_does_not_reprocess_succeeded_resume(tmp_path):
+    from app.domain.enums import ResumeStatus
+    from app.models.resumes import Resume
+    from app.resumes.parser import HeuristicResumeParser
+    from app.services.resume_processing import ResumeProcessingService
+
+    factory, tenant_id, resume_id = _resume_database(tmp_path)
+    ResumeProcessingService(
+        factory,
+        _MemoryStore(b"Python developer"),
+        HeuristicResumeParser(),
+    ).process(tenant_id, resume_id)
+    ResumeProcessingService(
+        factory,
+        _MemoryStore(error=OSError("must not read twice")),
+        HeuristicResumeParser(),
+    ).process(tenant_id, resume_id)
+
+    with factory() as session:
+        assert session.get(Resume, resume_id).status is ResumeStatus.SUCCEEDED
+
+
 def test_traceable_parser_result_is_written_in_same_success_flow(tmp_path):
     from app.ai.resume_parser import LLMResumeParser
     from app.models.operations import ModelTrace

@@ -82,6 +82,19 @@ def test_processing_activates_embedded_generation(tmp_path):
         assert chunks[0].vector == [1.0, 0.0]
 
 
+def test_duplicate_worker_delivery_does_not_reprocess_ready_document(tmp_path):
+    factory = _database(tmp_path)
+    store, tenant_id, document_id = _stored_document(tmp_path, factory, b"stable policy")
+    KnowledgeProcessingService(factory, store, FakeIndexer()).process(tenant_id, document_id)
+    KnowledgeProcessingService(factory, store, FakeIndexer(RuntimeError("must not embed twice"))).process(
+        tenant_id, document_id
+    )
+    with factory() as session:
+        document = KnowledgeRepository(session).get_document(tenant_id, document_id)
+        assert document.status == "ready"
+        assert document.active_generation == 1
+
+
 def test_failed_reindex_keeps_previous_generation_active(tmp_path):
     factory = _database(tmp_path)
     store, tenant_id, document_id = _stored_document(tmp_path, factory, b"new policy")
@@ -92,6 +105,7 @@ def test_failed_reindex_keeps_previous_generation_active(tmp_path):
             1,
             [ChunkInput(source_type="policy", content="old", start=0, end=3, vector=[1.0])],
         )
+        document.status = "uploaded"
         session.commit()
     KnowledgeProcessingService(factory, store, FakeIndexer(RuntimeError("embedding secret"))).process(
         tenant_id, document_id

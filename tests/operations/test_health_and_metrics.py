@@ -6,9 +6,8 @@ from fastapi.testclient import TestClient
 from app.config import Settings
 from app.main import create_app
 from app.ai.gateway import ModelGatewayError
-from app.ai.contracts import ModelRequest
+from app.ai.contracts import ModelRequest, ModelResponse
 from pydantic import BaseModel
-from app.models.identity import Tenant
 from app.services.ai_tracing import AITraceSink
 
 
@@ -50,6 +49,7 @@ def test_liveness_and_readiness_do_not_require_model_calls(operations_client):
 
 
 def test_ai_status_reports_safe_degradation_without_credentials(operations_client):
+    _login(operations_client, "Acme", "admin@acme.test", "correct horse battery staple")
     response = operations_client.get("/api/v1/ai/status")
     assert response.status_code == 200
     body = response.json()
@@ -83,11 +83,8 @@ def test_ai_status_uses_recent_trace_health(tmp_path):
 
     app = create_app(settings, structured_model=NoCallModel(), knowledge_embedder=Embedder())
     with TestClient(app) as client:
-        with app.state.session_factory() as session:
-            tenant = Tenant(name="Acme")
-            session.add(tenant)
-            session.commit()
-            tenant_id = tenant.id
+        _login(client, "Acme", "admin@acme.test", "correct horse battery staple")
+        tenant_id = client.get("/api/v1/auth/me").json()["tenant_id"]
         request = ModelRequest(
             operation="semantic_project_match",
             prompt_version="semantic-project-v1",
@@ -110,6 +107,60 @@ def test_ai_status_uses_recent_trace_health(tmp_path):
         assert body["latest_status"] == "failed"
         assert body["latest_error"] == "timeout"
         assert body["latest_latency_ms"] == 20000
+
+
+def test_ai_status_requires_authentication(operations_client):
+    assert operations_client.get("/api/v1/ai/status").status_code == 401
+
+
+def test_ai_status_ignores_other_tenant_model_failures(tmp_path):
+    settings = Settings(
+        api_key="test-key",
+        ai_enabled=True,
+        database_url=f"sqlite:///{tmp_path / 'tenant-ai-health.db'}",
+        artifact_dir=str(tmp_path / "artifacts"),
+        knowledge_artifact_dir=str(tmp_path / "knowledge"),
+        jwt_secret="a-test-secret-that-is-at-least-32-bytes",
+    )
+    app = create_app(settings)
+    request = ModelRequest(
+        operation="semantic_project_match",
+        prompt_version="semantic-project-v1",
+        system="private",
+        user="private",
+        schema=_Answer,
+    )
+    response = ModelResponse(
+        value=_Answer(value="ok"),
+        provider="fake",
+        model="fake",
+        input_tokens=1,
+        output_tokens=1,
+        estimated_cost=0,
+        latency_ms=1,
+    )
+    with TestClient(app) as client:
+        _login(client, "Acme", "admin@acme.test", "correct horse battery staple")
+        acme_id = client.get("/api/v1/auth/me").json()["tenant_id"]
+        AITraceSink(app.state.session_factory).succeeded(
+            acme_id, "semantic_match", "resume", ["resume", "job"], request, response
+        )
+        _login(client, "Globex", "admin@globex.test", "another correct horse password")
+        globex_id = client.get("/api/v1/auth/me").json()["tenant_id"]
+        AITraceSink(app.state.session_factory).failed(
+            globex_id,
+            "semantic_match",
+            "resume",
+            ["resume", "job"],
+            request,
+            ModelGatewayError("timeout", True),
+            20000,
+        )
+        _login(client, "Acme", "admin@acme.test", "correct horse battery staple")
+        body = client.get("/api/v1/ai/status").json()
+        assert body["available"] is True
+        assert body["degraded"] is False
+        assert body["latest_status"] == "succeeded"
 
 
 def test_analytics_are_tenant_scoped_and_never_return_resume_text(operations_client):

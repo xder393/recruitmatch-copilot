@@ -2,9 +2,13 @@ from __future__ import annotations
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 
 from app.config import Settings
 from app.main import create_app
+from app.models.knowledge import KnowledgeChunk
+from app.models.matching import MatchResult, MatchRun
+from app.models.resumes import Resume
 
 
 @pytest.fixture
@@ -57,6 +61,31 @@ def test_duplicate_upload_is_idempotent_and_profile_is_queryable(resume_client):
     assert [item["name"] for item in detail.json()["profile"]["skills"]] == ["Python", "FastAPI", "RAG"]
 
 
+def test_failed_task_dispatch_is_visible_and_duplicate_upload_retries(resume_client):
+    class BrokenDispatcher:
+        def dispatch_resume(self, tenant_id, resume_id):
+            raise RuntimeError("broker unavailable")
+
+    working = resume_client.app.state.task_dispatcher
+    resume_client.app.state.task_dispatcher = BrokenDispatcher()
+    content = "Python retry".encode()
+    failed = resume_client.post(
+        "/api/v1/resumes",
+        files={"file": ("retry.txt", content, "text/plain")},
+    )
+    assert failed.status_code == 202
+    assert failed.json()["status"] == "failed"
+    assert failed.json()["error_code"] == "task_dispatch_failed"
+
+    resume_client.app.state.task_dispatcher = working
+    retried = resume_client.post(
+        "/api/v1/resumes",
+        files={"file": ("retry.txt", content, "text/plain")},
+    )
+    assert retried.status_code == 200
+    assert retried.json()["status"] == "succeeded"
+
+
 def test_resume_identifier_from_another_tenant_is_hidden(resume_client):
     """Catches IDOR reads across enterprise boundaries."""
     uploaded = resume_client.post(
@@ -79,6 +108,23 @@ def test_list_and_soft_delete_hide_resume(resume_client):
         files={"file": ("delete-me.txt", "Python 经历".encode(), "text/plain")},
     )
     resume_id = uploaded.json()["id"]
+    job = resume_client.post(
+        "/api/v1/jobs",
+        json={
+            "title": "Python Engineer",
+            "jd_text": "Python",
+            "profile": {
+                "job_family": "backend",
+                "level": "mid",
+                "required_skills": ["Python"],
+                "preferred_skills": [],
+                "min_experience_years": 0,
+                "weights": {"skills": 1},
+            },
+        },
+    ).json()
+    resume_client.post(f"/api/v1/jobs/{job['id']}/activate")
+    resume_client.post(f"/api/v1/resumes/{resume_id}/matches")
 
     listing = resume_client.get("/api/v1/resumes")
     assert listing.status_code == 200
@@ -87,3 +133,25 @@ def test_list_and_soft_delete_hide_resume(resume_client):
     assert resume_client.delete(f"/api/v1/resumes/{resume_id}").status_code == 204
     assert resume_client.get(f"/api/v1/resumes/{resume_id}").status_code == 404
     assert resume_client.get("/api/v1/resumes").json()["total"] == 0
+    with resume_client.app.state.session_factory() as session:
+        stored = session.get(Resume, resume_id)
+        assert stored.profile == {}
+        assert stored.artifact.extracted_text is None
+        assert session.scalar(
+            select(KnowledgeChunk).where(
+                KnowledgeChunk.source_type == "resume",
+                KnowledgeChunk.source_id == resume_id,
+            )
+        ) is None
+        run = session.scalar(select(MatchRun).where(MatchRun.resume_id == resume_id))
+        result = session.scalar(select(MatchResult).where(MatchResult.run_id == run.id))
+        assert result.evidence == []
+        assert result.citations == []
+        assert result.grounded_explanation == {}
+        assert result.interview_questions == []
+    reuploaded = resume_client.post(
+        "/api/v1/resumes",
+        files={"file": ("delete-me.txt", "Python 经历".encode(), "text/plain")},
+    )
+    assert reuploaded.status_code == 202
+    assert reuploaded.json()["id"] != resume_id

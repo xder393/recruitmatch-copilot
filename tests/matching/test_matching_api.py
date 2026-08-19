@@ -129,12 +129,40 @@ def test_hybrid_mode_persists_score_components(matching_client):
     assert response.status_code == 201
     body = response.json()
     assert body["algorithm_version"] == "hybrid-v1"
+    assert body["prompt_version"] == "semantic-project-v1+match-explanation-v1"
     assert body["results"][0]["rule_score"] is not None
     assert body["results"][0]["semantic_score"] == 0.75
     assert body["results"][0]["citations"]
     assert body["results"][0]["grounded_explanation"]["strengths"][0]["text"] == "Python 项目匹配"
     assert body["results"][0]["interview_questions"][0]["text"] == "请说明该项目的职责边界"
     assert body["results"][0]["citations"][0]["content"]
+
+
+def test_hybrid_guidance_retrieval_failure_keeps_rules_results(matching_client):
+    from app.matching.engine import MatchingEngine
+    from app.matching.hybrid import HybridMatchingEngine
+
+    class NoSemantic:
+        def score(self, tenant_id, resume_id, job_version_id):
+            return None
+
+    class BrokenIndex:
+        def source_chunks(self, *args, **kwargs):
+            raise RuntimeError("vector store unavailable")
+
+        def search(self, *args, **kwargs):
+            raise RuntimeError("vector store unavailable")
+
+    client, resume_id = matching_client
+    client.app.state.hybrid_matching_engine = HybridMatchingEngine(MatchingEngine(), NoSemantic())
+    client.app.state.grounded_explanation_service = object()
+    client.app.state.knowledge_index = BrokenIndex()
+
+    response = client.post(f"/api/v1/resumes/{resume_id}/matches?mode=hybrid-v1")
+
+    assert response.status_code == 201
+    assert len(response.json()["results"]) == 3
+    assert all(item["fallback_reason"] == "semantic_evidence_unavailable" for item in response.json()["results"])
 
 
 def test_match_run_is_hidden_from_another_tenant(matching_client):

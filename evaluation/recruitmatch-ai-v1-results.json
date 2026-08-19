@@ -19,7 +19,9 @@
       "grounded": 140,
       "rejected_unsupported_claims": 10
     },
-    "semantic_fallback_results": 30
+    "semantic_fallback_results": 30,
+    "semantic_discriminated_cases": 140,
+    "semantic_ranking_changed_cases": 85
   },
   "metrics": {
     "citation_coverage": 1.0,
@@ -28,11 +30,11 @@
     "cases": 150,
     "extraction_precision": 0.8883,
     "extraction_recall": 0.9785,
-    "top1_accuracy": 0.9533,
-    "top3_recall": 0.98,
+    "top1_accuracy": 0.9733,
+    "top3_recall": 1.0,
     "p50_latency_ms": 12.0,
     "p95_latency_ms": 13.0,
-    "total_tokens": 157540,
+    "total_tokens": 158930,
     "estimated_cost": 0.0
   },
   "cases": [
@@ -42,7 +44,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 579,
-      "output_tokens": 565,
+      "output_tokens": 575,
       "estimated_cost": 0
     },
     {
@@ -51,7 +53,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 579,
-      "output_tokens": 565,
+      "output_tokens": 575,
       "estimated_cost": 0
     },
     {
@@ -60,7 +62,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 579,
-      "output_tokens": 565,
+      "output_tokens": 575,
       "estimated_cost": 0
     },
     {
@@ -69,7 +71,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 579,
-      "output_tokens": 565,
+      "output_tokens": 575,
       "estimated_cost": 0
     },
     {
@@ -78,7 +80,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 579,
-      "output_tokens": 565,
+      "output_tokens": 575,
       "estimated_cost": 0
     },
     {
@@ -87,7 +89,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 579,
-      "output_tokens": 565,
+      "output_tokens": 575,
       "estimated_cost": 0
     },
     {
@@ -96,7 +98,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 519,
-      "output_tokens": 516,
+      "output_tokens": 526,
       "estimated_cost": 0
     },
     {
@@ -105,7 +107,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 519,
-      "output_tokens": 516,
+      "output_tokens": 526,
       "estimated_cost": 0
     },
     {
@@ -114,7 +116,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 519,
-      "output_tokens": 516,
+      "output_tokens": 526,
       "estimated_cost": 0
     },
     {
@@ -123,7 +125,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 519,
-      "output_tokens": 516,
+      "output_tokens": 526,
       "estimated_cost": 0
     },
     {
@@ -132,7 +134,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 507,
-      "output_tokens": 514,
+      "output_tokens": 524,
       "estimated_cost": 0
     },
     {
@@ -141,7 +143,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 507,
-      "output_tokens": 513,
+      "output_tokens": 523,
       "estimated_cost": 0
     },
     {
@@ -152,7 +154,7 @@
       ],
       "latency_ms": 13,
       "input_tokens": 493,
-      "output_tokens": 428,
+      "output_tokens": 438,
       "estimated_cost": 0
     },
     {
@@ -174,7 +176,7 @@
       ],
       "latency_ms": 12,
       "input_tokens": 585,
-      "output_tokens": 577,
+      "output_tokens": 587,
       "estimated_cost": 0
     },
     {
@@ -183,7 +185,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 569,
-      "output_tokens": 559,
+      "output_tokens": 569,
       "estimated_cost": 0
     },
     {
@@ -192,7 +194,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 569,
-      "output_tokens": 559,
+      "output_tokens": 569,
       "estimated_cost": 0
     },
     {
@@ -201,7 +203,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 569,
-      "output_tokens": 559,
+      "output_tokens": 569,
       "estimated_cost": 0
     },
     {
@@ -210,7 +212,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 569,
-      "output_tokens": 559,
+      "output_tokens": 569,
       "estimated_cost": 0
     },
     {
@@ -219,7 +221,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 569,
-      "output_tokens": 559,
+      "output_tokens": 569,
       "estimated_cost": 0
     },
     {
@@ -228,7 +230,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 569,
-      "output_tokens": 559,
+      "output_tokens": 569,
       "estimated_cost": 0
     },
     {
@@ -237,7 +239,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 521,
-      "output_tokens": 512,
+      "output_tokens": 522,
       "estimated_cost": 0
     },
     {
@@ -246,7 +248,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 521,
-      "output_tokens": 512,
+      "output_tokens": 522,
       "estimated_cost": 0
     },
     {
@@ -255,7 +257,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 521,
-      "output_tokens": 512,
+      "output_tokens": 522,
       "estimated_cost": 0
     },
     {
@@ -264,7 +266,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 521,
-      "output_tokens": 512,
+      "output_tokens": 522,
       "estimated_cost": 0
     },
     {
@@ -273,7 +275,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 499,
-      "output_tokens": 508,
+      "output_tokens": 518,
       "estimated_cost": 0
     },
     {
@@ -282,7 +284,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 499,
-      "output_tokens": 508,
+      "output_tokens": 518,
       "estimated_cost": 0
     },
     {
@@ -294,7 +296,7 @@
       ],
       "latency_ms": 13,
       "input_tokens": 485,
-      "output_tokens": 422,
+      "output_tokens": 432,
       "estimated_cost": 0
     },
     {
@@ -316,7 +318,7 @@
       ],
       "latency_ms": 12,
       "input_tokens": 579,
-      "output_tokens": 572,
+      "output_tokens": 582,
       "estimated_cost": 0
     },
     {
@@ -325,7 +327,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 576,
-      "output_tokens": 571,
+      "output_tokens": 581,
       "estimated_cost": 0
     },
     {
@@ -334,7 +336,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 576,
-      "output_tokens": 571,
+      "output_tokens": 581,
       "estimated_cost": 0
     },
     {
@@ -343,7 +345,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 576,
-      "output_tokens": 571,
+      "output_tokens": 581,
       "estimated_cost": 0
     },
     {
@@ -352,7 +354,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 576,
-      "output_tokens": 571,
+      "output_tokens": 581,
       "estimated_cost": 0
     },
     {
@@ -361,7 +363,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 576,
-      "output_tokens": 571,
+      "output_tokens": 581,
       "estimated_cost": 0
     },
     {
@@ -370,7 +372,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 576,
-      "output_tokens": 571,
+      "output_tokens": 581,
       "estimated_cost": 0
     },
     {
@@ -379,7 +381,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 504,
-      "output_tokens": 519,
+      "output_tokens": 529,
       "estimated_cost": 0
     },
     {
@@ -388,7 +390,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 504,
-      "output_tokens": 519,
+      "output_tokens": 529,
       "estimated_cost": 0
     },
     {
@@ -397,7 +399,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 504,
-      "output_tokens": 519,
+      "output_tokens": 529,
       "estimated_cost": 0
     },
     {
@@ -406,7 +408,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 504,
-      "output_tokens": 519,
+      "output_tokens": 529,
       "estimated_cost": 0
     },
     {
@@ -415,7 +417,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 531,
-      "output_tokens": 524,
+      "output_tokens": 534,
       "estimated_cost": 0
     },
     {
@@ -424,7 +426,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 531,
-      "output_tokens": 524,
+      "output_tokens": 534,
       "estimated_cost": 0
     },
     {
@@ -432,12 +434,11 @@
       "passed": false,
       "failure_categories": [
         "parser_fallback",
-        "extraction_gap",
-        "top3_miss"
+        "extraction_gap"
       ],
       "latency_ms": 13,
-      "input_tokens": 520,
-      "output_tokens": 433,
+      "input_tokens": 515,
+      "output_tokens": 445,
       "estimated_cost": 0
     },
     {
@@ -459,7 +460,7 @@
       ],
       "latency_ms": 12,
       "input_tokens": 586,
-      "output_tokens": 583,
+      "output_tokens": 593,
       "estimated_cost": 0
     },
     {
@@ -468,7 +469,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 552,
-      "output_tokens": 567,
+      "output_tokens": 577,
       "estimated_cost": 0
     },
     {
@@ -477,7 +478,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 552,
-      "output_tokens": 567,
+      "output_tokens": 577,
       "estimated_cost": 0
     },
     {
@@ -486,7 +487,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 552,
-      "output_tokens": 567,
+      "output_tokens": 577,
       "estimated_cost": 0
     },
     {
@@ -495,7 +496,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 552,
-      "output_tokens": 567,
+      "output_tokens": 577,
       "estimated_cost": 0
     },
     {
@@ -504,7 +505,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 552,
-      "output_tokens": 567,
+      "output_tokens": 577,
       "estimated_cost": 0
     },
     {
@@ -513,7 +514,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 552,
-      "output_tokens": 567,
+      "output_tokens": 577,
       "estimated_cost": 0
     },
     {
@@ -522,7 +523,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 502,
-      "output_tokens": 518,
+      "output_tokens": 528,
       "estimated_cost": 0
     },
     {
@@ -531,7 +532,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 502,
-      "output_tokens": 518,
+      "output_tokens": 528,
       "estimated_cost": 0
     },
     {
@@ -540,7 +541,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 502,
-      "output_tokens": 518,
+      "output_tokens": 528,
       "estimated_cost": 0
     },
     {
@@ -549,7 +550,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 502,
-      "output_tokens": 518,
+      "output_tokens": 528,
       "estimated_cost": 0
     },
     {
@@ -558,7 +559,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 507,
-      "output_tokens": 520,
+      "output_tokens": 530,
       "estimated_cost": 0
     },
     {
@@ -567,7 +568,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 507,
-      "output_tokens": 520,
+      "output_tokens": 530,
       "estimated_cost": 0
     },
     {
@@ -578,7 +579,7 @@
       ],
       "latency_ms": 13,
       "input_tokens": 493,
-      "output_tokens": 435,
+      "output_tokens": 445,
       "estimated_cost": 0
     },
     {
@@ -600,7 +601,7 @@
       ],
       "latency_ms": 12,
       "input_tokens": 562,
-      "output_tokens": 579,
+      "output_tokens": 589,
       "estimated_cost": 0
     },
     {
@@ -609,7 +610,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 545,
-      "output_tokens": 556,
+      "output_tokens": 566,
       "estimated_cost": 0
     },
     {
@@ -618,7 +619,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 545,
-      "output_tokens": 556,
+      "output_tokens": 566,
       "estimated_cost": 0
     },
     {
@@ -627,7 +628,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 545,
-      "output_tokens": 556,
+      "output_tokens": 566,
       "estimated_cost": 0
     },
     {
@@ -636,7 +637,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 545,
-      "output_tokens": 556,
+      "output_tokens": 566,
       "estimated_cost": 0
     },
     {
@@ -645,7 +646,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 545,
-      "output_tokens": 556,
+      "output_tokens": 566,
       "estimated_cost": 0
     },
     {
@@ -654,7 +655,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 545,
-      "output_tokens": 556,
+      "output_tokens": 566,
       "estimated_cost": 0
     },
     {
@@ -663,7 +664,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 480,
-      "output_tokens": 505,
+      "output_tokens": 515,
       "estimated_cost": 0
     },
     {
@@ -672,7 +673,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 480,
-      "output_tokens": 505,
+      "output_tokens": 515,
       "estimated_cost": 0
     },
     {
@@ -681,7 +682,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 480,
-      "output_tokens": 505,
+      "output_tokens": 515,
       "estimated_cost": 0
     },
     {
@@ -690,7 +691,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 480,
-      "output_tokens": 505,
+      "output_tokens": 515,
       "estimated_cost": 0
     },
     {
@@ -699,7 +700,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 482,
-      "output_tokens": 506,
+      "output_tokens": 516,
       "estimated_cost": 0
     },
     {
@@ -708,7 +709,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 482,
-      "output_tokens": 505,
+      "output_tokens": 515,
       "estimated_cost": 0
     },
     {
@@ -720,7 +721,7 @@
       ],
       "latency_ms": 13,
       "input_tokens": 471,
-      "output_tokens": 425,
+      "output_tokens": 435,
       "estimated_cost": 0
     },
     {
@@ -742,7 +743,7 @@
       ],
       "latency_ms": 12,
       "input_tokens": 554,
-      "output_tokens": 568,
+      "output_tokens": 578,
       "estimated_cost": 0
     },
     {
@@ -751,7 +752,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 519,
-      "output_tokens": 533,
+      "output_tokens": 543,
       "estimated_cost": 0
     },
     {
@@ -760,7 +761,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 519,
-      "output_tokens": 533,
+      "output_tokens": 543,
       "estimated_cost": 0
     },
     {
@@ -769,7 +770,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 519,
-      "output_tokens": 533,
+      "output_tokens": 543,
       "estimated_cost": 0
     },
     {
@@ -778,7 +779,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 519,
-      "output_tokens": 533,
+      "output_tokens": 543,
       "estimated_cost": 0
     },
     {
@@ -787,7 +788,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 519,
-      "output_tokens": 533,
+      "output_tokens": 543,
       "estimated_cost": 0
     },
     {
@@ -796,7 +797,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 519,
-      "output_tokens": 533,
+      "output_tokens": 543,
       "estimated_cost": 0
     },
     {
@@ -805,7 +806,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 473,
-      "output_tokens": 486,
+      "output_tokens": 496,
       "estimated_cost": 0
     },
     {
@@ -814,7 +815,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 473,
-      "output_tokens": 486,
+      "output_tokens": 496,
       "estimated_cost": 0
     },
     {
@@ -823,7 +824,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 473,
-      "output_tokens": 486,
+      "output_tokens": 496,
       "estimated_cost": 0
     },
     {
@@ -832,7 +833,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 473,
-      "output_tokens": 485,
+      "output_tokens": 495,
       "estimated_cost": 0
     },
     {
@@ -841,7 +842,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 462,
-      "output_tokens": 484,
+      "output_tokens": 494,
       "estimated_cost": 0
     },
     {
@@ -850,7 +851,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 462,
-      "output_tokens": 484,
+      "output_tokens": 494,
       "estimated_cost": 0
     },
     {
@@ -858,12 +859,11 @@
       "passed": false,
       "failure_categories": [
         "parser_fallback",
-        "extraction_gap",
-        "top3_miss"
+        "extraction_gap"
       ],
       "latency_ms": 13,
-      "input_tokens": 455,
-      "output_tokens": 404,
+      "input_tokens": 451,
+      "output_tokens": 411,
       "estimated_cost": 0
     },
     {
@@ -885,7 +885,7 @@
       ],
       "latency_ms": 12,
       "input_tokens": 527,
-      "output_tokens": 545,
+      "output_tokens": 555,
       "estimated_cost": 0
     },
     {
@@ -894,7 +894,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 568,
-      "output_tokens": 545,
+      "output_tokens": 555,
       "estimated_cost": 0
     },
     {
@@ -903,7 +903,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 568,
-      "output_tokens": 545,
+      "output_tokens": 555,
       "estimated_cost": 0
     },
     {
@@ -912,7 +912,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 568,
-      "output_tokens": 545,
+      "output_tokens": 555,
       "estimated_cost": 0
     },
     {
@@ -921,7 +921,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 568,
-      "output_tokens": 545,
+      "output_tokens": 555,
       "estimated_cost": 0
     },
     {
@@ -930,7 +930,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 568,
-      "output_tokens": 545,
+      "output_tokens": 555,
       "estimated_cost": 0
     },
     {
@@ -939,7 +939,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 568,
-      "output_tokens": 545,
+      "output_tokens": 555,
       "estimated_cost": 0
     },
     {
@@ -948,7 +948,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 501,
-      "output_tokens": 494,
+      "output_tokens": 504,
       "estimated_cost": 0
     },
     {
@@ -957,7 +957,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 501,
-      "output_tokens": 494,
+      "output_tokens": 504,
       "estimated_cost": 0
     },
     {
@@ -966,7 +966,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 501,
-      "output_tokens": 494,
+      "output_tokens": 504,
       "estimated_cost": 0
     },
     {
@@ -975,7 +975,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 501,
-      "output_tokens": 494,
+      "output_tokens": 504,
       "estimated_cost": 0
     },
     {
@@ -984,7 +984,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 506,
-      "output_tokens": 495,
+      "output_tokens": 505,
       "estimated_cost": 0
     },
     {
@@ -993,7 +993,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 506,
-      "output_tokens": 495,
+      "output_tokens": 505,
       "estimated_cost": 0
     },
     {
@@ -1005,7 +1005,7 @@
       ],
       "latency_ms": 13,
       "input_tokens": 491,
-      "output_tokens": 403,
+      "output_tokens": 413,
       "estimated_cost": 0
     },
     {
@@ -1027,7 +1027,7 @@
       ],
       "latency_ms": 12,
       "input_tokens": 578,
-      "output_tokens": 557,
+      "output_tokens": 567,
       "estimated_cost": 0
     },
     {
@@ -1036,7 +1036,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 546,
-      "output_tokens": 549,
+      "output_tokens": 559,
       "estimated_cost": 0
     },
     {
@@ -1045,7 +1045,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 546,
-      "output_tokens": 549,
+      "output_tokens": 559,
       "estimated_cost": 0
     },
     {
@@ -1054,7 +1054,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 546,
-      "output_tokens": 549,
+      "output_tokens": 559,
       "estimated_cost": 0
     },
     {
@@ -1063,7 +1063,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 546,
-      "output_tokens": 549,
+      "output_tokens": 559,
       "estimated_cost": 0
     },
     {
@@ -1072,7 +1072,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 546,
-      "output_tokens": 549,
+      "output_tokens": 559,
       "estimated_cost": 0
     },
     {
@@ -1081,7 +1081,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 546,
-      "output_tokens": 549,
+      "output_tokens": 559,
       "estimated_cost": 0
     },
     {
@@ -1090,7 +1090,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 482,
-      "output_tokens": 498,
+      "output_tokens": 508,
       "estimated_cost": 0
     },
     {
@@ -1099,7 +1099,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 482,
-      "output_tokens": 498,
+      "output_tokens": 508,
       "estimated_cost": 0
     },
     {
@@ -1108,7 +1108,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 482,
-      "output_tokens": 498,
+      "output_tokens": 508,
       "estimated_cost": 0
     },
     {
@@ -1117,7 +1117,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 482,
-      "output_tokens": 498,
+      "output_tokens": 508,
       "estimated_cost": 0
     },
     {
@@ -1126,7 +1126,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 504,
-      "output_tokens": 502,
+      "output_tokens": 512,
       "estimated_cost": 0
     },
     {
@@ -1135,7 +1135,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 504,
-      "output_tokens": 502,
+      "output_tokens": 512,
       "estimated_cost": 0
     },
     {
@@ -1146,8 +1146,8 @@
         "extraction_gap"
       ],
       "latency_ms": 13,
-      "input_tokens": 491,
-      "output_tokens": 410,
+      "input_tokens": 489,
+      "output_tokens": 422,
       "estimated_cost": 0
     },
     {
@@ -1169,7 +1169,7 @@
       ],
       "latency_ms": 12,
       "input_tokens": 556,
-      "output_tokens": 561,
+      "output_tokens": 571,
       "estimated_cost": 0
     },
     {
@@ -1178,7 +1178,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 576,
-      "output_tokens": 570,
+      "output_tokens": 580,
       "estimated_cost": 0
     },
     {
@@ -1187,7 +1187,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 576,
-      "output_tokens": 570,
+      "output_tokens": 580,
       "estimated_cost": 0
     },
     {
@@ -1196,7 +1196,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 576,
-      "output_tokens": 570,
+      "output_tokens": 580,
       "estimated_cost": 0
     },
     {
@@ -1205,7 +1205,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 576,
-      "output_tokens": 570,
+      "output_tokens": 580,
       "estimated_cost": 0
     },
     {
@@ -1214,7 +1214,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 576,
-      "output_tokens": 570,
+      "output_tokens": 580,
       "estimated_cost": 0
     },
     {
@@ -1223,7 +1223,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 576,
-      "output_tokens": 570,
+      "output_tokens": 580,
       "estimated_cost": 0
     },
     {
@@ -1232,7 +1232,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 528,
-      "output_tokens": 523,
+      "output_tokens": 533,
       "estimated_cost": 0
     },
     {
@@ -1241,7 +1241,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 528,
-      "output_tokens": 523,
+      "output_tokens": 533,
       "estimated_cost": 0
     },
     {
@@ -1250,7 +1250,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 528,
-      "output_tokens": 523,
+      "output_tokens": 533,
       "estimated_cost": 0
     },
     {
@@ -1259,7 +1259,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 528,
-      "output_tokens": 523,
+      "output_tokens": 533,
       "estimated_cost": 0
     },
     {
@@ -1268,7 +1268,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 528,
-      "output_tokens": 523,
+      "output_tokens": 533,
       "estimated_cost": 0
     },
     {
@@ -1277,7 +1277,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 528,
-      "output_tokens": 523,
+      "output_tokens": 533,
       "estimated_cost": 0
     },
     {
@@ -1285,12 +1285,11 @@
       "passed": false,
       "failure_categories": [
         "parser_fallback",
-        "extraction_gap",
-        "top3_miss"
+        "extraction_gap"
       ],
       "latency_ms": 13,
-      "input_tokens": 515,
-      "output_tokens": 433,
+      "input_tokens": 513,
+      "output_tokens": 445,
       "estimated_cost": 0
     },
     {
@@ -1312,7 +1311,7 @@
       ],
       "latency_ms": 12,
       "input_tokens": 583,
-      "output_tokens": 583,
+      "output_tokens": 593,
       "estimated_cost": 0
     },
     {
@@ -1321,7 +1320,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 562,
-      "output_tokens": 551,
+      "output_tokens": 561,
       "estimated_cost": 0
     },
     {
@@ -1330,7 +1329,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 562,
-      "output_tokens": 551,
+      "output_tokens": 561,
       "estimated_cost": 0
     },
     {
@@ -1339,7 +1338,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 562,
-      "output_tokens": 551,
+      "output_tokens": 561,
       "estimated_cost": 0
     },
     {
@@ -1348,7 +1347,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 562,
-      "output_tokens": 551,
+      "output_tokens": 561,
       "estimated_cost": 0
     },
     {
@@ -1357,7 +1356,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 562,
-      "output_tokens": 551,
+      "output_tokens": 561,
       "estimated_cost": 0
     },
     {
@@ -1366,7 +1365,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 562,
-      "output_tokens": 551,
+      "output_tokens": 561,
       "estimated_cost": 0
     },
     {
@@ -1375,7 +1374,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 466,
-      "output_tokens": 495,
+      "output_tokens": 505,
       "estimated_cost": 0
     },
     {
@@ -1384,7 +1383,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 466,
-      "output_tokens": 495,
+      "output_tokens": 505,
       "estimated_cost": 0
     },
     {
@@ -1393,7 +1392,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 466,
-      "output_tokens": 495,
+      "output_tokens": 505,
       "estimated_cost": 0
     },
     {
@@ -1402,7 +1401,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 466,
-      "output_tokens": 496,
+      "output_tokens": 506,
       "estimated_cost": 0
     },
     {
@@ -1411,7 +1410,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 480,
-      "output_tokens": 498,
+      "output_tokens": 508,
       "estimated_cost": 0
     },
     {
@@ -1420,7 +1419,7 @@
       "failure_categories": [],
       "latency_ms": 12,
       "input_tokens": 480,
-      "output_tokens": 498,
+      "output_tokens": 508,
       "estimated_cost": 0
     },
     {
@@ -1432,7 +1431,7 @@
       ],
       "latency_ms": 13,
       "input_tokens": 467,
-      "output_tokens": 412,
+      "output_tokens": 422,
       "estimated_cost": 0
     },
     {
@@ -1454,7 +1453,7 @@
       ],
       "latency_ms": 12,
       "input_tokens": 568,
-      "output_tokens": 564,
+      "output_tokens": 574,
       "estimated_cost": 0
     }
   ]

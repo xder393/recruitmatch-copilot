@@ -103,31 +103,47 @@ class GroundedExplanationService:
             self._trace_failed(tenant_id, resume_id, source_ids, request, error, started)
             return self._fallback(rule_result, "rules_fallback")
         explanation = self._validate(response.value, permitted)
+        if not any(
+            [
+                explanation.summary,
+                explanation.strengths,
+                explanation.gaps,
+                explanation.risk_flags,
+                explanation.interview_questions,
+            ]
+        ):
+            explanation = self._fallback(rule_result, "empty_model_output")
         if self.trace_sink is not None:
-            self.trace_sink.succeeded(
-                tenant_id,
-                "match_explanation",
-                resume_id,
-                source_ids,
-                request,
-                response,
-                fallback_reason=(
-                    "unsupported_claims" if explanation.grounding_status == "rejected_unsupported_claims" else None
-                ),
-            )
+            try:
+                self.trace_sink.succeeded(
+                    tenant_id,
+                    "match_explanation",
+                    resume_id,
+                    source_ids,
+                    request,
+                    response,
+                    fallback_reason=(
+                        None if explanation.grounding_status == "grounded" else explanation.grounding_status
+                    ),
+                )
+            except Exception:
+                pass
         return explanation
 
     def _trace_failed(self, tenant_id, resume_id, source_ids, request, error, started):
         if self.trace_sink is not None:
-            self.trace_sink.failed(
-                tenant_id,
-                "match_explanation",
-                resume_id,
-                source_ids,
-                request,
-                error,
-                (time.perf_counter() - started) * 1000,
-            )
+            try:
+                self.trace_sink.failed(
+                    tenant_id,
+                    "match_explanation",
+                    resume_id,
+                    source_ids,
+                    request,
+                    error,
+                    (time.perf_counter() - started) * 1000,
+                )
+            except Exception:
+                pass
 
     @staticmethod
     def _validate(output: GroundedModelOutput, hits: List[RetrievedChunk]) -> GroundedExplanation:

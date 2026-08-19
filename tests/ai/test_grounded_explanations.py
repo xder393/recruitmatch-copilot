@@ -100,3 +100,25 @@ def test_disabled_generation_uses_deterministic_fallback():
 
     assert result.grounding_status == "rules_fallback"
     assert model.calls == []
+
+
+def test_empty_valid_model_output_is_not_reported_as_grounded():
+    result = GroundedExplanationService(FakeModel(GroundedModelOutput())).generate(
+        "tenant-1", "resume-1", "job-1", _rules(), [_hit()]
+    )
+
+    assert result.grounding_status == "empty_model_output"
+    assert [item.text for item in result.strengths] == ["已匹配：Python"]
+
+
+def test_trace_storage_failure_cannot_break_grounded_result():
+    class BrokenTrace:
+        def succeeded(self, *args, **kwargs):
+            raise RuntimeError("trace database unavailable")
+
+    result = GroundedExplanationService(
+        FakeModel(GroundedModelOutput(summary=GroundedClaim(text="Python", citation_ids=["known"]))),
+        trace_sink=BrokenTrace(),
+    ).generate("tenant-1", "resume-1", "job-1", _rules(), [_hit()])
+
+    assert result.grounding_status == "grounded"

@@ -10,6 +10,8 @@ from app.main import create_app
 from app.models.knowledge import KnowledgeChunk
 from app.models.jobs import JobVersion
 from app.models.resumes import Resume
+from app.domain.enums import Role
+from app.security.tokens import Principal, issue_access_token
 
 
 class HashEmbedder:
@@ -78,6 +80,25 @@ def test_upload_is_idempotent_and_processed_inline(client):
     assert client.get("/api/v1/knowledge-documents").json()["total"] == 1
 
 
+def test_failed_knowledge_dispatch_is_retryable_by_idempotent_upload(client, knowledge_app):
+    class BrokenDispatcher:
+        def dispatch_knowledge(self, tenant_id, document_id):
+            raise RuntimeError("broker unavailable")
+
+    _login(client, "Acme", "admin@acme.test")
+    working = knowledge_app.state.knowledge_dispatcher
+    knowledge_app.state.knowledge_dispatcher = BrokenDispatcher()
+    failed = _upload(client, b"retryable policy")
+    assert failed.status_code == 202
+    assert failed.json()["status"] == "failed"
+    assert failed.json()["error_code"] == "task_dispatch_failed"
+
+    knowledge_app.state.knowledge_dispatcher = working
+    retried = _upload(client, b"retryable policy")
+    assert retried.status_code == 202
+    assert retried.json()["status"] == "ready"
+
+
 def test_cross_tenant_document_is_hidden(client):
     _login(client, "Acme", "admin@acme.test")
     document_id = _upload(client).json()["id"]
@@ -117,6 +138,18 @@ def test_oversized_knowledge_upload_is_rejected(client):
     response = _upload(client, b"x" * (10 * 1024 * 1024 + 2))
     assert response.status_code == 400
     assert response.json()["error"]["code"] == "unsupported_file"
+
+
+def test_lead_role_cannot_mutate_enterprise_knowledge(client):
+    tenant_id = _login(client, "Acme", "admin@acme.test")
+    token = issue_access_token(
+        Principal(user_id="lead-user", tenant_id=tenant_id, role=Role.LEAD),
+        client.app.state.token_settings,
+    )
+    client.headers["Authorization"] = f"Bearer {token}"
+
+    assert _upload(client).status_code == 403
+    assert client.post("/api/v1/knowledge-documents/rebuild-sources").status_code == 403
 
 
 def test_source_backfill_repairs_existing_resume_and_job_indexes(client, knowledge_app):

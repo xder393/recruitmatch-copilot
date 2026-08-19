@@ -38,6 +38,7 @@ def _authenticated(client):
 
 def test_ai_status_is_disabled_without_disabling_core(tmp_path):
     with TestClient(create_app(_settings(tmp_path))) as client:
+        _authenticated(client)
         body = client.get("/api/v1/ai/status").json()
         assert body == {
             "configured": False,
