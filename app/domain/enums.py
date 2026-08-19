@@ -20,3 +20,16 @@ class ResumeStatus(str, Enum):
     SUCCEEDED = "succeeded"
     FAILED = "failed"
     DELETED = "deleted"
+
+
+class MatchStatus(str, Enum):
+    QUEUED = "queued"
+    RUNNING = "running"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+
+
+class FeedbackAction(str, Enum):
+    CONFIRM = "confirm"
+    REJECT = "reject"
+    REASSIGN = "reassign"
