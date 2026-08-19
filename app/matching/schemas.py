@@ -1,7 +1,7 @@
 """Pure matching input and output contracts."""
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -34,3 +34,11 @@ class MatchRecommendation(BaseModel):
     evidence: List[Evidence]
     risk_flags: List[str]
     summary: str
+
+
+class HybridMatchRecommendation(MatchRecommendation):
+    rule_score: float = Field(ge=0, le=1)
+    semantic_score: Optional[float] = Field(default=None, ge=0, le=1)
+    grounding_status: str
+    fallback_reason: Optional[str] = None
+    citations: List[Dict[str, Any]] = Field(default_factory=list)

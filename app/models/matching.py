@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy import DateTime, Enum, Float, ForeignKey, Integer, JSON, String, Text, UniqueConstraint
+from sqlalchemy import DateTime, Enum, Float, ForeignKey, Index, Integer, JSON, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -44,13 +44,21 @@ class MatchRun(Base):
 
 class MatchResult(Base):
     __tablename__ = "match_results"
-    __table_args__ = (UniqueConstraint("run_id", "rank", name="uq_match_run_rank"),)
+    __table_args__ = (
+        UniqueConstraint("run_id", "rank", name="uq_match_run_rank"),
+        Index("ix_match_results_run_grounding", "run_id", "grounding_status"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
     run_id: Mapped[str] = mapped_column(ForeignKey("match_runs.id", ondelete="CASCADE"), index=True, nullable=False)
     job_version_id: Mapped[str] = mapped_column(ForeignKey("job_versions.id"), index=True, nullable=False)
     rank: Mapped[int] = mapped_column(Integer, nullable=False)
     total_score: Mapped[float] = mapped_column(Float, nullable=False)
+    rule_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    semantic_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    grounding_status: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    fallback_reason: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    citations: Mapped[Optional[List[Any]]] = mapped_column(JSON, default=list, nullable=True)
     dimension_scores: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
     matched_items: Mapped[List[Any]] = mapped_column(JSON, default=list, nullable=False)
     missing_items: Mapped[List[Any]] = mapped_column(JSON, default=list, nullable=False)
