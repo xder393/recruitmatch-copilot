@@ -8,12 +8,10 @@ def test_feedback_appends_without_changing_historical_job_version(tmp_path):
     from app.models import (
         Feedback,
         Job,
-        JobTemplate,
         JobVersion,
         MatchResult,
         MatchRun,
         Resume,
-        ResumeArtifact,
         Tenant,
         User,
     )
