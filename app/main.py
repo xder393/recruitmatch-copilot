@@ -13,6 +13,7 @@ from langchain_openai import ChatOpenAI
 
 from app.agents.agent import RagAgent
 from app.api.routes import router
+from app.api.v1.router import router as v1_router
 from app.config import Settings
 from app.core.exceptions import AppError
 from app.core.logging import get_logger, request_id_var, setup_logging
@@ -21,6 +22,9 @@ from app.rag.retriever import Retriever
 from app.services.ingestion import IngestionService
 from app.storage.conversations import ConversationStore
 from app.storage.vector_store import VectorStore
+from app.database import Base, create_engine_and_session
+from app.models import Job, JobTemplate, JobVersion, Tenant, User  # noqa: F401
+from app.security.tokens import TokenSettings
 
 logger = get_logger(__name__)
 
@@ -69,12 +73,28 @@ def init_state(app: FastAPI, settings: Settings) -> None:
     logger.info("应用初始化完成，知识库共 %d 块", len(store))
 
 
+def init_recruiting_state(app: FastAPI, settings: Settings) -> None:
+    """Initialize recruiting persistence once per application instance."""
+    if getattr(app.state, "_recruiting_initialized", False):
+        return
+    engine, session_factory = create_engine_and_session(settings.database_url)
+    Base.metadata.create_all(engine)
+    app.state.database_engine = engine
+    app.state.session_factory = session_factory
+    app.state.token_settings = TokenSettings(
+        secret_key=settings.jwt_secret,
+        access_token_minutes=settings.access_token_minutes,
+    )
+    app.state._recruiting_initialized = True
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings.load()
     setup_logging()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        init_recruiting_state(app, settings)
         init_state(app, settings)
         yield
 
@@ -128,6 +148,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
     app.include_router(router)
+    app.include_router(v1_router)
 
     # ---- 前端页面 ----
     @app.get("/", response_class=HTMLResponse)

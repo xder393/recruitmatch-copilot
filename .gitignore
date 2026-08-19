@@ -19,6 +19,7 @@ data/conversations.json
 data/index/
 data/*.txt
 data/*.pdf
+data/*.db
 
 # ===== 模型缓存 =====
 *.safetensors
