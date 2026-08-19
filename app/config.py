@@ -50,6 +50,9 @@ class Settings:
     index_dir: str = "data/index"
     conversations_file: str = "data/conversations.json"
 
+    # —— 企业业务数据库 ——
+    database_url: str = "sqlite:///data/recruitmatch.db"
+
     # —— RAG ——
     chunk_size: int = 500
     chunk_overlap: int = 100
@@ -70,6 +73,7 @@ class Settings:
             data_dir=os.getenv("DATA_DIR", cls.data_dir).strip(),
             index_dir=os.getenv("INDEX_DIR", cls.index_dir).strip(),
             conversations_file=os.getenv("CONVERSATIONS_FILE", cls.conversations_file).strip(),
+            database_url=os.getenv("DATABASE_URL", cls.database_url).strip(),
             chunk_size=_get_int("CHUNK_SIZE", cls.chunk_size),
             chunk_overlap=_get_int("CHUNK_OVERLAP", cls.chunk_overlap),
             top_k=_get_int("TOP_K", cls.top_k),
