@@ -29,6 +29,8 @@ def ai_status(request: Request):
     settings = request.app.state.settings
     return {
         "enabled": settings.ai_enabled,
+        "degraded": not settings.ai_enabled,
+        "fallback_mode": None if settings.ai_enabled else "rules-v1",
         "provider": settings.model_provider,
         "model": settings.chat_model,
         "embedding_model": settings.embedding_model,

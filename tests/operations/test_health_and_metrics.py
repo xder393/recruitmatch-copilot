@@ -40,6 +40,17 @@ def test_liveness_and_readiness_do_not_require_model_calls(operations_client):
     assert ready.json() == {"status": "ready", "database": "ok"}
 
 
+def test_ai_status_reports_safe_degradation_without_credentials(operations_client):
+    response = operations_client.get("/api/v1/ai/status")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["enabled"] is False
+    assert body["degraded"] is True
+    assert body["fallback_mode"] == "rules-v1"
+    assert "api_key" not in response.text.casefold()
+    assert "sk-" not in response.text.casefold()
+
+
 def test_analytics_are_tenant_scoped_and_never_return_resume_text(operations_client):
     """Catches cross-tenant aggregate leakage or PII appearing in operations responses."""
     _login(operations_client, "Acme", "admin@acme.test", "correct horse battery staple")

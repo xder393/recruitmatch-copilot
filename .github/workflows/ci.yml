@@ -21,4 +21,10 @@ jobs:
           python scripts/evaluate_recruitment.py
           --dataset /tmp/recruitmatch-eval.json
           --output /tmp/recruitmatch-results.json
+      - run: >-
+          python scripts/evaluate_ai_pipeline.py
+          --dataset evaluation/recruitmatch-ai-v1.json
+          --output /tmp/recruitmatch-ai-results.json
+          --mode hybrid-v1 --fake-model
+      - run: diff -u evaluation/recruitmatch-ai-v1-results.json /tmp/recruitmatch-ai-results.json
       - run: python -m pytest -q

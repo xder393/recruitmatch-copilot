@@ -8,7 +8,9 @@
 
 - **真实业务闭环**：企业岗位版本 → 简历上传/解析 → Top 3 推荐 → 证据复核 → 人工反馈 → 离线评测。
 - **多租户隔离**：JWT 中携带租户身份，仓储查询强制租户条件；跨租户资源 ID 统一返回 404。
-- **可解释匹配**：`rules-v1` 对必备技能、加分技能、经验和项目维度评分，每个匹配技能保留原文偏移。
+- **有界混合匹配**：`rules-v1` 保持兼容；`hybrid-v1` 固定由 80% 规则分与最多 20% 语义项目分组成，语义分必须同时引用当前简历和岗位证据。
+- **招聘 RAG**：企业制度、面试指南、能力模型和评分量表具备上传、去重、分块、版本化索引、重建和停用生命周期；检索先按租户过滤。
+- **受约束模型层**：OpenAI-compatible 结构化输出、Schema 校验、超时/重试、Token/费用追踪；未知引用或无引用结论会被剔除，失败自动降级到规则结果。
 - **可靠文件管线**：PDF、DOCX、TXT 白名单、10 MiB 限制、SHA-256 租户内幂等、UUID 物理路径、损坏文件稳定错误码。
 - **异步生产形态**：API、Celery Worker、Redis、PostgreSQL 与 Alembic 迁移通过 Docker Compose 组装；测试使用 SQLite 和内联任务。
 - **可重复 AI 评测**：提交 150 条确定性合成样本、生成脚本、评测脚本和机器可读结果，不手填指标。
@@ -16,19 +18,21 @@
 
 ## 当前可验证结果
 
-`evaluation/recruitmatch-v1-results.json` 由仓库脚本生成：
+规则和 AI 对比结果都由仓库脚本生成：
 
 | 数据集 | 标签来源 | 样本 | Top-1 Accuracy | Top-3 Recall | 证据覆盖率 |
 |---|---|---:|---:|---:|---:|
 | recruitmatch-v1 | synthetic_heuristic | 150 | 98.67% | 100% | 100% |
+| recruitmatch-ai-v1 / hybrid-v1 | synthetic_ai | 150 | 98.67% | 100% | 引用有效率 100% |
 
-这些数字只表示 `rules-v1` 在合成启发式基准上的回归表现，不代表真实招聘准确率。真实上线前必须由招聘专家对脱敏样本重新标注并审查公平性。
+这些数字只表示对应算法在固定合成基准上的回归表现，不代表真实招聘准确率。真实上线前必须由招聘专家对脱敏样本重新标注并审查公平性。
 
 复现：
 
 ```bash
 python scripts/generate_recruitment_eval.py
 python scripts/evaluate_recruitment.py
+python scripts/evaluate_ai_pipeline.py --mode hybrid-v1 --fake-model
 ```
 
 ## 架构
@@ -39,13 +43,17 @@ flowchart LR
     API --> AUTH[租户认证与 RBAC]
     API --> JOB[岗位与不可变版本]
     API --> RESUME[简历摄取]
-    API --> MATCH[可解释匹配]
+    API --> MATCH[rules-v1 / hybrid-v1]
+    API --> KNOWLEDGE[租户招聘知识库]
     API --> FEEDBACK[人工反馈]
     RESUME --> QUEUE[Redis / Celery]
     QUEUE --> WORKER[解析 Worker]
     API --> DB[(PostgreSQL)]
     WORKER --> DB
     WORKER --> FILES[(Artifact Store)]
+    KNOWLEDGE --> VECTOR[(版本化向量分块)]
+    VECTOR --> MATCH
+    MATCH --> MODEL[结构化模型网关]
     MATCH --> EVAL[固定评测集]
 ```
 
@@ -59,7 +67,7 @@ flowchart LR
 
 ```bash
 cp .env.example .env
-# 修改 JWT_SECRET；RecruitMatch 默认不需要 LLM Key
+# 修改 JWT_SECRET；默认 AI_ENABLED=false，无需模型 Key
 docker compose up --build
 ```
 
@@ -85,6 +93,17 @@ uvicorn app.main:app --reload
 
 默认数据库为 `data/recruitmatch.db`，任务以内联方式执行。生产式本地联调使用 Compose 的 PostgreSQL、Redis 和 Celery。
 
+启用 AI 时配置：
+
+```bash
+export AI_ENABLED=true
+export OPENAI_API_KEY='your-key'
+export OPENAI_BASE_URL='https://api.deepseek.com'
+export OPENAI_MODEL='deepseek-chat'
+```
+
+模型网关使用 OpenAI-compatible 协议，可替换为其他兼容供应商。未配置或调用失败时，健康检查、岗位管理、简历处理和 `rules-v1` 仍可工作；`/api/v1/ai/status` 会显示降级状态。
+
 ## 关键 API
 
 | 方法 | 路径 | 说明 |
@@ -96,7 +115,11 @@ uvicorn app.main:app --reload
 | PUT | `/api/v1/jobs/{id}` | 追加不可变岗位版本 |
 | POST | `/api/v1/jobs/{id}/activate` | 发布岗位 |
 | POST/GET | `/api/v1/resumes` | 上传/查询简历 |
-| POST | `/api/v1/resumes/{id}/matches` | 生成 Top 3 推荐 |
+| POST | `/api/v1/resumes/{id}/matches?mode=rules-v1\|hybrid-v1` | 生成 Top 3 推荐 |
+| POST/GET | `/api/v1/knowledge-documents` | 上传/查询招聘知识 |
+| POST | `/api/v1/knowledge-documents/{id}/reindex` | 重建知识索引 |
+| POST | `/api/v1/knowledge-documents/{id}/deactivate` | 停用知识文档 |
+| GET | `/api/v1/ai/status` | 查看模型、Embedding 与降级状态 |
 | GET | `/api/v1/match-runs/{id}` | 查询版本化结果 |
 | POST | `/api/v1/match-results/{id}/feedback` | 确认、驳回或改选 |
 | GET | `/api/v1/analytics/summary` | 租户级业务统计 |
@@ -107,6 +130,7 @@ uvicorn app.main:app --reload
 python -m pytest -q
 python -m ruff check app tests scripts
 DATABASE_URL=sqlite:////tmp/recruitmatch-ci.db alembic upgrade head
+python scripts/evaluate_ai_pipeline.py --mode hybrid-v1 --fake-model
 ```
 
 测试覆盖：密码/JWT、岗位版本、租户 IDOR、上传幂等、文件安全、PDF/DOCX 错误、画像证据、状态机、Top 3 算法、反馈、运营统计、迁移和 Web 入口。GitHub Actions 会执行 Ruff、全新数据库迁移、合成数据生成、评测和全量测试。
@@ -122,7 +146,8 @@ DATABASE_URL=sqlite:////tmp/recruitmatch-ci.db alembic upgrade head
 ## 已知限制
 
 - 当前基准是合成数据，不是招聘专家标注的真实数据。
-- `rules-v1` 是确定性可解释基线，尚未加入经过真实数据验证的向量召回或 LLM 增强。
+- RAG/LLM 增强只有合成回归结果，尚未经过招聘专家标注的真实数据验证。
+- 当前向量适配器将分块向量持久化在关系库 JSON 字段，规模扩大后应替换为 pgvector 或专用向量库。
 - 本地 Artifact Store 通过接口封装，但 S3/MinIO 适配器尚未实现。
 - JWT 暂未实现刷新令牌撤销列表，企业 SSO 尚未实现。
 - 预置模板以技术岗位为主，不能直接用于医疗、法律等专业招聘。

@@ -34,6 +34,10 @@ services:
       DATABASE_URL: postgresql+psycopg://recruitmatch:recruitmatch@postgres:5432/recruitmatch
       TASK_MODE: celery
       CELERY_BROKER_URL: redis://redis:6379/0
+      AI_ENABLED: ${AI_ENABLED:-false}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.deepseek.com}
+      OPENAI_MODEL: ${OPENAI_MODEL:-deepseek-chat}
     depends_on:
       postgres:
         condition: service_healthy
@@ -60,7 +64,12 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://recruitmatch:recruitmatch@postgres:5432/recruitmatch
       ARTIFACT_DIR: /app/data/resumes
+      KNOWLEDGE_ARTIFACT_DIR: /app/data/knowledge
       CELERY_BROKER_URL: redis://redis:6379/0
+      AI_ENABLED: ${AI_ENABLED:-false}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.deepseek.com}
+      OPENAI_MODEL: ${OPENAI_MODEL:-deepseek-chat}
     depends_on:
       postgres:
         condition: service_healthy
@@ -69,6 +78,7 @@ services:
     command: celery -A app.tasks.celery_app.celery_app worker --loglevel=INFO
     volumes:
       - ./data:/app/data
+      - hf-cache:/root/.cache/huggingface
     restart: unless-stopped
 
 volumes:
