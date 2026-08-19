@@ -106,3 +106,10 @@ def test_resume_and_job_versions_are_indexed_for_rag(client, knowledge_app):
     job_hits = knowledge_app.state.knowledge_index.search(tenant_id, "RAG", {"job"}, 5, 0)
     assert resume_hits[0].source_id == resume.json()["id"]
     assert job_hits[0].source_id == job.json()["versions"][0]["id"]
+
+
+def test_oversized_knowledge_upload_is_rejected(client):
+    _login(client, "Acme", "admin@acme.test")
+    response = _upload(client, b"x" * (10 * 1024 * 1024 + 2))
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "unsupported_file"

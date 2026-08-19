@@ -1,7 +1,7 @@
 """Bounded semantic project-fit scoring that requires two-sided citations."""
 from __future__ import annotations
 
-from typing import List, Optional, Set
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -18,12 +18,13 @@ class SemanticProjectScore(BaseModel):
 
 def validate_semantic_score(
     score: SemanticProjectScore,
-    authorized_ids: Set[str],
+    authorized_sources: Dict[str, str],
 ) -> Optional[SemanticProjectScore]:
-    citation_ids = score.resume_citation_ids + score.job_citation_ids
     if not score.resume_citation_ids or not score.job_citation_ids:
         return None
-    if any(item not in authorized_ids for item in citation_ids):
+    if any(authorized_sources.get(item) != "resume" for item in score.resume_citation_ids):
+        return None
+    if any(authorized_sources.get(item) != "job" for item in score.job_citation_ids):
         return None
     return score.model_copy(update={"score": min(max(float(score.score), 0.0), 1.0)})
 
@@ -66,4 +67,4 @@ class SemanticMatcher:
             output = self.model.generate(request).value
         except Exception:
             return None
-        return validate_semantic_score(output, {hit.citation_id for hit in hits})
+        return validate_semantic_score(output, {hit.citation_id: hit.source_type for hit in hits})

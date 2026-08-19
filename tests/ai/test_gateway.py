@@ -3,6 +3,8 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 import pytest
+import httpx
+from openai import APITimeoutError, InternalServerError
 from pydantic import BaseModel
 
 from app.ai.contracts import ModelRequest
@@ -92,3 +94,32 @@ def test_gateway_normalizes_invalid_parsed_response():
         OpenAICompatibleGateway(settings, client=_client(completions)).generate(_request())
     assert raised.value.code == "invalid_output"
     assert raised.value.retryable is False
+
+
+def test_gateway_normalizes_sdk_timeout_and_server_error():
+    request = httpx.Request("POST", "https://model.test")
+    response = httpx.Response(503, request=request)
+    completions = StubCompletions(
+        [APITimeoutError(request=request), InternalServerError("down", response=response, body=None)]
+    )
+    settings = Settings(api_key="test", ai_enabled=True, model_max_retries=0)
+    with pytest.raises(ModelGatewayError) as timeout:
+        OpenAICompatibleGateway(settings, client=_client(completions)).generate(_request())
+    assert timeout.value.code == "timeout"
+
+    with pytest.raises(ModelGatewayError) as server:
+        OpenAICompatibleGateway(settings, client=_client(completions)).generate(_request())
+    assert server.value.code == "provider_unavailable"
+    assert server.value.retryable is True
+
+
+def test_gateway_disables_hidden_sdk_retries(monkeypatch):
+    captured = {}
+
+    def fake_openai(**kwargs):
+        captured.update(kwargs)
+        return _client(StubCompletions([]))
+
+    monkeypatch.setattr("app.ai.gateway.OpenAI", fake_openai)
+    OpenAICompatibleGateway(Settings(api_key="test", ai_enabled=True))
+    assert captured["max_retries"] == 0

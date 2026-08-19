@@ -62,7 +62,7 @@ async def upload_document(
     principal: Principal = Depends(get_current_principal),
     session: Session = Depends(get_db),
 ):
-    content = await file.read()
+    content = await file.read(10 * 1024 * 1024 + 1)
     document, _ = _service(request, session).upload(
         principal,
         document_type,

@@ -4,7 +4,17 @@ from __future__ import annotations
 import time
 from typing import Optional
 
-from openai import APIConnectionError, AuthenticationError, OpenAI, RateLimitError
+from openai import (
+    APIConnectionError,
+    APIStatusError,
+    APITimeoutError,
+    AuthenticationError,
+    ContentFilterFinishReasonError,
+    LengthFinishReasonError,
+    OpenAI,
+    OpenAIError,
+    RateLimitError,
+)
 
 from app.ai.contracts import ModelRequest, ModelResponse, T
 from app.config import Settings
@@ -24,6 +34,7 @@ class OpenAICompatibleGateway:
             api_key=settings.api_key,
             base_url=settings.base_url,
             timeout=settings.model_timeout_seconds,
+            max_retries=0,
         )
 
     def generate(self, request: ModelRequest[T]) -> ModelResponse[T]:
@@ -66,9 +77,23 @@ class OpenAICompatibleGateway:
             except RateLimitError as exc:
                 error = ModelGatewayError("rate_limited", retryable=True)
                 cause = exc
-            except (APIConnectionError, TimeoutError) as exc:
-                error = ModelGatewayError("timeout" if isinstance(exc, TimeoutError) else "transport_error", True)
+            except APITimeoutError as exc:
+                error = ModelGatewayError("timeout", retryable=True)
                 cause = exc
+            except APIConnectionError as exc:
+                error = ModelGatewayError("transport_error", retryable=True)
+                cause = exc
+            except APIStatusError as exc:
+                retryable = exc.status_code >= 500 or exc.status_code in {408, 429}
+                error = ModelGatewayError("provider_unavailable" if retryable else "provider_rejected", retryable)
+                cause = exc
+            except (LengthFinishReasonError, ContentFilterFinishReasonError) as exc:
+                raise ModelGatewayError("invalid_output", retryable=False) from exc
+            except TimeoutError as exc:
+                error = ModelGatewayError("timeout", retryable=True)
+                cause = exc
+            except OpenAIError as exc:
+                raise ModelGatewayError("provider_error", retryable=False) from exc
             except (ValueError, TypeError, IndexError, AttributeError) as exc:
                 raise ModelGatewayError("invalid_output", retryable=False) from exc
             if attempt + 1 >= attempts:
