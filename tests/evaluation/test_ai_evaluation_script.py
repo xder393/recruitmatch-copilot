@@ -30,3 +30,23 @@ def test_fake_model_evaluation_is_deterministic(tmp_path):
     result = json.loads(first.read_text(encoding="utf-8"))
     assert result["algorithm_version"] == "hybrid-v1"
     assert result["label_source"] == "synthetic_ai"
+    assert result["pipeline_calls"]["semantic_project_match"] > 0
+    assert result["pipeline_calls"]["match_explanation"] > 0
+    assert result["pipeline_outcomes"]["parser"]["rules_fallback"] > 0
+    assert result["pipeline_outcomes"]["grounding"]["rejected_unsupported_claims"] > 0
+    assert result["pipeline_outcomes"]["semantic_fallback_results"] > 0
+
+
+def test_modes_execute_different_real_pipeline_components():
+    from scripts.evaluate_ai_pipeline import evaluate
+
+    cases = json.loads(Path("evaluation/recruitmatch-ai-v1.json").read_text(encoding="utf-8"))
+    rules = evaluate(cases, "rules-v1")
+    llm_rules = evaluate(cases, "llm-rules-v1")
+    hybrid = evaluate(cases, "hybrid-v1")
+
+    assert rules["pipeline_calls"] == {}
+    assert llm_rules["pipeline_calls"]["resume_extract"] > 0
+    assert "semantic_project_match" not in llm_rules["pipeline_calls"]
+    assert hybrid["pipeline_calls"]["semantic_project_match"] > 0
+    assert rules["metrics"]["extraction_recall"] < llm_rules["metrics"]["extraction_recall"]

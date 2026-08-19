@@ -3,7 +3,7 @@
     "id": "ai_application-01",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Python、LLM API、LangChain、FastAPI、向量数据库、RAG",
+    "resume_text": "候选人技能：Python、LLM API、LangChain、FastAPI、向量数据库、RAG；工作经验：1 年；案例编号：ai_application-01",
     "expected_facts": [
       "Python",
       "LLM API",
@@ -56,7 +56,7 @@
     "id": "ai_application-02",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：LangChain、LLM API、Python、RAG、FastAPI、向量数据库",
+    "resume_text": "候选人技能：LangChain、LLM API、Python、RAG、FastAPI、向量数据库；工作经验：3 年；案例编号：ai_application-02",
     "expected_facts": [
       "LangChain",
       "LLM API",
@@ -109,7 +109,7 @@
     "id": "ai_application-03",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：RAG、向量数据库、LangChain、LLM API、FastAPI、Python",
+    "resume_text": "候选人技能：RAG、向量数据库、LangChain、LLM API、FastAPI、Python；工作经验：5 年；案例编号：ai_application-03",
     "expected_facts": [
       "RAG",
       "向量数据库",
@@ -162,7 +162,7 @@
     "id": "ai_application-04",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：向量数据库、RAG、LLM API、FastAPI、LangChain、Python",
+    "resume_text": "候选人技能：向量数据库、RAG、LLM API、FastAPI、LangChain、Python；工作经验：1 年；案例编号：ai_application-04",
     "expected_facts": [
       "向量数据库",
       "RAG",
@@ -215,7 +215,7 @@
     "id": "ai_application-05",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：LLM API、向量数据库、LangChain、FastAPI、RAG、Python",
+    "resume_text": "候选人技能：LLM API、向量数据库、LangChain、FastAPI、RAG、Python；工作经验：3 年；案例编号：ai_application-05",
     "expected_facts": [
       "LLM API",
       "向量数据库",
@@ -268,7 +268,7 @@
     "id": "ai_application-06",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：向量数据库、FastAPI、RAG、LangChain、LLM API、Python",
+    "resume_text": "候选人技能：向量数据库、FastAPI、RAG、LangChain、LLM API、Python；工作经验：5 年；案例编号：ai_application-06",
     "expected_facts": [
       "向量数据库",
       "FastAPI",
@@ -321,7 +321,7 @@
     "id": "ai_application-07",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Python、LLM API、FastAPI",
+    "resume_text": "候选人技能：Python、LLM API、FastAPI；工作经验：2 年；案例编号：ai_application-07",
     "expected_facts": [
       "Python",
       "LLM API",
@@ -356,7 +356,7 @@
     "id": "ai_application-08",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：LLM API、FastAPI、Python",
+    "resume_text": "候选人技能：LLM API、FastAPI、Python；工作经验：4 年；案例编号：ai_application-08",
     "expected_facts": [
       "LLM API",
       "FastAPI",
@@ -391,7 +391,7 @@
     "id": "ai_application-09",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：LLM API、Python、FastAPI",
+    "resume_text": "候选人技能：LLM API、Python、FastAPI；工作经验：6 年；案例编号：ai_application-09",
     "expected_facts": [
       "LLM API",
       "Python",
@@ -426,7 +426,7 @@
     "id": "ai_application-10",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：LLM API、Python、FastAPI",
+    "resume_text": "候选人技能：LLM API、Python、FastAPI；工作经验：8 年；案例编号：ai_application-10",
     "expected_facts": [
       "LLM API",
       "Python",
@@ -461,7 +461,7 @@
     "id": "ai_application-11",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Python、RAG、FastAPI",
+    "resume_text": "候选人技能：Python、RAG、FastAPI；工作经验：1 年；案例编号：ai_application-11",
     "expected_facts": [
       "Python",
       "RAG",
@@ -496,7 +496,7 @@
     "id": "ai_application-12",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：RAG、Python、FastAPI",
+    "resume_text": "候选人技能：RAG、Python、FastAPI；工作经验：3 年；案例编号：ai_application-12",
     "expected_facts": [
       "RAG",
       "Python",
@@ -531,7 +531,7 @@
     "id": "ai_application-13",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：FastAPI、Python、RAG",
+    "resume_text": "候选人技能：FastAPI、Python、RAG；工作经验：5 年；案例编号：ai_application-13",
     "expected_facts": [
       "FastAPI",
       "Python",
@@ -566,7 +566,7 @@
     "id": "ai_application-14",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：RAG、Python",
+    "resume_text": "候选人技能：RAG、Python；工作经验：3 年；案例编号：ai_application-14",
     "expected_facts": [
       "RAG",
       "Python"
@@ -595,7 +595,7 @@
     "id": "ai_application-15",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：RAG、LangChain、向量数据库、Python、FastAPI、LLM API",
+    "resume_text": "候选人技能：RAG、LangChain、向量数据库、Python、FastAPI、LLM API；工作经验：null 年；案例编号：ai_application-15",
     "expected_facts": [
       "RAG",
       "LangChain",
@@ -648,7 +648,7 @@
     "id": "llm_algorithm-01",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Python、PyTorch、推理加速、PEFT、Transformer、分布式训练",
+    "resume_text": "候选人技能：Python、PyTorch、推理加速、PEFT、Transformer、分布式训练；工作经验：1 年；案例编号：llm_algorithm-01",
     "expected_facts": [
       "Python",
       "PyTorch",
@@ -701,7 +701,7 @@
     "id": "llm_algorithm-02",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Python、分布式训练、推理加速、PyTorch、PEFT、Transformer",
+    "resume_text": "候选人技能：Python、分布式训练、推理加速、PyTorch、PEFT、Transformer；工作经验：3 年；案例编号：llm_algorithm-02",
     "expected_facts": [
       "Python",
       "分布式训练",
@@ -754,7 +754,7 @@
     "id": "llm_algorithm-03",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Transformer、Python、PyTorch、PEFT、分布式训练、推理加速",
+    "resume_text": "候选人技能：Transformer、Python、PyTorch、PEFT、分布式训练、推理加速；工作经验：5 年；案例编号：llm_algorithm-03",
     "expected_facts": [
       "Transformer",
       "Python",
@@ -807,7 +807,7 @@
     "id": "llm_algorithm-04",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：推理加速、PEFT、PyTorch、分布式训练、Python、Transformer",
+    "resume_text": "候选人技能：推理加速、PEFT、PyTorch、分布式训练、Python、Transformer；工作经验：1 年；案例编号：llm_algorithm-04",
     "expected_facts": [
       "推理加速",
       "PEFT",
@@ -860,7 +860,7 @@
     "id": "llm_algorithm-05",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：PyTorch、Python、PEFT、Transformer、推理加速、分布式训练",
+    "resume_text": "候选人技能：PyTorch、Python、PEFT、Transformer、推理加速、分布式训练；工作经验：3 年；案例编号：llm_algorithm-05",
     "expected_facts": [
       "PyTorch",
       "Python",
@@ -913,7 +913,7 @@
     "id": "llm_algorithm-06",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：PyTorch、分布式训练、推理加速、Python、Transformer、PEFT",
+    "resume_text": "候选人技能：PyTorch、分布式训练、推理加速、Python、Transformer、PEFT；工作经验：5 年；案例编号：llm_algorithm-06",
     "expected_facts": [
       "PyTorch",
       "分布式训练",
@@ -966,7 +966,7 @@
     "id": "llm_algorithm-07",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Transformer、Python、PyTorch",
+    "resume_text": "候选人技能：Transformer、Python、PyTorch；工作经验：2 年；案例编号：llm_algorithm-07",
     "expected_facts": [
       "Transformer",
       "Python",
@@ -1001,7 +1001,7 @@
     "id": "llm_algorithm-08",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：PyTorch、Python、Transformer",
+    "resume_text": "候选人技能：PyTorch、Python、Transformer；工作经验：4 年；案例编号：llm_algorithm-08",
     "expected_facts": [
       "PyTorch",
       "Python",
@@ -1036,7 +1036,7 @@
     "id": "llm_algorithm-09",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Transformer、Python、PyTorch",
+    "resume_text": "候选人技能：Transformer、Python、PyTorch；工作经验：6 年；案例编号：llm_algorithm-09",
     "expected_facts": [
       "Transformer",
       "Python",
@@ -1071,7 +1071,7 @@
     "id": "llm_algorithm-10",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：PyTorch、Transformer、Python",
+    "resume_text": "候选人技能：PyTorch、Transformer、Python；工作经验：8 年；案例编号：llm_algorithm-10",
     "expected_facts": [
       "PyTorch",
       "Transformer",
@@ -1106,7 +1106,7 @@
     "id": "llm_algorithm-11",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Python、PyTorch、PEFT",
+    "resume_text": "候选人技能：Python、PyTorch、PEFT；工作经验：1 年；案例编号：llm_algorithm-11",
     "expected_facts": [
       "Python",
       "PyTorch",
@@ -1141,7 +1141,7 @@
     "id": "llm_algorithm-12",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：PyTorch、PEFT、Python",
+    "resume_text": "候选人技能：PyTorch、PEFT、Python；工作经验：3 年；案例编号：llm_algorithm-12",
     "expected_facts": [
       "PyTorch",
       "PEFT",
@@ -1176,7 +1176,7 @@
     "id": "llm_algorithm-13",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：PyTorch、PEFT、Python",
+    "resume_text": "候选人技能：PyTorch、PEFT、Python；工作经验：5 年；案例编号：llm_algorithm-13",
     "expected_facts": [
       "PyTorch",
       "PEFT",
@@ -1211,7 +1211,7 @@
     "id": "llm_algorithm-14",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：PEFT、Python",
+    "resume_text": "候选人技能：PEFT、Python；工作经验：3 年；案例编号：llm_algorithm-14",
     "expected_facts": [
       "PEFT",
       "Python"
@@ -1240,7 +1240,7 @@
     "id": "llm_algorithm-15",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：PyTorch、分布式训练、PEFT、Python、推理加速、Transformer",
+    "resume_text": "候选人技能：PyTorch、分布式训练、PEFT、Python、推理加速、Transformer；工作经验：null 年；案例编号：llm_algorithm-15",
     "expected_facts": [
       "PyTorch",
       "分布式训练",
@@ -1293,7 +1293,7 @@
     "id": "machine_learning-01",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Python、Scikit-learn、MLOps、机器学习、特征工程、SQL",
+    "resume_text": "候选人技能：Python、Scikit-learn、MLOps、机器学习、特征工程、SQL；工作经验：1 年；案例编号：machine_learning-01",
     "expected_facts": [
       "Python",
       "Scikit-learn",
@@ -1346,7 +1346,7 @@
     "id": "machine_learning-02",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Python、Scikit-learn、特征工程、SQL、MLOps、机器学习",
+    "resume_text": "候选人技能：Python、Scikit-learn、特征工程、SQL、MLOps、机器学习；工作经验：3 年；案例编号：machine_learning-02",
     "expected_facts": [
       "Python",
       "Scikit-learn",
@@ -1399,7 +1399,7 @@
     "id": "machine_learning-03",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Scikit-learn、机器学习、MLOps、Python、特征工程、SQL",
+    "resume_text": "候选人技能：Scikit-learn、机器学习、MLOps、Python、特征工程、SQL；工作经验：5 年；案例编号：machine_learning-03",
     "expected_facts": [
       "Scikit-learn",
       "机器学习",
@@ -1452,7 +1452,7 @@
     "id": "machine_learning-04",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：MLOps、特征工程、SQL、Python、Scikit-learn、机器学习",
+    "resume_text": "候选人技能：MLOps、特征工程、SQL、Python、Scikit-learn、机器学习；工作经验：1 年；案例编号：machine_learning-04",
     "expected_facts": [
       "MLOps",
       "特征工程",
@@ -1505,7 +1505,7 @@
     "id": "machine_learning-05",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Python、特征工程、Scikit-learn、机器学习、MLOps、SQL",
+    "resume_text": "候选人技能：Python、特征工程、Scikit-learn、机器学习、MLOps、SQL；工作经验：3 年；案例编号：machine_learning-05",
     "expected_facts": [
       "Python",
       "特征工程",
@@ -1558,7 +1558,7 @@
     "id": "machine_learning-06",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：特征工程、Scikit-learn、Python、SQL、MLOps、机器学习",
+    "resume_text": "候选人技能：特征工程、Scikit-learn、Python、SQL、MLOps、机器学习；工作经验：5 年；案例编号：machine_learning-06",
     "expected_facts": [
       "特征工程",
       "Scikit-learn",
@@ -1611,7 +1611,7 @@
     "id": "machine_learning-07",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：SQL、Python、机器学习",
+    "resume_text": "候选人技能：SQL、Python、机器学习；工作经验：2 年；案例编号：machine_learning-07",
     "expected_facts": [
       "SQL",
       "Python",
@@ -1646,7 +1646,7 @@
     "id": "machine_learning-08",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：机器学习、SQL、Python",
+    "resume_text": "候选人技能：机器学习、SQL、Python；工作经验：4 年；案例编号：machine_learning-08",
     "expected_facts": [
       "机器学习",
       "SQL",
@@ -1681,7 +1681,7 @@
     "id": "machine_learning-09",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：SQL、Python、机器学习",
+    "resume_text": "候选人技能：SQL、Python、机器学习；工作经验：6 年；案例编号：machine_learning-09",
     "expected_facts": [
       "SQL",
       "Python",
@@ -1716,7 +1716,7 @@
     "id": "machine_learning-10",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：SQL、机器学习、Python",
+    "resume_text": "候选人技能：SQL、机器学习、Python；工作经验：8 年；案例编号：machine_learning-10",
     "expected_facts": [
       "SQL",
       "机器学习",
@@ -1751,7 +1751,7 @@
     "id": "machine_learning-11",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：机器学习、Python、Scikit-learn",
+    "resume_text": "候选人技能：机器学习、Python、Scikit-learn；工作经验：1 年；案例编号：machine_learning-11",
     "expected_facts": [
       "机器学习",
       "Python",
@@ -1786,7 +1786,7 @@
     "id": "machine_learning-12",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Scikit-learn、Python、机器学习",
+    "resume_text": "候选人技能：Scikit-learn、Python、机器学习；工作经验：3 年；案例编号：machine_learning-12",
     "expected_facts": [
       "Scikit-learn",
       "Python",
@@ -1821,7 +1821,7 @@
     "id": "machine_learning-13",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Scikit-learn、Python、机器学习",
+    "resume_text": "候选人技能：Scikit-learn、Python、机器学习；工作经验：5 年；案例编号：machine_learning-13",
     "expected_facts": [
       "Scikit-learn",
       "Python",
@@ -1856,7 +1856,7 @@
     "id": "machine_learning-14",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Python、Scikit-learn",
+    "resume_text": "候选人技能：Python、Scikit-learn；工作经验：3 年；案例编号：machine_learning-14",
     "expected_facts": [
       "Python",
       "Scikit-learn"
@@ -1885,7 +1885,7 @@
     "id": "machine_learning-15",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：SQL、Python、机器学习、Scikit-learn、MLOps、特征工程",
+    "resume_text": "候选人技能：SQL、Python、机器学习、Scikit-learn、MLOps、特征工程；工作经验：null 年；案例编号：machine_learning-15",
     "expected_facts": [
       "SQL",
       "Python",
@@ -1938,7 +1938,7 @@
     "id": "data_engineering-01",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：ETL、数据仓库、Spark、SQL、Python、Flink",
+    "resume_text": "候选人技能：ETL、数据仓库、Spark、SQL、Python、Flink；工作经验：1 年；案例编号：data_engineering-01",
     "expected_facts": [
       "ETL",
       "数据仓库",
@@ -1991,7 +1991,7 @@
     "id": "data_engineering-02",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Python、数据仓库、Spark、Flink、ETL、SQL",
+    "resume_text": "候选人技能：Python、数据仓库、Spark、Flink、ETL、SQL；工作经验：3 年；案例编号：data_engineering-02",
     "expected_facts": [
       "Python",
       "数据仓库",
@@ -2044,7 +2044,7 @@
     "id": "data_engineering-03",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：ETL、Python、Spark、Flink、数据仓库、SQL",
+    "resume_text": "候选人技能：ETL、Python、Spark、Flink、数据仓库、SQL；工作经验：5 年；案例编号：data_engineering-03",
     "expected_facts": [
       "ETL",
       "Python",
@@ -2097,7 +2097,7 @@
     "id": "data_engineering-04",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：SQL、Python、Spark、ETL、Flink、数据仓库",
+    "resume_text": "候选人技能：SQL、Python、Spark、ETL、Flink、数据仓库；工作经验：1 年；案例编号：data_engineering-04",
     "expected_facts": [
       "SQL",
       "Python",
@@ -2150,7 +2150,7 @@
     "id": "data_engineering-05",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：数据仓库、ETL、SQL、Flink、Spark、Python",
+    "resume_text": "候选人技能：数据仓库、ETL、SQL、Flink、Spark、Python；工作经验：3 年；案例编号：data_engineering-05",
     "expected_facts": [
       "数据仓库",
       "ETL",
@@ -2203,7 +2203,7 @@
     "id": "data_engineering-06",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Spark、Python、SQL、数据仓库、Flink、ETL",
+    "resume_text": "候选人技能：Spark、Python、SQL、数据仓库、Flink、ETL；工作经验：5 年；案例编号：data_engineering-06",
     "expected_facts": [
       "Spark",
       "Python",
@@ -2256,7 +2256,7 @@
     "id": "data_engineering-07",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：SQL、ETL、Python",
+    "resume_text": "候选人技能：SQL、ETL、Python；工作经验：2 年；案例编号：data_engineering-07",
     "expected_facts": [
       "SQL",
       "ETL",
@@ -2291,7 +2291,7 @@
     "id": "data_engineering-08",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：ETL、Python、SQL",
+    "resume_text": "候选人技能：ETL、Python、SQL；工作经验：4 年；案例编号：data_engineering-08",
     "expected_facts": [
       "ETL",
       "Python",
@@ -2326,7 +2326,7 @@
     "id": "data_engineering-09",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：ETL、SQL、Python",
+    "resume_text": "候选人技能：ETL、SQL、Python；工作经验：6 年；案例编号：data_engineering-09",
     "expected_facts": [
       "ETL",
       "SQL",
@@ -2361,7 +2361,7 @@
     "id": "data_engineering-10",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：SQL、ETL、Python",
+    "resume_text": "候选人技能：SQL、ETL、Python；工作经验：8 年；案例编号：data_engineering-10",
     "expected_facts": [
       "SQL",
       "ETL",
@@ -2396,7 +2396,7 @@
     "id": "data_engineering-11",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Python、SQL、Spark",
+    "resume_text": "候选人技能：Python、SQL、Spark；工作经验：1 年；案例编号：data_engineering-11",
     "expected_facts": [
       "Python",
       "SQL",
@@ -2431,7 +2431,7 @@
     "id": "data_engineering-12",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Spark、SQL、Python",
+    "resume_text": "候选人技能：Spark、SQL、Python；工作经验：3 年；案例编号：data_engineering-12",
     "expected_facts": [
       "Spark",
       "SQL",
@@ -2466,7 +2466,7 @@
     "id": "data_engineering-13",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：SQL、Python、Spark",
+    "resume_text": "候选人技能：SQL、Python、Spark；工作经验：5 年；案例编号：data_engineering-13",
     "expected_facts": [
       "SQL",
       "Python",
@@ -2501,7 +2501,7 @@
     "id": "data_engineering-14",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：SQL、Spark",
+    "resume_text": "候选人技能：SQL、Spark；工作经验：3 年；案例编号：data_engineering-14",
     "expected_facts": [
       "SQL",
       "Spark"
@@ -2530,7 +2530,7 @@
     "id": "data_engineering-15",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：数据仓库、Python、ETL、Spark、Flink、SQL",
+    "resume_text": "候选人技能：数据仓库、Python、ETL、Spark、Flink、SQL；工作经验：null 年；案例编号：data_engineering-15",
     "expected_facts": [
       "数据仓库",
       "Python",
@@ -2583,7 +2583,7 @@
     "id": "data_analysis-01",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：SQL、Python、数据可视化、Tableau、A/B 测试、统计学",
+    "resume_text": "候选人技能：SQL、Python、数据可视化、Tableau、A/B 测试、统计学；工作经验：1 年；案例编号：data_analysis-01",
     "expected_facts": [
       "SQL",
       "Python",
@@ -2636,7 +2636,7 @@
     "id": "data_analysis-02",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Python、数据可视化、Tableau、统计学、A/B 测试、SQL",
+    "resume_text": "候选人技能：Python、数据可视化、Tableau、统计学、A/B 测试、SQL；工作经验：3 年；案例编号：data_analysis-02",
     "expected_facts": [
       "Python",
       "数据可视化",
@@ -2689,7 +2689,7 @@
     "id": "data_analysis-03",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：数据可视化、A/B 测试、Python、统计学、SQL、Tableau",
+    "resume_text": "候选人技能：数据可视化、A/B 测试、Python、统计学、SQL、Tableau；工作经验：5 年；案例编号：data_analysis-03",
     "expected_facts": [
       "数据可视化",
       "A/B 测试",
@@ -2742,7 +2742,7 @@
     "id": "data_analysis-04",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：A/B 测试、统计学、Tableau、SQL、数据可视化、Python",
+    "resume_text": "候选人技能：A/B 测试、统计学、Tableau、SQL、数据可视化、Python；工作经验：1 年；案例编号：data_analysis-04",
     "expected_facts": [
       "A/B 测试",
       "统计学",
@@ -2795,7 +2795,7 @@
     "id": "data_analysis-05",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：数据可视化、SQL、Python、统计学、Tableau、A/B 测试",
+    "resume_text": "候选人技能：数据可视化、SQL、Python、统计学、Tableau、A/B 测试；工作经验：3 年；案例编号：data_analysis-05",
     "expected_facts": [
       "数据可视化",
       "SQL",
@@ -2848,7 +2848,7 @@
     "id": "data_analysis-06",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：数据可视化、Tableau、Python、统计学、SQL、A/B 测试",
+    "resume_text": "候选人技能：数据可视化、Tableau、Python、统计学、SQL、A/B 测试；工作经验：5 年；案例编号：data_analysis-06",
     "expected_facts": [
       "数据可视化",
       "Tableau",
@@ -2901,7 +2901,7 @@
     "id": "data_analysis-07",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：数据可视化、统计学、SQL",
+    "resume_text": "候选人技能：数据可视化、统计学、SQL；工作经验：2 年；案例编号：data_analysis-07",
     "expected_facts": [
       "数据可视化",
       "统计学",
@@ -2936,7 +2936,7 @@
     "id": "data_analysis-08",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：统计学、数据可视化、SQL",
+    "resume_text": "候选人技能：统计学、数据可视化、SQL；工作经验：4 年；案例编号：data_analysis-08",
     "expected_facts": [
       "统计学",
       "数据可视化",
@@ -2971,7 +2971,7 @@
     "id": "data_analysis-09",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：SQL、统计学、数据可视化",
+    "resume_text": "候选人技能：SQL、统计学、数据可视化；工作经验：6 年；案例编号：data_analysis-09",
     "expected_facts": [
       "SQL",
       "统计学",
@@ -3006,7 +3006,7 @@
     "id": "data_analysis-10",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：数据可视化、SQL、统计学",
+    "resume_text": "候选人技能：数据可视化、SQL、统计学；工作经验：8 年；案例编号：data_analysis-10",
     "expected_facts": [
       "数据可视化",
       "SQL",
@@ -3041,7 +3041,7 @@
     "id": "data_analysis-11",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Python、SQL、统计学",
+    "resume_text": "候选人技能：Python、SQL、统计学；工作经验：1 年；案例编号：data_analysis-11",
     "expected_facts": [
       "Python",
       "SQL",
@@ -3076,7 +3076,7 @@
     "id": "data_analysis-12",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：统计学、Python、SQL",
+    "resume_text": "候选人技能：统计学、Python、SQL；工作经验：3 年；案例编号：data_analysis-12",
     "expected_facts": [
       "统计学",
       "Python",
@@ -3111,7 +3111,7 @@
     "id": "data_analysis-13",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：统计学、SQL、Python",
+    "resume_text": "候选人技能：统计学、SQL、Python；工作经验：5 年；案例编号：data_analysis-13",
     "expected_facts": [
       "统计学",
       "SQL",
@@ -3146,7 +3146,7 @@
     "id": "data_analysis-14",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：SQL、Python",
+    "resume_text": "候选人技能：SQL、Python；工作经验：3 年；案例编号：data_analysis-14",
     "expected_facts": [
       "SQL",
       "Python"
@@ -3175,7 +3175,7 @@
     "id": "data_analysis-15",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：统计学、Python、数据可视化、SQL、A/B 测试、Tableau",
+    "resume_text": "候选人技能：统计学、Python、数据可视化、SQL、A/B 测试、Tableau；工作经验：null 年；案例编号：data_analysis-15",
     "expected_facts": [
       "统计学",
       "Python",
@@ -3228,7 +3228,7 @@
     "id": "backend-01",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：消息队列、API 设计、Python/Java、Redis、数据库、微服务",
+    "resume_text": "候选人技能：消息队列、API 设计、Python/Java、Redis、数据库、微服务；工作经验：1 年；案例编号：backend-01",
     "expected_facts": [
       "消息队列",
       "API 设计",
@@ -3281,7 +3281,7 @@
     "id": "backend-02",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：微服务、数据库、Python/Java、Redis、API 设计、消息队列",
+    "resume_text": "候选人技能：微服务、数据库、Python/Java、Redis、API 设计、消息队列；工作经验：3 年；案例编号：backend-02",
     "expected_facts": [
       "微服务",
       "数据库",
@@ -3334,7 +3334,7 @@
     "id": "backend-03",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Redis、消息队列、API 设计、微服务、Python/Java、数据库",
+    "resume_text": "候选人技能：Redis、消息队列、API 设计、微服务、Python/Java、数据库；工作经验：5 年；案例编号：backend-03",
     "expected_facts": [
       "Redis",
       "消息队列",
@@ -3387,7 +3387,7 @@
     "id": "backend-04",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：数据库、Python/Java、Redis、消息队列、微服务、API 设计",
+    "resume_text": "候选人技能：数据库、Python/Java、Redis、消息队列、微服务、API 设计；工作经验：1 年；案例编号：backend-04",
     "expected_facts": [
       "数据库",
       "Python/Java",
@@ -3440,7 +3440,7 @@
     "id": "backend-05",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Python/Java、微服务、数据库、API 设计、Redis、消息队列",
+    "resume_text": "候选人技能：Python/Java、微服务、数据库、API 设计、Redis、消息队列；工作经验：3 年；案例编号：backend-05",
     "expected_facts": [
       "Python/Java",
       "微服务",
@@ -3493,7 +3493,7 @@
     "id": "backend-06",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：微服务、API 设计、消息队列、数据库、Redis、Python/Java",
+    "resume_text": "候选人技能：微服务、API 设计、消息队列、数据库、Redis、Python/Java；工作经验：5 年；案例编号：backend-06",
     "expected_facts": [
       "微服务",
       "API 设计",
@@ -3546,7 +3546,7 @@
     "id": "backend-07",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Python/Java、API 设计、数据库",
+    "resume_text": "候选人技能：Python/Java、API 设计、数据库；工作经验：2 年；案例编号：backend-07",
     "expected_facts": [
       "Python/Java",
       "API 设计",
@@ -3581,7 +3581,7 @@
     "id": "backend-08",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Python/Java、API 设计、数据库",
+    "resume_text": "候选人技能：Python/Java、API 设计、数据库；工作经验：4 年；案例编号：backend-08",
     "expected_facts": [
       "Python/Java",
       "API 设计",
@@ -3616,7 +3616,7 @@
     "id": "backend-09",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：API 设计、Python/Java、数据库",
+    "resume_text": "候选人技能：API 设计、Python/Java、数据库；工作经验：6 年；案例编号：backend-09",
     "expected_facts": [
       "API 设计",
       "Python/Java",
@@ -3651,7 +3651,7 @@
     "id": "backend-10",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：数据库、Python/Java、API 设计",
+    "resume_text": "候选人技能：数据库、Python/Java、API 设计；工作经验：8 年；案例编号：backend-10",
     "expected_facts": [
       "数据库",
       "Python/Java",
@@ -3686,7 +3686,7 @@
     "id": "backend-11",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：微服务、数据库、Python/Java",
+    "resume_text": "候选人技能：微服务、数据库、Python/Java；工作经验：1 年；案例编号：backend-11",
     "expected_facts": [
       "微服务",
       "数据库",
@@ -3721,7 +3721,7 @@
     "id": "backend-12",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Python/Java、数据库、微服务",
+    "resume_text": "候选人技能：Python/Java、数据库、微服务；工作经验：3 年；案例编号：backend-12",
     "expected_facts": [
       "Python/Java",
       "数据库",
@@ -3756,7 +3756,7 @@
     "id": "backend-13",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：微服务、Python/Java、数据库",
+    "resume_text": "候选人技能：微服务、Python/Java、数据库；工作经验：5 年；案例编号：backend-13",
     "expected_facts": [
       "微服务",
       "Python/Java",
@@ -3791,7 +3791,7 @@
     "id": "backend-14",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Python/Java、微服务",
+    "resume_text": "候选人技能：Python/Java、微服务；工作经验：3 年；案例编号：backend-14",
     "expected_facts": [
       "Python/Java",
       "微服务"
@@ -3820,7 +3820,7 @@
     "id": "backend-15",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：消息队列、Redis、数据库、微服务、API 设计、Python/Java",
+    "resume_text": "候选人技能：消息队列、Redis、数据库、微服务、API 设计、Python/Java；工作经验：null 年；案例编号：backend-15",
     "expected_facts": [
       "消息队列",
       "Redis",
@@ -3873,7 +3873,7 @@
     "id": "frontend-01",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：JavaScript、TypeScript、性能优化、HTML/CSS、React/Vue、前端工程化",
+    "resume_text": "候选人技能：JavaScript、TypeScript、性能优化、HTML/CSS、React/Vue、前端工程化；工作经验：1 年；案例编号：frontend-01",
     "expected_facts": [
       "JavaScript",
       "TypeScript",
@@ -3926,7 +3926,7 @@
     "id": "frontend-02",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：前端工程化、JavaScript、性能优化、HTML/CSS、React/Vue、TypeScript",
+    "resume_text": "候选人技能：前端工程化、JavaScript、性能优化、HTML/CSS、React/Vue、TypeScript；工作经验：3 年；案例编号：frontend-02",
     "expected_facts": [
       "前端工程化",
       "JavaScript",
@@ -3979,7 +3979,7 @@
     "id": "frontend-03",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：HTML/CSS、React/Vue、TypeScript、性能优化、JavaScript、前端工程化",
+    "resume_text": "候选人技能：HTML/CSS、React/Vue、TypeScript、性能优化、JavaScript、前端工程化；工作经验：5 年；案例编号：frontend-03",
     "expected_facts": [
       "HTML/CSS",
       "React/Vue",
@@ -4032,7 +4032,7 @@
     "id": "frontend-04",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：性能优化、JavaScript、TypeScript、React/Vue、HTML/CSS、前端工程化",
+    "resume_text": "候选人技能：性能优化、JavaScript、TypeScript、React/Vue、HTML/CSS、前端工程化；工作经验：1 年；案例编号：frontend-04",
     "expected_facts": [
       "性能优化",
       "JavaScript",
@@ -4085,7 +4085,7 @@
     "id": "frontend-05",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：性能优化、前端工程化、TypeScript、HTML/CSS、React/Vue、JavaScript",
+    "resume_text": "候选人技能：性能优化、前端工程化、TypeScript、HTML/CSS、React/Vue、JavaScript；工作经验：3 年；案例编号：frontend-05",
     "expected_facts": [
       "性能优化",
       "前端工程化",
@@ -4138,7 +4138,7 @@
     "id": "frontend-06",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：性能优化、前端工程化、TypeScript、HTML/CSS、JavaScript、React/Vue",
+    "resume_text": "候选人技能：性能优化、前端工程化、TypeScript、HTML/CSS、JavaScript、React/Vue；工作经验：5 年；案例编号：frontend-06",
     "expected_facts": [
       "性能优化",
       "前端工程化",
@@ -4191,7 +4191,7 @@
     "id": "frontend-07",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：React/Vue、JavaScript、HTML/CSS",
+    "resume_text": "候选人技能：React/Vue、JavaScript、HTML/CSS；工作经验：2 年；案例编号：frontend-07",
     "expected_facts": [
       "React/Vue",
       "JavaScript",
@@ -4226,7 +4226,7 @@
     "id": "frontend-08",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：React/Vue、JavaScript、HTML/CSS",
+    "resume_text": "候选人技能：React/Vue、JavaScript、HTML/CSS；工作经验：4 年；案例编号：frontend-08",
     "expected_facts": [
       "React/Vue",
       "JavaScript",
@@ -4261,7 +4261,7 @@
     "id": "frontend-09",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：HTML/CSS、JavaScript、React/Vue",
+    "resume_text": "候选人技能：HTML/CSS、JavaScript、React/Vue；工作经验：6 年；案例编号：frontend-09",
     "expected_facts": [
       "HTML/CSS",
       "JavaScript",
@@ -4296,7 +4296,7 @@
     "id": "frontend-10",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：React/Vue、HTML/CSS、JavaScript",
+    "resume_text": "候选人技能：React/Vue、HTML/CSS、JavaScript；工作经验：8 年；案例编号：frontend-10",
     "expected_facts": [
       "React/Vue",
       "HTML/CSS",
@@ -4331,7 +4331,7 @@
     "id": "frontend-11",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：JavaScript、TypeScript、HTML/CSS",
+    "resume_text": "候选人技能：JavaScript、TypeScript、HTML/CSS；工作经验：1 年；案例编号：frontend-11",
     "expected_facts": [
       "JavaScript",
       "TypeScript",
@@ -4366,7 +4366,7 @@
     "id": "frontend-12",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：HTML/CSS、JavaScript、TypeScript",
+    "resume_text": "候选人技能：HTML/CSS、JavaScript、TypeScript；工作经验：3 年；案例编号：frontend-12",
     "expected_facts": [
       "HTML/CSS",
       "JavaScript",
@@ -4401,7 +4401,7 @@
     "id": "frontend-13",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：HTML/CSS、TypeScript、JavaScript",
+    "resume_text": "候选人技能：HTML/CSS、TypeScript、JavaScript；工作经验：5 年；案例编号：frontend-13",
     "expected_facts": [
       "HTML/CSS",
       "TypeScript",
@@ -4436,7 +4436,7 @@
     "id": "frontend-14",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：JavaScript、TypeScript",
+    "resume_text": "候选人技能：JavaScript、TypeScript；工作经验：3 年；案例编号：frontend-14",
     "expected_facts": [
       "JavaScript",
       "TypeScript"
@@ -4465,7 +4465,7 @@
     "id": "frontend-15",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：React/Vue、性能优化、HTML/CSS、TypeScript、前端工程化、JavaScript",
+    "resume_text": "候选人技能：React/Vue、性能优化、HTML/CSS、TypeScript、前端工程化、JavaScript；工作经验：null 年；案例编号：frontend-15",
     "expected_facts": [
       "React/Vue",
       "性能优化",
@@ -4518,7 +4518,7 @@
     "id": "full_stack-01",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Python、后端开发、数据库、JavaScript、云部署、TypeScript",
+    "resume_text": "候选人技能：Python、后端开发、数据库、JavaScript、云部署、TypeScript；工作经验：1 年；案例编号：full_stack-01",
     "expected_facts": [
       "Python",
       "后端开发",
@@ -4571,7 +4571,7 @@
     "id": "full_stack-02",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Python、JavaScript、后端开发、TypeScript、数据库、云部署",
+    "resume_text": "候选人技能：Python、JavaScript、后端开发、TypeScript、数据库、云部署；工作经验：3 年；案例编号：full_stack-02",
     "expected_facts": [
       "Python",
       "JavaScript",
@@ -4624,7 +4624,7 @@
     "id": "full_stack-03",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：JavaScript、后端开发、TypeScript、云部署、数据库、Python",
+    "resume_text": "候选人技能：JavaScript、后端开发、TypeScript、云部署、数据库、Python；工作经验：5 年；案例编号：full_stack-03",
     "expected_facts": [
       "JavaScript",
       "后端开发",
@@ -4677,7 +4677,7 @@
     "id": "full_stack-04",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：后端开发、云部署、数据库、Python、JavaScript、TypeScript",
+    "resume_text": "候选人技能：后端开发、云部署、数据库、Python、JavaScript、TypeScript；工作经验：1 年；案例编号：full_stack-04",
     "expected_facts": [
       "后端开发",
       "云部署",
@@ -4730,7 +4730,7 @@
     "id": "full_stack-05",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：TypeScript、Python、数据库、JavaScript、云部署、后端开发",
+    "resume_text": "候选人技能：TypeScript、Python、数据库、JavaScript、云部署、后端开发；工作经验：3 年；案例编号：full_stack-05",
     "expected_facts": [
       "TypeScript",
       "Python",
@@ -4783,7 +4783,7 @@
     "id": "full_stack-06",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：数据库、后端开发、云部署、TypeScript、JavaScript、Python",
+    "resume_text": "候选人技能：数据库、后端开发、云部署、TypeScript、JavaScript、Python；工作经验：5 年；案例编号：full_stack-06",
     "expected_facts": [
       "数据库",
       "后端开发",
@@ -4836,7 +4836,7 @@
     "id": "full_stack-07",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：后端开发、JavaScript、数据库",
+    "resume_text": "候选人技能：后端开发、JavaScript、数据库；工作经验：2 年；案例编号：full_stack-07",
     "expected_facts": [
       "后端开发",
       "JavaScript",
@@ -4871,7 +4871,7 @@
     "id": "full_stack-08",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：数据库、后端开发、JavaScript",
+    "resume_text": "候选人技能：数据库、后端开发、JavaScript；工作经验：4 年；案例编号：full_stack-08",
     "expected_facts": [
       "数据库",
       "后端开发",
@@ -4906,7 +4906,7 @@
     "id": "full_stack-09",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：JavaScript、后端开发、数据库",
+    "resume_text": "候选人技能：JavaScript、后端开发、数据库；工作经验：6 年；案例编号：full_stack-09",
     "expected_facts": [
       "JavaScript",
       "后端开发",
@@ -4941,7 +4941,7 @@
     "id": "full_stack-10",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：JavaScript、后端开发、数据库",
+    "resume_text": "候选人技能：JavaScript、后端开发、数据库；工作经验：8 年；案例编号：full_stack-10",
     "expected_facts": [
       "JavaScript",
       "后端开发",
@@ -4976,7 +4976,7 @@
     "id": "full_stack-11",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：JavaScript、后端开发、TypeScript",
+    "resume_text": "候选人技能：JavaScript、后端开发、TypeScript；工作经验：1 年；案例编号：full_stack-11",
     "expected_facts": [
       "JavaScript",
       "后端开发",
@@ -5011,7 +5011,7 @@
     "id": "full_stack-12",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：JavaScript、TypeScript、后端开发",
+    "resume_text": "候选人技能：JavaScript、TypeScript、后端开发；工作经验：3 年；案例编号：full_stack-12",
     "expected_facts": [
       "JavaScript",
       "TypeScript",
@@ -5046,7 +5046,7 @@
     "id": "full_stack-13",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：JavaScript、TypeScript、后端开发",
+    "resume_text": "候选人技能：JavaScript、TypeScript、后端开发；工作经验：5 年；案例编号：full_stack-13",
     "expected_facts": [
       "JavaScript",
       "TypeScript",
@@ -5081,7 +5081,7 @@
     "id": "full_stack-14",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：JavaScript、TypeScript",
+    "resume_text": "候选人技能：JavaScript、TypeScript；工作经验：3 年；案例编号：full_stack-14",
     "expected_facts": [
       "JavaScript",
       "TypeScript"
@@ -5110,7 +5110,7 @@
     "id": "full_stack-15",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Python、JavaScript、后端开发、数据库、TypeScript、云部署",
+    "resume_text": "候选人技能：Python、JavaScript、后端开发、数据库、TypeScript、云部署；工作经验：null 年；案例编号：full_stack-15",
     "expected_facts": [
       "Python",
       "JavaScript",
@@ -5163,7 +5163,7 @@
     "id": "test_development-01",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：自动化测试、CI/CD、Python/Java、测试平台、性能测试、接口测试",
+    "resume_text": "候选人技能：自动化测试、CI/CD、Python/Java、测试平台、性能测试、接口测试；工作经验：1 年；案例编号：test_development-01",
     "expected_facts": [
       "自动化测试",
       "CI/CD",
@@ -5216,7 +5216,7 @@
     "id": "test_development-02",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：接口测试、测试平台、CI/CD、Python/Java、自动化测试、性能测试",
+    "resume_text": "候选人技能：接口测试、测试平台、CI/CD、Python/Java、自动化测试、性能测试；工作经验：3 年；案例编号：test_development-02",
     "expected_facts": [
       "接口测试",
       "测试平台",
@@ -5269,7 +5269,7 @@
     "id": "test_development-03",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：测试平台、CI/CD、自动化测试、性能测试、Python/Java、接口测试",
+    "resume_text": "候选人技能：测试平台、CI/CD、自动化测试、性能测试、Python/Java、接口测试；工作经验：5 年；案例编号：test_development-03",
     "expected_facts": [
       "测试平台",
       "CI/CD",
@@ -5322,7 +5322,7 @@
     "id": "test_development-04",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：CI/CD、性能测试、自动化测试、Python/Java、测试平台、接口测试",
+    "resume_text": "候选人技能：CI/CD、性能测试、自动化测试、Python/Java、测试平台、接口测试；工作经验：1 年；案例编号：test_development-04",
     "expected_facts": [
       "CI/CD",
       "性能测试",
@@ -5375,7 +5375,7 @@
     "id": "test_development-05",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：接口测试、测试平台、CI/CD、性能测试、Python/Java、自动化测试",
+    "resume_text": "候选人技能：接口测试、测试平台、CI/CD、性能测试、Python/Java、自动化测试；工作经验：3 年；案例编号：test_development-05",
     "expected_facts": [
       "接口测试",
       "测试平台",
@@ -5428,7 +5428,7 @@
     "id": "test_development-06",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：接口测试、CI/CD、自动化测试、测试平台、性能测试、Python/Java",
+    "resume_text": "候选人技能：接口测试、CI/CD、自动化测试、测试平台、性能测试、Python/Java；工作经验：5 年；案例编号：test_development-06",
     "expected_facts": [
       "接口测试",
       "CI/CD",
@@ -5481,7 +5481,7 @@
     "id": "test_development-07",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Python/Java、自动化测试、接口测试",
+    "resume_text": "候选人技能：Python/Java、自动化测试、接口测试；工作经验：2 年；案例编号：test_development-07",
     "expected_facts": [
       "Python/Java",
       "自动化测试",
@@ -5516,7 +5516,7 @@
     "id": "test_development-08",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：接口测试、自动化测试、Python/Java",
+    "resume_text": "候选人技能：接口测试、自动化测试、Python/Java；工作经验：4 年；案例编号：test_development-08",
     "expected_facts": [
       "接口测试",
       "自动化测试",
@@ -5551,7 +5551,7 @@
     "id": "test_development-09",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：自动化测试、Python/Java、接口测试",
+    "resume_text": "候选人技能：自动化测试、Python/Java、接口测试；工作经验：6 年；案例编号：test_development-09",
     "expected_facts": [
       "自动化测试",
       "Python/Java",
@@ -5586,7 +5586,7 @@
     "id": "test_development-10",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Python/Java、自动化测试、接口测试",
+    "resume_text": "候选人技能：Python/Java、自动化测试、接口测试；工作经验：8 年；案例编号：test_development-10",
     "expected_facts": [
       "Python/Java",
       "自动化测试",
@@ -5621,7 +5621,7 @@
     "id": "test_development-11",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Python/Java、自动化测试、性能测试",
+    "resume_text": "候选人技能：Python/Java、自动化测试、性能测试；工作经验：1 年；案例编号：test_development-11",
     "expected_facts": [
       "Python/Java",
       "自动化测试",
@@ -5656,7 +5656,7 @@
     "id": "test_development-12",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：自动化测试、性能测试、Python/Java",
+    "resume_text": "候选人技能：自动化测试、性能测试、Python/Java；工作经验：3 年；案例编号：test_development-12",
     "expected_facts": [
       "自动化测试",
       "性能测试",
@@ -5691,7 +5691,7 @@
     "id": "test_development-13",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：性能测试、Python/Java、自动化测试",
+    "resume_text": "候选人技能：性能测试、Python/Java、自动化测试；工作经验：5 年；案例编号：test_development-13",
     "expected_facts": [
       "性能测试",
       "Python/Java",
@@ -5726,7 +5726,7 @@
     "id": "test_development-14",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：性能测试、自动化测试",
+    "resume_text": "候选人技能：性能测试、自动化测试；工作经验：3 年；案例编号：test_development-14",
     "expected_facts": [
       "性能测试",
       "自动化测试"
@@ -5755,7 +5755,7 @@
     "id": "test_development-15",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：CI/CD、自动化测试、接口测试、测试平台、性能测试、Python/Java",
+    "resume_text": "候选人技能：CI/CD、自动化测试、接口测试、测试平台、性能测试、Python/Java；工作经验：null 年；案例编号：test_development-15",
     "expected_facts": [
       "CI/CD",
       "自动化测试",
@@ -5808,7 +5808,7 @@
     "id": "devops_sre-01",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：CI/CD、Prometheus、Terraform、Kubernetes、容器、Linux",
+    "resume_text": "候选人技能：CI/CD、Prometheus、Terraform、Kubernetes、容器、Linux；工作经验：1 年；案例编号：devops_sre-01",
     "expected_facts": [
       "CI/CD",
       "Prometheus",
@@ -5861,7 +5861,7 @@
     "id": "devops_sre-02",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Linux、容器、Prometheus、Kubernetes、Terraform、CI/CD",
+    "resume_text": "候选人技能：Linux、容器、Prometheus、Kubernetes、Terraform、CI/CD；工作经验：3 年；案例编号：devops_sre-02",
     "expected_facts": [
       "Linux",
       "容器",
@@ -5914,7 +5914,7 @@
     "id": "devops_sre-03",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：CI/CD、Linux、容器、Terraform、Prometheus、Kubernetes",
+    "resume_text": "候选人技能：CI/CD、Linux、容器、Terraform、Prometheus、Kubernetes；工作经验：5 年；案例编号：devops_sre-03",
     "expected_facts": [
       "CI/CD",
       "Linux",
@@ -5967,7 +5967,7 @@
     "id": "devops_sre-04",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Linux、Kubernetes、Prometheus、Terraform、CI/CD、容器",
+    "resume_text": "候选人技能：Linux、Kubernetes、Prometheus、Terraform、CI/CD、容器；工作经验：1 年；案例编号：devops_sre-04",
     "expected_facts": [
       "Linux",
       "Kubernetes",
@@ -6020,7 +6020,7 @@
     "id": "devops_sre-05",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Kubernetes、CI/CD、Prometheus、Terraform、容器、Linux",
+    "resume_text": "候选人技能：Kubernetes、CI/CD、Prometheus、Terraform、容器、Linux；工作经验：3 年；案例编号：devops_sre-05",
     "expected_facts": [
       "Kubernetes",
       "CI/CD",
@@ -6073,7 +6073,7 @@
     "id": "devops_sre-06",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Linux、容器、Terraform、Kubernetes、CI/CD、Prometheus",
+    "resume_text": "候选人技能：Linux、容器、Terraform、Kubernetes、CI/CD、Prometheus；工作经验：5 年；案例编号：devops_sre-06",
     "expected_facts": [
       "Linux",
       "容器",
@@ -6126,7 +6126,7 @@
     "id": "devops_sre-07",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：容器、Linux、CI/CD",
+    "resume_text": "候选人技能：容器、Linux、CI/CD；工作经验：2 年；案例编号：devops_sre-07",
     "expected_facts": [
       "容器",
       "Linux",
@@ -6161,7 +6161,7 @@
     "id": "devops_sre-08",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：容器、CI/CD、Linux",
+    "resume_text": "候选人技能：容器、CI/CD、Linux；工作经验：4 年；案例编号：devops_sre-08",
     "expected_facts": [
       "容器",
       "CI/CD",
@@ -6196,7 +6196,7 @@
     "id": "devops_sre-09",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：容器、CI/CD、Linux",
+    "resume_text": "候选人技能：容器、CI/CD、Linux；工作经验：6 年；案例编号：devops_sre-09",
     "expected_facts": [
       "容器",
       "CI/CD",
@@ -6231,7 +6231,7 @@
     "id": "devops_sre-10",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Linux、CI/CD、容器",
+    "resume_text": "候选人技能：Linux、CI/CD、容器；工作经验：8 年；案例编号：devops_sre-10",
     "expected_facts": [
       "Linux",
       "CI/CD",
@@ -6266,7 +6266,7 @@
     "id": "devops_sre-11",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：容器、Kubernetes、Linux",
+    "resume_text": "候选人技能：容器、Kubernetes、Linux；工作经验：1 年；案例编号：devops_sre-11",
     "expected_facts": [
       "容器",
       "Kubernetes",
@@ -6301,7 +6301,7 @@
     "id": "devops_sre-12",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Linux、Kubernetes、容器",
+    "resume_text": "候选人技能：Linux、Kubernetes、容器；工作经验：3 年；案例编号：devops_sre-12",
     "expected_facts": [
       "Linux",
       "Kubernetes",
@@ -6336,7 +6336,7 @@
     "id": "devops_sre-13",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：容器、Kubernetes、Linux",
+    "resume_text": "候选人技能：容器、Kubernetes、Linux；工作经验：5 年；案例编号：devops_sre-13",
     "expected_facts": [
       "容器",
       "Kubernetes",
@@ -6371,7 +6371,7 @@
     "id": "devops_sre-14",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Kubernetes、Linux",
+    "resume_text": "候选人技能：Kubernetes、Linux；工作经验：3 年；案例编号：devops_sre-14",
     "expected_facts": [
       "Kubernetes",
       "Linux"
@@ -6400,7 +6400,7 @@
     "id": "devops_sre-15",
     "dataset_version": "recruitmatch-ai-v1",
     "label_source": "synthetic_ai",
-    "resume_text": "候选人技能：Prometheus、Terraform、容器、Kubernetes、Linux、CI/CD",
+    "resume_text": "候选人技能：Prometheus、Terraform、容器、Kubernetes、Linux、CI/CD；工作经验：null 年；案例编号：devops_sre-15",
     "expected_facts": [
       "Prometheus",
       "Terraform",
