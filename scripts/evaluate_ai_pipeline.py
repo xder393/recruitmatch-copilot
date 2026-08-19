@@ -23,6 +23,9 @@ from app.knowledge.index import RetrievedChunk  # noqa: E402
 from app.matching.engine import MatchingEngine  # noqa: E402
 from app.matching.hybrid import HybridMatchingEngine, HybridTenantContext  # noqa: E402
 from app.matching.schemas import CandidateJob  # noqa: E402
+from app.models.evaluation import AIEvaluationCase, AIEvaluationRun  # noqa: E402
+from app.repositories.evaluation import AIEvaluationRepository  # noqa: E402
+from app.database import create_engine_and_session  # noqa: E402
 from app.resumes.parser import HeuristicResumeParser  # noqa: E402
 from app.resumes.schemas import Evidence, ResumeProfile, SkillEvidence  # noqa: E402
 
@@ -179,16 +182,19 @@ def evaluate(dataset: list[dict], mode: str) -> dict:
     parser_outcomes: Counter[str] = Counter()
     grounding_outcomes: Counter[str] = Counter()
     semantic_fallbacks = 0
+    safe_cases = []
     for case in dataset:
         before_input, before_output = model.input_tokens, model.output_tokens
         before_calls = sum(model.calls.values())
         if mode == "rules-v1":
             profile = HeuristicResumeParser().parse(case["resume_text"])
             parser_outcomes["rules"] += 1
+            parser_status = "rules"
         else:
             parsed = LLMResumeParser(model, HeuristicResumeParser()).parse_with_metadata(case["resume_text"])
             profile = parsed.profile
             parser_outcomes[parsed.outcome.mode] += 1
+            parser_status = parsed.outcome.mode
         index = EvaluationIndex(case["id"], case["resume_text"], jobs)
         if mode == "hybrid-v1":
             ranked = HybridMatchingEngine(rules, SemanticMatcher(model, index)).rank(
@@ -205,6 +211,7 @@ def evaluate(dataset: list[dict], mode: str) -> dict:
 
         explanation_claims = []
         authorized_ids = []
+        grounding_status = "not_run"
         if mode != "rules-v1" and ranked:
             top = ranked[0]
             hits = index.source_chunks("synthetic-tenant", "resume", case["id"])
@@ -226,18 +233,40 @@ def evaluate(dataset: list[dict], mode: str) -> dict:
             )
             explanation_claims = _claims(explanation)
             grounding_outcomes[explanation.grounding_status] += 1
+            grounding_status = explanation.grounding_status
             authorized_ids = [item.citation_id for item in hits]
-        evaluated.append(
+        evaluated_case = {
+            "expected_facts": case["expected_facts"],
+            "extracted_facts": [item.name for item in profile.skills],
+            "expected_job_families": case["expected_job_families"],
+            "predictions": [item.job_id for item in ranked],
+            "claims": explanation_claims,
+            "authorized_ids": authorized_ids,
+            "latency_ms": sum(model.calls.values()) - before_calls,
+            "input_tokens": model.input_tokens - before_input,
+            "output_tokens": model.output_tokens - before_output,
+            "estimated_cost": 0,
+        }
+        evaluated.append(evaluated_case)
+        failures = []
+        if parser_status == "rules_fallback" and mode != "rules-v1":
+            failures.append("parser_fallback")
+        if not set(case["expected_facts"]).issubset({item.name for item in profile.skills}):
+            failures.append("extraction_gap")
+        if not any(item in set(case["expected_job_families"]) for item in evaluated_case["predictions"][:3]):
+            failures.append("top3_miss")
+        if grounding_status == "rejected_unsupported_claims":
+            failures.append("grounding_rejected")
+        if any(getattr(item, "semantic_score", 1) is None for item in ranked):
+            failures.append("semantic_fallback")
+        safe_cases.append(
             {
-                "expected_facts": case["expected_facts"],
-                "extracted_facts": [item.name for item in profile.skills],
-                "expected_job_families": case["expected_job_families"],
-                "predictions": [item.job_id for item in ranked],
-                "claims": explanation_claims,
-                "authorized_ids": authorized_ids,
-                "latency_ms": sum(model.calls.values()) - before_calls,
-                "input_tokens": model.input_tokens - before_input,
-                "output_tokens": model.output_tokens - before_output,
+                "case_key": case["id"],
+                "passed": not failures,
+                "failure_categories": failures,
+                "latency_ms": evaluated_case["latency_ms"],
+                "input_tokens": evaluated_case["input_tokens"],
+                "output_tokens": evaluated_case["output_tokens"],
                 "estimated_cost": 0,
             }
         )
@@ -257,7 +286,25 @@ def evaluate(dataset: list[dict], mode: str) -> dict:
             "semantic_fallback_results": semantic_fallbacks,
         },
         "metrics": evaluate_ai_cases(evaluated).model_dump(),
+        "cases": safe_cases,
     }
+
+
+def persist_result(result: dict, database_url: str, tenant_id: str) -> str:
+    _, session_factory = create_engine_and_session(database_url)
+    run = AIEvaluationRun(
+        tenant_id=tenant_id,
+        dataset_version=result["dataset_version"],
+        algorithm_version=result["algorithm_version"],
+        model_version=result["model_version"],
+        prompt_version=result["prompt_version"],
+        embedding_version=result["embedding_version"],
+        case_count=result["metrics"]["cases"],
+        metrics=result["metrics"],
+        cases=[AIEvaluationCase(**item) for item in result["cases"]],
+    )
+    with session_factory() as session:
+        return AIEvaluationRepository(session).add(run).id
 
 
 def main() -> None:
@@ -266,11 +313,17 @@ def main() -> None:
     parser.add_argument("--output", default="evaluation/recruitmatch-ai-v1-results.json")
     parser.add_argument("--mode", choices=["rules-v1", "llm-rules-v1", "hybrid-v1"], default="hybrid-v1")
     parser.add_argument("--fake-model", action="store_true")
+    parser.add_argument("--persist-database-url")
+    parser.add_argument("--tenant-id")
     args = parser.parse_args()
     if not args.fake_model:
         parser.error("this reproducible benchmark currently requires --fake-model")
     dataset = json.loads(Path(args.dataset).read_text(encoding="utf-8"))
     result = evaluate(dataset, args.mode)
+    if bool(args.persist_database_url) != bool(args.tenant_id):
+        parser.error("--persist-database-url and --tenant-id must be provided together")
+    if args.persist_database_url:
+        result["persisted_run_id"] = persist_result(result, args.persist_database_url, args.tenant_id)
     Path(args.output).write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(result, ensure_ascii=False))
 

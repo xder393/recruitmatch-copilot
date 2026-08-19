@@ -34,5 +34,1428 @@
     "p95_latency_ms": 13.0,
     "total_tokens": 157540,
     "estimated_cost": 0.0
-  }
+  },
+  "cases": [
+    {
+      "case_key": "ai_application-01",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 579,
+      "output_tokens": 565,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "ai_application-02",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 579,
+      "output_tokens": 565,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "ai_application-03",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 579,
+      "output_tokens": 565,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "ai_application-04",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 579,
+      "output_tokens": 565,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "ai_application-05",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 579,
+      "output_tokens": 565,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "ai_application-06",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 579,
+      "output_tokens": 565,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "ai_application-07",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 519,
+      "output_tokens": 516,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "ai_application-08",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 519,
+      "output_tokens": 516,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "ai_application-09",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 519,
+      "output_tokens": 516,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "ai_application-10",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 519,
+      "output_tokens": 516,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "ai_application-11",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 507,
+      "output_tokens": 514,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "ai_application-12",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 507,
+      "output_tokens": 513,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "ai_application-13",
+      "passed": false,
+      "failure_categories": [
+        "parser_fallback"
+      ],
+      "latency_ms": 13,
+      "input_tokens": 493,
+      "output_tokens": 428,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "ai_application-14",
+      "passed": false,
+      "failure_categories": [
+        "semantic_fallback"
+      ],
+      "latency_ms": 12,
+      "input_tokens": 483,
+      "output_tokens": 506,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "ai_application-15",
+      "passed": false,
+      "failure_categories": [
+        "grounding_rejected"
+      ],
+      "latency_ms": 12,
+      "input_tokens": 585,
+      "output_tokens": 577,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "llm_algorithm-01",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 569,
+      "output_tokens": 559,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "llm_algorithm-02",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 569,
+      "output_tokens": 559,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "llm_algorithm-03",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 569,
+      "output_tokens": 559,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "llm_algorithm-04",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 569,
+      "output_tokens": 559,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "llm_algorithm-05",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 569,
+      "output_tokens": 559,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "llm_algorithm-06",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 569,
+      "output_tokens": 559,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "llm_algorithm-07",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 521,
+      "output_tokens": 512,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "llm_algorithm-08",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 521,
+      "output_tokens": 512,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "llm_algorithm-09",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 521,
+      "output_tokens": 512,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "llm_algorithm-10",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 521,
+      "output_tokens": 512,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "llm_algorithm-11",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 499,
+      "output_tokens": 508,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "llm_algorithm-12",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 499,
+      "output_tokens": 508,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "llm_algorithm-13",
+      "passed": false,
+      "failure_categories": [
+        "parser_fallback",
+        "extraction_gap"
+      ],
+      "latency_ms": 13,
+      "input_tokens": 485,
+      "output_tokens": 422,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "llm_algorithm-14",
+      "passed": false,
+      "failure_categories": [
+        "semantic_fallback"
+      ],
+      "latency_ms": 12,
+      "input_tokens": 475,
+      "output_tokens": 501,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "llm_algorithm-15",
+      "passed": false,
+      "failure_categories": [
+        "grounding_rejected"
+      ],
+      "latency_ms": 12,
+      "input_tokens": 579,
+      "output_tokens": 572,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "machine_learning-01",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 576,
+      "output_tokens": 571,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "machine_learning-02",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 576,
+      "output_tokens": 571,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "machine_learning-03",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 576,
+      "output_tokens": 571,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "machine_learning-04",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 576,
+      "output_tokens": 571,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "machine_learning-05",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 576,
+      "output_tokens": 571,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "machine_learning-06",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 576,
+      "output_tokens": 571,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "machine_learning-07",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 504,
+      "output_tokens": 519,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "machine_learning-08",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 504,
+      "output_tokens": 519,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "machine_learning-09",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 504,
+      "output_tokens": 519,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "machine_learning-10",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 504,
+      "output_tokens": 519,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "machine_learning-11",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 531,
+      "output_tokens": 524,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "machine_learning-12",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 531,
+      "output_tokens": 524,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "machine_learning-13",
+      "passed": false,
+      "failure_categories": [
+        "parser_fallback",
+        "extraction_gap",
+        "top3_miss"
+      ],
+      "latency_ms": 13,
+      "input_tokens": 520,
+      "output_tokens": 433,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "machine_learning-14",
+      "passed": false,
+      "failure_categories": [
+        "semantic_fallback"
+      ],
+      "latency_ms": 12,
+      "input_tokens": 516,
+      "output_tokens": 518,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "machine_learning-15",
+      "passed": false,
+      "failure_categories": [
+        "grounding_rejected"
+      ],
+      "latency_ms": 12,
+      "input_tokens": 586,
+      "output_tokens": 583,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "data_engineering-01",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 552,
+      "output_tokens": 567,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "data_engineering-02",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 552,
+      "output_tokens": 567,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "data_engineering-03",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 552,
+      "output_tokens": 567,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "data_engineering-04",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 552,
+      "output_tokens": 567,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "data_engineering-05",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 552,
+      "output_tokens": 567,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "data_engineering-06",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 552,
+      "output_tokens": 567,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "data_engineering-07",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 502,
+      "output_tokens": 518,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "data_engineering-08",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 502,
+      "output_tokens": 518,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "data_engineering-09",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 502,
+      "output_tokens": 518,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "data_engineering-10",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 502,
+      "output_tokens": 518,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "data_engineering-11",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 507,
+      "output_tokens": 520,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "data_engineering-12",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 507,
+      "output_tokens": 520,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "data_engineering-13",
+      "passed": false,
+      "failure_categories": [
+        "parser_fallback"
+      ],
+      "latency_ms": 13,
+      "input_tokens": 493,
+      "output_tokens": 435,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "data_engineering-14",
+      "passed": false,
+      "failure_categories": [
+        "semantic_fallback"
+      ],
+      "latency_ms": 12,
+      "input_tokens": 484,
+      "output_tokens": 513,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "data_engineering-15",
+      "passed": false,
+      "failure_categories": [
+        "grounding_rejected"
+      ],
+      "latency_ms": 12,
+      "input_tokens": 562,
+      "output_tokens": 579,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "data_analysis-01",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 545,
+      "output_tokens": 556,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "data_analysis-02",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 545,
+      "output_tokens": 556,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "data_analysis-03",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 545,
+      "output_tokens": 556,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "data_analysis-04",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 545,
+      "output_tokens": 556,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "data_analysis-05",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 545,
+      "output_tokens": 556,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "data_analysis-06",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 545,
+      "output_tokens": 556,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "data_analysis-07",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 480,
+      "output_tokens": 505,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "data_analysis-08",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 480,
+      "output_tokens": 505,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "data_analysis-09",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 480,
+      "output_tokens": 505,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "data_analysis-10",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 480,
+      "output_tokens": 505,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "data_analysis-11",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 482,
+      "output_tokens": 506,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "data_analysis-12",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 482,
+      "output_tokens": 505,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "data_analysis-13",
+      "passed": false,
+      "failure_categories": [
+        "parser_fallback",
+        "extraction_gap"
+      ],
+      "latency_ms": 13,
+      "input_tokens": 471,
+      "output_tokens": 425,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "data_analysis-14",
+      "passed": false,
+      "failure_categories": [
+        "semantic_fallback"
+      ],
+      "latency_ms": 12,
+      "input_tokens": 471,
+      "output_tokens": 503,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "data_analysis-15",
+      "passed": false,
+      "failure_categories": [
+        "grounding_rejected"
+      ],
+      "latency_ms": 12,
+      "input_tokens": 554,
+      "output_tokens": 568,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "backend-01",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 519,
+      "output_tokens": 533,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "backend-02",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 519,
+      "output_tokens": 533,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "backend-03",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 519,
+      "output_tokens": 533,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "backend-04",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 519,
+      "output_tokens": 533,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "backend-05",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 519,
+      "output_tokens": 533,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "backend-06",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 519,
+      "output_tokens": 533,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "backend-07",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 473,
+      "output_tokens": 486,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "backend-08",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 473,
+      "output_tokens": 486,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "backend-09",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 473,
+      "output_tokens": 486,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "backend-10",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 473,
+      "output_tokens": 485,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "backend-11",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 462,
+      "output_tokens": 484,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "backend-12",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 462,
+      "output_tokens": 484,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "backend-13",
+      "passed": false,
+      "failure_categories": [
+        "parser_fallback",
+        "extraction_gap",
+        "top3_miss"
+      ],
+      "latency_ms": 13,
+      "input_tokens": 455,
+      "output_tokens": 404,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "backend-14",
+      "passed": false,
+      "failure_categories": [
+        "semantic_fallback"
+      ],
+      "latency_ms": 12,
+      "input_tokens": 450,
+      "output_tokens": 479,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "backend-15",
+      "passed": false,
+      "failure_categories": [
+        "grounding_rejected"
+      ],
+      "latency_ms": 12,
+      "input_tokens": 527,
+      "output_tokens": 545,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "frontend-01",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 568,
+      "output_tokens": 545,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "frontend-02",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 568,
+      "output_tokens": 545,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "frontend-03",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 568,
+      "output_tokens": 545,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "frontend-04",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 568,
+      "output_tokens": 545,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "frontend-05",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 568,
+      "output_tokens": 545,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "frontend-06",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 568,
+      "output_tokens": 545,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "frontend-07",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 501,
+      "output_tokens": 494,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "frontend-08",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 501,
+      "output_tokens": 494,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "frontend-09",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 501,
+      "output_tokens": 494,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "frontend-10",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 501,
+      "output_tokens": 494,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "frontend-11",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 506,
+      "output_tokens": 495,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "frontend-12",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 506,
+      "output_tokens": 495,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "frontend-13",
+      "passed": false,
+      "failure_categories": [
+        "parser_fallback",
+        "extraction_gap"
+      ],
+      "latency_ms": 13,
+      "input_tokens": 491,
+      "output_tokens": 403,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "frontend-14",
+      "passed": false,
+      "failure_categories": [
+        "semantic_fallback"
+      ],
+      "latency_ms": 12,
+      "input_tokens": 477,
+      "output_tokens": 487,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "frontend-15",
+      "passed": false,
+      "failure_categories": [
+        "grounding_rejected"
+      ],
+      "latency_ms": 12,
+      "input_tokens": 578,
+      "output_tokens": 557,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "full_stack-01",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 546,
+      "output_tokens": 549,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "full_stack-02",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 546,
+      "output_tokens": 549,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "full_stack-03",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 546,
+      "output_tokens": 549,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "full_stack-04",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 546,
+      "output_tokens": 549,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "full_stack-05",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 546,
+      "output_tokens": 549,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "full_stack-06",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 546,
+      "output_tokens": 549,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "full_stack-07",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 482,
+      "output_tokens": 498,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "full_stack-08",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 482,
+      "output_tokens": 498,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "full_stack-09",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 482,
+      "output_tokens": 498,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "full_stack-10",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 482,
+      "output_tokens": 498,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "full_stack-11",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 504,
+      "output_tokens": 502,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "full_stack-12",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 504,
+      "output_tokens": 502,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "full_stack-13",
+      "passed": false,
+      "failure_categories": [
+        "parser_fallback",
+        "extraction_gap"
+      ],
+      "latency_ms": 13,
+      "input_tokens": 491,
+      "output_tokens": 410,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "full_stack-14",
+      "passed": false,
+      "failure_categories": [
+        "semantic_fallback"
+      ],
+      "latency_ms": 12,
+      "input_tokens": 488,
+      "output_tokens": 494,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "full_stack-15",
+      "passed": false,
+      "failure_categories": [
+        "grounding_rejected"
+      ],
+      "latency_ms": 12,
+      "input_tokens": 556,
+      "output_tokens": 561,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "test_development-01",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 576,
+      "output_tokens": 570,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "test_development-02",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 576,
+      "output_tokens": 570,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "test_development-03",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 576,
+      "output_tokens": 570,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "test_development-04",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 576,
+      "output_tokens": 570,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "test_development-05",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 576,
+      "output_tokens": 570,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "test_development-06",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 576,
+      "output_tokens": 570,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "test_development-07",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 528,
+      "output_tokens": 523,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "test_development-08",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 528,
+      "output_tokens": 523,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "test_development-09",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 528,
+      "output_tokens": 523,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "test_development-10",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 528,
+      "output_tokens": 523,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "test_development-11",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 528,
+      "output_tokens": 523,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "test_development-12",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 528,
+      "output_tokens": 523,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "test_development-13",
+      "passed": false,
+      "failure_categories": [
+        "parser_fallback",
+        "extraction_gap",
+        "top3_miss"
+      ],
+      "latency_ms": 13,
+      "input_tokens": 515,
+      "output_tokens": 433,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "test_development-14",
+      "passed": false,
+      "failure_categories": [
+        "semantic_fallback"
+      ],
+      "latency_ms": 12,
+      "input_tokens": 492,
+      "output_tokens": 513,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "test_development-15",
+      "passed": false,
+      "failure_categories": [
+        "grounding_rejected"
+      ],
+      "latency_ms": 12,
+      "input_tokens": 583,
+      "output_tokens": 583,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "devops_sre-01",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 562,
+      "output_tokens": 551,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "devops_sre-02",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 562,
+      "output_tokens": 551,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "devops_sre-03",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 562,
+      "output_tokens": 551,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "devops_sre-04",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 562,
+      "output_tokens": 551,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "devops_sre-05",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 562,
+      "output_tokens": 551,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "devops_sre-06",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 562,
+      "output_tokens": 551,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "devops_sre-07",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 466,
+      "output_tokens": 495,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "devops_sre-08",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 466,
+      "output_tokens": 495,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "devops_sre-09",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 466,
+      "output_tokens": 495,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "devops_sre-10",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 466,
+      "output_tokens": 496,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "devops_sre-11",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 480,
+      "output_tokens": 498,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "devops_sre-12",
+      "passed": true,
+      "failure_categories": [],
+      "latency_ms": 12,
+      "input_tokens": 480,
+      "output_tokens": 498,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "devops_sre-13",
+      "passed": false,
+      "failure_categories": [
+        "parser_fallback",
+        "extraction_gap"
+      ],
+      "latency_ms": 13,
+      "input_tokens": 467,
+      "output_tokens": 412,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "devops_sre-14",
+      "passed": false,
+      "failure_categories": [
+        "semantic_fallback"
+      ],
+      "latency_ms": 12,
+      "input_tokens": 470,
+      "output_tokens": 493,
+      "estimated_cost": 0
+    },
+    {
+      "case_key": "devops_sre-15",
+      "passed": false,
+      "failure_categories": [
+        "grounding_rejected"
+      ],
+      "latency_ms": 12,
+      "input_tokens": 568,
+      "output_tokens": 564,
+      "estimated_cost": 0
+    }
+  ]
 }

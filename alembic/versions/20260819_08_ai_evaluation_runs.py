@@ -12,7 +12,7 @@ def upgrade() -> None:
     op.create_table(
         "ai_evaluation_runs",
         sa.Column("id", sa.String(36), primary_key=True),
-        sa.Column("tenant_id", sa.String(36), sa.ForeignKey("tenants.id", ondelete="CASCADE"), nullable=True),
+        sa.Column("tenant_id", sa.String(36), sa.ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False),
         sa.Column("dataset_version", sa.String(100), nullable=False),
         sa.Column("algorithm_version", sa.String(100), nullable=False),
         sa.Column("model_version", sa.String(200), nullable=False),
@@ -21,12 +21,13 @@ def upgrade() -> None:
         sa.Column("case_count", sa.Integer(), nullable=False),
         sa.Column("metrics", sa.JSON(), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.UniqueConstraint(
-            "tenant_id", "dataset_version", "algorithm_version", "model_version", "prompt_version",
-            "embedding_version", name="uq_ai_evaluation_version_set",
-        ),
     )
     op.create_index("ix_ai_evaluation_runs_tenant_id", "ai_evaluation_runs", ["tenant_id"])
+    op.create_index(
+        "ix_ai_evaluation_version_set",
+        "ai_evaluation_runs",
+        ["tenant_id", "dataset_version", "algorithm_version", "model_version", "prompt_version", "embedding_version"],
+    )
     op.create_table(
         "ai_evaluation_cases",
         sa.Column("id", sa.String(36), primary_key=True),

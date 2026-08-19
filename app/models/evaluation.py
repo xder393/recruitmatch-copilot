@@ -3,9 +3,9 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, JSON, String, UniqueConstraint
+from sqlalchemy import DateTime, Float, ForeignKey, Index, Integer, JSON, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -22,19 +22,19 @@ def _utcnow() -> datetime:
 class AIEvaluationRun(Base):
     __tablename__ = "ai_evaluation_runs"
     __table_args__ = (
-        UniqueConstraint(
+        Index(
+            "ix_ai_evaluation_version_set",
             "tenant_id",
             "dataset_version",
             "algorithm_version",
             "model_version",
             "prompt_version",
             "embedding_version",
-            name="uq_ai_evaluation_version_set",
         ),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
-    tenant_id: Mapped[Optional[str]] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), index=True)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), index=True, nullable=False)
     dataset_version: Mapped[str] = mapped_column(String(100), nullable=False)
     algorithm_version: Mapped[str] = mapped_column(String(100), nullable=False)
     model_version: Mapped[str] = mapped_column(String(200), nullable=False)
