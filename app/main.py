@@ -107,7 +107,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         init_recruiting_state(app, settings)
-        init_state(app, settings)
+        if settings.legacy_rag_enabled:
+            init_state(app, settings)
         yield
 
     app = FastAPI(

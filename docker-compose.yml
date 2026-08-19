@@ -46,6 +46,11 @@ services:
     volumes:
       - ./data:/app/data              # 上传的资料 + 索引 + 会话
       - hf-cache:/root/.cache/huggingface   # embedding 模型缓存
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/ready', timeout=2)"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
     restart: unless-stopped
 
   recruitmatch-worker:

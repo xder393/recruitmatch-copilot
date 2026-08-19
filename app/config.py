@@ -33,6 +33,18 @@ def _get_float(name: str, default: float) -> float:
         raise ConfigError(f"环境变量 {name} 必须是数字，当前值: {raw!r}") from exc
 
 
+def _get_bool(name: str, default: bool) -> bool:
+    raw = os.getenv(name)
+    if raw is None or raw == "":
+        return default
+    normalized = raw.strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off"}:
+        return False
+    raise ConfigError(f"环境变量 {name} 必须是布尔值，当前值: {raw!r}")
+
+
 @dataclass(frozen=True)
 class Settings:
     """全局配置对象。字段名与环境变量一一对应（大写）。"""
@@ -69,6 +81,7 @@ class Settings:
     # —— Agent ——
     llm_temperature: float = 0.2
     max_agent_iterations: int = 3
+    legacy_rag_enabled: bool = False
 
     @classmethod
     def load(cls) -> "Settings":
@@ -92,12 +105,13 @@ class Settings:
             similarity_threshold=_get_float("SIMILARITY_THRESHOLD", cls.similarity_threshold),
             llm_temperature=_get_float("LLM_TEMPERATURE", cls.llm_temperature),
             max_agent_iterations=_get_int("MAX_AGENT_ITERATIONS", cls.max_agent_iterations),
+            legacy_rag_enabled=_get_bool("LEGACY_RAG_ENABLED", cls.legacy_rag_enabled),
         )
         settings.validate()
         return settings
 
     def validate(self) -> None:
-        if not self.api_key:
+        if self.legacy_rag_enabled and not self.api_key:
             raise ConfigError("缺少 OPENAI_API_KEY，请在 .env 中配置")
         if self.chunk_overlap >= self.chunk_size:
             raise ConfigError("CHUNK_OVERLAP 必须小于 CHUNK_SIZE")
