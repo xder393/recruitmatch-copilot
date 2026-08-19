@@ -24,7 +24,7 @@ from app.services.ingestion import IngestionService
 from app.storage.conversations import ConversationStore
 from app.storage.vector_store import VectorStore
 from app.database import Base, create_engine_and_session
-from app.models import Job, JobTemplate, JobVersion, Tenant, User  # noqa: F401
+from app.models import AuditLog, Job, JobTemplate, JobVersion, ModelTrace, Tenant, User  # noqa: F401
 from app.security.tokens import TokenSettings
 from app.resumes.artifacts import LocalArtifactStore
 from app.resumes.parser import HeuristicResumeParser
@@ -134,6 +134,24 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             if response is not None:
                 response.headers["X-Request-ID"] = request_id
             logger.info("%s %s -> %s (%.1fms)", request.method, request.url.path, status, latency_ms)
+            if response is not None and not request.url.path.startswith("/api/v1/health/"):
+                principal = getattr(request.state, "principal", None)
+                try:
+                    with request.app.state.session_factory() as audit_session:
+                        audit_session.add(
+                            AuditLog(
+                                tenant_id=getattr(principal, "tenant_id", None),
+                                user_id=getattr(principal, "user_id", None),
+                                request_id=request_id,
+                                method=request.method,
+                                path=request.url.path,
+                                status_code=int(status),
+                                latency_ms=latency_ms,
+                            )
+                        )
+                        audit_session.commit()
+                except Exception:
+                    logger.warning("审计日志写入失败 request_id=%s", request_id)
             request_id_var.reset(token)
 
     # ---- 异常处理 ----

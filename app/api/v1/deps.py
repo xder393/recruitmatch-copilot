@@ -23,9 +23,12 @@ def get_token_settings(request: Request) -> TokenSettings:
 
 
 def get_current_principal(
+    request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(_bearer),
     token_settings: TokenSettings = Depends(get_token_settings),
 ) -> Principal:
     if credentials is None or credentials.scheme.lower() != "bearer":
         raise AuthenticationError("请先登录")
-    return decode_access_token(credentials.credentials, token_settings)
+    principal = decode_access_token(credentials.credentials, token_settings)
+    request.state.principal = principal
+    return principal
