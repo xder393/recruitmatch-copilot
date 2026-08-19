@@ -30,6 +30,8 @@ from app.resumes.artifacts import LocalArtifactStore
 from app.resumes.parser import HeuristicResumeParser
 from app.services.resume_processing import ResumeProcessingService
 from app.tasks.dispatcher import CeleryTaskDispatcher, InlineTaskDispatcher
+from app.ai.gateway import OpenAICompatibleGateway
+from app.ai.resume_parser import LLMResumeParser
 
 logger = get_logger(__name__)
 
@@ -78,7 +80,7 @@ def init_state(app: FastAPI, settings: Settings) -> None:
     logger.info("应用初始化完成，知识库共 %d 块", len(store))
 
 
-def init_recruiting_state(app: FastAPI, settings: Settings) -> None:
+def init_recruiting_state(app: FastAPI, settings: Settings, structured_model=None) -> None:
     """Initialize recruiting persistence once per application instance."""
     if getattr(app.state, "_recruiting_initialized", False):
         return
@@ -91,7 +93,18 @@ def init_recruiting_state(app: FastAPI, settings: Settings) -> None:
         access_token_minutes=settings.access_token_minutes,
     )
     artifact_store = LocalArtifactStore(Path(settings.artifact_dir))
-    processor = ResumeProcessingService(session_factory, artifact_store, HeuristicResumeParser())
+    fallback_parser = HeuristicResumeParser()
+    parser = (
+        LLMResumeParser(
+            structured_model or OpenAICompatibleGateway(settings),
+            fallback_parser,
+            prompt_version=settings.resume_prompt_version,
+            max_evidence_characters=settings.max_evidence_characters,
+        )
+        if settings.ai_enabled
+        else fallback_parser
+    )
+    processor = ResumeProcessingService(session_factory, artifact_store, parser)
     app.state.artifact_store = artifact_store
     app.state.resume_processor = processor
     app.state.task_dispatcher = (
@@ -100,13 +113,13 @@ def init_recruiting_state(app: FastAPI, settings: Settings) -> None:
     app.state._recruiting_initialized = True
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
+def create_app(settings: Settings | None = None, structured_model=None) -> FastAPI:
     settings = settings or Settings.load()
     setup_logging()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        init_recruiting_state(app, settings)
+        init_recruiting_state(app, settings, structured_model)
         if settings.legacy_rag_enabled:
             init_state(app, settings)
         yield

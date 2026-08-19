@@ -2,8 +2,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import time
 
-from app.ai.contracts import ModelRequest, StructuredModel
+from app.ai.contracts import ModelRequest, ModelResponse, StructuredModel
 from app.ai.evidence import contains_sensitive_trait, evidence_resolves
 from app.ai.gateway import ModelGatewayError
 from app.resumes.schemas import ResumeProfile, SkillEvidence
@@ -14,6 +15,16 @@ class ParseOutcome:
     mode: str
     invalid_fact_count: int = 0
     fallback_reason: str | None = None
+
+
+@dataclass(frozen=True)
+class ResumeParseResult:
+    profile: ResumeProfile
+    outcome: ParseOutcome
+    request: ModelRequest[ResumeProfile]
+    response: ModelResponse[ResumeProfile] | None = None
+    error: ModelGatewayError | None = None
+    latency_ms: float = 0.0
 
 
 class LLMResumeParser:
@@ -31,6 +42,10 @@ class LLMResumeParser:
         self.last_outcome = ParseOutcome(mode="not_run")
 
     def parse(self, text: str) -> ResumeProfile:
+        return self.parse_with_metadata(text).profile
+
+    def parse_with_metadata(self, text: str) -> ResumeParseResult:
+        started = time.perf_counter()
         bounded = text[: self.max_evidence_characters]
         request = self._request(bounded, repair=False)
         repaired = False
@@ -38,19 +53,26 @@ class LLMResumeParser:
             response = self.model.generate(request)
         except ModelGatewayError as exc:
             if exc.code != "invalid_output":
-                return self._fallback(text, exc.code)
+                return self._fallback_result(text, request, exc, started)
             repaired = True
+            request = self._request(bounded, repair=True)
             try:
-                response = self.model.generate(self._request(bounded, repair=True))
+                response = self.model.generate(request)
             except ModelGatewayError as repair_error:
-                return self._fallback(text, repair_error.code)
+                return self._fallback_result(text, request, repair_error, started)
         validated, invalid_count = self._ground(response.value, bounded)
         merged = self._merge(validated, self.fallback.parse(text))
         self.last_outcome = ParseOutcome(
             mode="llm_repaired" if repaired else "llm",
             invalid_fact_count=invalid_count,
         )
-        return merged
+        return ResumeParseResult(
+            profile=merged,
+            outcome=self.last_outcome,
+            request=request,
+            response=response,
+            latency_ms=(time.perf_counter() - started) * 1000,
+        )
 
     def _request(self, text: str, repair: bool) -> ModelRequest[ResumeProfile]:
         system = (
@@ -67,9 +89,21 @@ class LLMResumeParser:
             schema=ResumeProfile,
         )
 
-    def _fallback(self, text: str, reason: str) -> ResumeProfile:
-        self.last_outcome = ParseOutcome(mode="rules_fallback", fallback_reason=reason)
-        return self.fallback.parse(text)
+    def _fallback_result(
+        self,
+        text: str,
+        request: ModelRequest[ResumeProfile],
+        error: ModelGatewayError,
+        started: float,
+    ) -> ResumeParseResult:
+        self.last_outcome = ParseOutcome(mode="rules_fallback", fallback_reason=error.code)
+        return ResumeParseResult(
+            profile=self.fallback.parse(text),
+            outcome=self.last_outcome,
+            request=request,
+            error=error,
+            latency_ms=(time.perf_counter() - started) * 1000,
+        )
 
     @staticmethod
     def _ground(profile: ResumeProfile, source: str) -> tuple[ResumeProfile, int]:

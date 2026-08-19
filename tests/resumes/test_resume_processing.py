@@ -77,3 +77,31 @@ def test_processing_failure_records_stable_error_without_raising(tmp_path):
         assert resume.status is ResumeStatus.FAILED
         assert resume.error_code == "artifact_read_failed"
         assert "disk secret" not in (resume.error_message or "")
+
+
+def test_traceable_parser_result_is_written_in_same_success_flow(tmp_path):
+    from app.ai.resume_parser import LLMResumeParser
+    from app.models.operations import ModelTrace
+    from app.resumes.parser import HeuristicResumeParser
+    from app.services.resume_processing import ResumeProcessingService
+    from tests.ai.fakes import FakeStructuredModel
+
+    factory, tenant_id, resume_id = _resume_database(tmp_path)
+    parser = LLMResumeParser(
+        FakeStructuredModel(
+            {
+                "resume_extract": {
+                    "skills": [
+                        {"name": "Python", "evidence": {"start": 0, "end": 6, "text": "Python"}}
+                    ]
+                }
+            }
+        ),
+        HeuristicResumeParser(),
+    )
+    ResumeProcessingService(factory, _MemoryStore(b"Python developer"), parser).process(tenant_id, resume_id)
+
+    with factory() as session:
+        traces = session.query(ModelTrace).all()
+        assert len(traces) == 1
+        assert traces[0].business_id == resume_id

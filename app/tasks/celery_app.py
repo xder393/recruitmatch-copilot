@@ -11,6 +11,8 @@ from app.database import create_engine_and_session
 from app.resumes.artifacts import LocalArtifactStore
 from app.resumes.parser import HeuristicResumeParser
 from app.services.resume_processing import ResumeProcessingService
+from app.ai.gateway import OpenAICompatibleGateway
+from app.ai.resume_parser import LLMResumeParser
 
 celery_app = Celery("recruitmatch", broker=os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0"))
 celery_app.conf.update(
@@ -24,9 +26,20 @@ celery_app.conf.update(
 def process_resume_task(tenant_id: str, resume_id: str) -> None:
     settings = Settings.load()
     _, session_factory = create_engine_and_session(settings.database_url)
+    fallback_parser = HeuristicResumeParser()
+    parser = (
+        LLMResumeParser(
+            OpenAICompatibleGateway(settings),
+            fallback_parser,
+            prompt_version=settings.resume_prompt_version,
+            max_evidence_characters=settings.max_evidence_characters,
+        )
+        if settings.ai_enabled
+        else fallback_parser
+    )
     processor = ResumeProcessingService(
         session_factory,
         LocalArtifactStore(Path(settings.artifact_dir)),
-        HeuristicResumeParser(),
+        parser,
     )
     processor.process(tenant_id, resume_id)

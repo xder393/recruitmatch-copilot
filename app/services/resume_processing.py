@@ -11,6 +11,7 @@ from app.domain.enums import ResumeStatus
 from app.models.resumes import Resume
 from app.resumes.extractors import extract_text
 from app.resumes.schemas import ResumeProfile
+from app.repositories.model_traces import ModelTraceWriter
 
 
 class ArtifactReader(Protocol):
@@ -50,7 +51,10 @@ class ResumeProcessingService:
 
         try:
             text = extract_text(filename, content)
-            profile = self.parser.parse(text)
+            parse_result = (
+                self.parser.parse_with_metadata(text) if hasattr(self.parser, "parse_with_metadata") else None
+            )
+            profile = parse_result.profile if parse_result is not None else self.parser.parse(text)
         except AppError as exc:
             self._mark_failed(tenant_id, resume_id, exc.code, exc.message)
             return
@@ -67,6 +71,27 @@ class ResumeProcessingService:
             resume.status = ResumeStatus.SUCCEEDED
             resume.error_code = None
             resume.error_message = None
+            if parse_result is not None:
+                writer = ModelTraceWriter(session)
+                if parse_result.response is not None:
+                    writer.succeeded(
+                        tenant_id,
+                        "resume_extract",
+                        resume_id,
+                        [resume_id],
+                        parse_result.request,
+                        parse_result.response,
+                    )
+                elif parse_result.error is not None:
+                    writer.failed(
+                        tenant_id,
+                        "resume_extract",
+                        resume_id,
+                        [resume_id],
+                        parse_result.request,
+                        parse_result.error,
+                        parse_result.latency_ms,
+                    )
             session.commit()
 
     def _mark_failed(self, tenant_id: str, resume_id: str, code: str, message: str) -> None:

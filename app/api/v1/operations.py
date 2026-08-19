@@ -1,5 +1,5 @@
 """Model-independent health and tenant-scoped operations summaries."""
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
@@ -22,6 +22,18 @@ def liveness():
 def readiness(session: Session = Depends(get_db)):
     session.execute(text("SELECT 1"))
     return {"status": "ready", "database": "ok"}
+
+
+@router.get("/ai/status")
+def ai_status(request: Request):
+    settings = request.app.state.settings
+    return {
+        "enabled": settings.ai_enabled,
+        "provider": settings.model_provider,
+        "model": settings.chat_model,
+        "embedding_model": settings.embedding_model,
+        "core_available": True,
+    }
 
 
 @router.get("/analytics/summary")
