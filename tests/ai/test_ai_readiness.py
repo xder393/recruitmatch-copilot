@@ -41,6 +41,8 @@ def test_ai_status_is_disabled_without_disabling_core(tmp_path):
         body = client.get("/api/v1/ai/status").json()
         assert body == {
             "enabled": False,
+            "degraded": True,
+            "fallback_mode": "rules-v1",
             "provider": "openai-compatible",
             "model": "deepseek-chat",
             "embedding_model": "BAAI/bge-small-zh-v1.5",
