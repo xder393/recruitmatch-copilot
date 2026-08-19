@@ -68,6 +68,7 @@ def test_match_api_returns_explainable_top_three_and_accepts_feedback(matching_c
     assert response.status_code == 201
     run = response.json()
     assert run["algorithm_version"] == "rules-v1"
+    assert run["results"][0]["rule_score"] is None
     assert [item["rank"] for item in run["results"]] == [1, 2, 3]
     assert run["results"][0]["job_title"] == "AI 应用"
     assert [item["text"] for item in run["results"][0]["evidence"]] == ["Python", "FastAPI", "RAG"]
@@ -79,6 +80,31 @@ def test_match_api_returns_explainable_top_three_and_accepts_feedback(matching_c
     )
     assert feedback.status_code == 201
     assert feedback.json()["action"] == "confirm"
+
+
+def test_hybrid_mode_persists_score_components(matching_client):
+    from app.ai.semantic_matching import SemanticProjectScore
+    from app.matching.engine import MatchingEngine
+    from app.matching.hybrid import HybridMatchingEngine
+
+    class Semantic:
+        def score(self, tenant_id, resume_id, job_version_id):
+            return SemanticProjectScore(
+                score=0.75,
+                rationale="项目证据匹配",
+                resume_citation_ids=[f"resume-{resume_id}"],
+                job_citation_ids=[f"job-{job_version_id}"],
+            )
+
+    client, resume_id = matching_client
+    client.app.state.hybrid_matching_engine = HybridMatchingEngine(MatchingEngine(), Semantic())
+    response = client.post(f"/api/v1/resumes/{resume_id}/matches?mode=hybrid-v1")
+    assert response.status_code == 201
+    body = response.json()
+    assert body["algorithm_version"] == "hybrid-v1"
+    assert body["results"][0]["rule_score"] is not None
+    assert body["results"][0]["semantic_score"] == 0.75
+    assert body["results"][0]["citations"]
 
 
 def test_match_run_is_hidden_from_another_tenant(matching_client):

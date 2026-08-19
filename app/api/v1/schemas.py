@@ -103,6 +103,11 @@ class MatchResultResponse(BaseModel):
     evidence: List[Dict[str, Any]]
     risk_flags: List[str]
     summary: str
+    rule_score: Optional[float] = None
+    semantic_score: Optional[float] = None
+    grounding_status: Optional[str] = None
+    fallback_reason: Optional[str] = None
+    citations: List[Any] = Field(default_factory=list)
 
 
 class MatchRunResponse(BaseModel):

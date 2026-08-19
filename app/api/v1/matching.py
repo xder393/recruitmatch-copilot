@@ -1,7 +1,7 @@
 """Explainable recommendation and recruiter feedback endpoints."""
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.orm import Session
 
 from app.api.v1.deps import get_current_principal, get_db
@@ -29,6 +29,11 @@ def _result_response(result: MatchResult) -> MatchResultResponse:
         evidence=result.evidence,
         risk_flags=result.risk_flags,
         summary=result.summary or "",
+        rule_score=result.rule_score,
+        semantic_score=result.semantic_score,
+        grounding_status=result.grounding_status,
+        fallback_reason=result.fallback_reason,
+        citations=result.citations or [],
     )
 
 
@@ -46,10 +51,16 @@ def _run_response(run: MatchRun) -> MatchRunResponse:
 @router.post("/resumes/{resume_id}/matches", response_model=MatchRunResponse, status_code=status.HTTP_201_CREATED)
 def run_matches(
     resume_id: str,
+    request: Request,
+    mode: str = "rules-v1",
     principal: Principal = Depends(get_current_principal),
     session: Session = Depends(get_db),
 ):
-    return _run_response(MatchingService(session).run(principal, resume_id))
+    return _run_response(
+        MatchingService(session, hybrid_engine=request.app.state.hybrid_matching_engine).run(
+            principal, resume_id, mode=mode
+        )
+    )
 
 
 @router.get("/resumes/{resume_id}/matches", response_model=MatchRunResponse)

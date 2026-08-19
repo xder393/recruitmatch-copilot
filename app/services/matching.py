@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.exceptions import ConflictError, ResourceNotFoundError
 from app.domain.enums import MatchStatus
 from app.matching.engine import MatchingEngine
+from app.matching.hybrid import HybridMatchingEngine, HybridTenantContext
 from app.matching.schemas import CandidateJob
 from app.models.matching import MatchResult, MatchRun
 from app.repositories.matching import MatchingRepository
@@ -16,12 +17,22 @@ from app.security.tokens import Principal
 
 
 class MatchingService:
-    def __init__(self, session: Session, engine: MatchingEngine | None = None):
+    def __init__(
+        self,
+        session: Session,
+        engine: MatchingEngine | None = None,
+        hybrid_engine: HybridMatchingEngine | None = None,
+    ):
         self.session = session
         self.engine = engine or MatchingEngine()
+        self.hybrid_engine = hybrid_engine
         self.repository = MatchingRepository(session)
 
-    def run(self, principal: Principal, resume_id: str) -> MatchRun:
+    def run(self, principal: Principal, resume_id: str, mode: str = "rules-v1") -> MatchRun:
+        if mode not in {"rules-v1", "hybrid-v1"}:
+            raise ConflictError("不支持的匹配算法")
+        if mode == "hybrid-v1" and self.hybrid_engine is None:
+            raise ConflictError("混合匹配服务未配置")
         resume = self.repository.get_succeeded_resume(principal.tenant_id, resume_id)
         if resume is None:
             raise ResourceNotFoundError("已完成解析的简历不存在")
@@ -51,11 +62,20 @@ class MatchingService:
             resume_id=resume.id,
             created_by=principal.user_id,
             status=MatchStatus.RUNNING,
-            algorithm_version=self.engine.algorithm_version,
-            prompt_version="none",
+            algorithm_version=mode,
+            prompt_version="semantic-project-v1" if mode == "hybrid-v1" else "none",
         )
         self.repository.add_run(run)
-        recommendations = self.engine.rank(ResumeProfile.model_validate(resume.profile), candidates, top_k=3)
+        profile = ResumeProfile.model_validate(resume.profile)
+        if mode == "hybrid-v1":
+            recommendations = self.hybrid_engine.rank(  # type: ignore[union-attr]
+                profile,
+                candidates,
+                HybridTenantContext(principal.tenant_id, resume.id),
+                top_k=3,
+            )
+        else:
+            recommendations = self.engine.rank(profile, candidates, top_k=3)
         for rank, item in enumerate(recommendations, start=1):
             run.results.append(
                 MatchResult(
@@ -69,6 +89,14 @@ class MatchingService:
                     evidence=[evidence.model_dump(mode="json") for evidence in item.evidence],
                     risk_flags=item.risk_flags,
                     summary=item.summary,
+                    rule_score=getattr(item, "rule_score", None),
+                    semantic_score=getattr(item, "semantic_score", None),
+                    grounding_status=getattr(item, "grounding_status", None),
+                    fallback_reason=getattr(item, "fallback_reason", None),
+                    citations=[
+                        citation if isinstance(citation, dict) else {"id": citation}
+                        for citation in getattr(item, "citations", [])
+                    ],
                 )
             )
         run.status = MatchStatus.SUCCEEDED

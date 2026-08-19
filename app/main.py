@@ -37,6 +37,9 @@ from app.knowledge.artifacts import KnowledgeArtifactStore
 from app.knowledge.embeddings import BGEEmbedder
 from app.knowledge.index import RecruitingVectorIndex
 from app.services.knowledge_processing import KnowledgeProcessingService
+from app.ai.semantic_matching import SemanticMatcher
+from app.matching.engine import MatchingEngine
+from app.matching.hybrid import HybridMatchingEngine
 
 logger = get_logger(__name__)
 
@@ -99,9 +102,10 @@ def init_recruiting_state(app: FastAPI, settings: Settings, structured_model=Non
     )
     artifact_store = LocalArtifactStore(Path(settings.artifact_dir))
     fallback_parser = HeuristicResumeParser()
+    recruiting_model = structured_model or OpenAICompatibleGateway(settings)
     parser = (
         LLMResumeParser(
-            structured_model or OpenAICompatibleGateway(settings),
+            recruiting_model,
             fallback_parser,
             prompt_version=settings.resume_prompt_version,
             max_evidence_characters=settings.max_evidence_characters,
@@ -125,6 +129,15 @@ def init_recruiting_state(app: FastAPI, settings: Settings, structured_model=Non
     app.state.recruiting_source_index = source_index
     app.state.knowledge_artifact_store = knowledge_artifact_store
     app.state.knowledge_processor = knowledge_processor
+    app.state.hybrid_matching_engine = HybridMatchingEngine(
+        MatchingEngine(),
+        SemanticMatcher(
+            recruiting_model,
+            knowledge_index,
+            enabled=settings.ai_enabled,
+            max_evidence_characters=settings.max_evidence_characters,
+        ),
+    )
     app.state.task_dispatcher = (
         CeleryTaskDispatcher() if settings.task_mode == "celery" else InlineTaskDispatcher(processor)
     )
