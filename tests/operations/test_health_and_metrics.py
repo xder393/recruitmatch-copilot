@@ -162,6 +162,22 @@ def test_ai_status_ignores_other_tenant_model_failures(tmp_path):
         assert body["degraded"] is False
         assert body["latest_status"] == "succeeded"
 
+        AITraceSink(app.state.session_factory).succeeded(
+            acme_id,
+            "semantic_match",
+            "resume",
+            ["resume", "job"],
+            request,
+            response,
+            fallback_reason="invalid_semantic_citations",
+        )
+        rejected = client.get("/api/v1/ai/status").json()
+        assert rejected["available"] is False
+        assert rejected["degraded"] is True
+        assert rejected["fallback_mode"] == "rules-v1"
+        assert rejected["latest_status"] == "rejected"
+        assert rejected["latest_error"] == "invalid_semantic_citations"
+
 
 def test_analytics_are_tenant_scoped_and_never_return_resume_text(operations_client):
     """Catches cross-tenant aggregate leakage or PII appearing in operations responses."""

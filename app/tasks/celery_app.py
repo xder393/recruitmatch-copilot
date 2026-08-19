@@ -26,8 +26,8 @@ celery_app.conf.update(
 )
 
 
-@celery_app.task(name="recruitmatch.process_resume")
-def process_resume_task(tenant_id: str, resume_id: str) -> None:
+@celery_app.task(bind=True, name="recruitmatch.process_resume", max_retries=10)
+def process_resume_task(self, tenant_id: str, resume_id: str) -> None:
     settings = Settings.load()
     _, session_factory = create_engine_and_session(settings.database_url)
     fallback_parser = HeuristicResumeParser()
@@ -48,11 +48,12 @@ def process_resume_task(tenant_id: str, resume_id: str) -> None:
         parser,
         source_index=source_index,
     )
-    processor.process(tenant_id, resume_id)
+    if not processor.process(tenant_id, resume_id):
+        raise self.retry(countdown=60)
 
 
-@celery_app.task(name="recruitmatch.process_knowledge")
-def process_knowledge_task(tenant_id: str, document_id: str) -> None:
+@celery_app.task(bind=True, name="recruitmatch.process_knowledge", max_retries=10)
+def process_knowledge_task(self, tenant_id: str, document_id: str) -> None:
     settings = Settings.load()
     _, session_factory = create_engine_and_session(settings.database_url)
     index = RecruitingVectorIndex(session_factory, BGEEmbedder(settings.embedding_model))
@@ -61,4 +62,5 @@ def process_knowledge_task(tenant_id: str, document_id: str) -> None:
         KnowledgeArtifactStore(Path(settings.knowledge_artifact_dir)),
         index,
     )
-    processor.process(tenant_id, document_id)
+    if not processor.process(tenant_id, document_id):
+        raise self.retry(countdown=60)

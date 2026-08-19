@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 
 from app.config import Settings
+from app.core.exceptions import ResourceNotFoundError
 from app.main import create_app
 from app.models.knowledge import KnowledgeChunk
 from app.models.matching import MatchResult, MatchRun
@@ -99,6 +100,45 @@ def test_resume_identifier_from_another_tenant_is_hidden(resume_client):
 
     assert response.status_code == 404
     assert response.json()["error"]["code"] == "not_found"
+
+
+def test_artifact_cleanup_failure_is_recorded_and_delete_can_retry(resume_client):
+    class FailOnceStore:
+        def __init__(self, delegate):
+            self.delegate = delegate
+            self.failed = False
+
+        def put(self, *args, **kwargs):
+            return self.delegate.put(*args, **kwargs)
+
+        def read(self, *args, **kwargs):
+            return self.delegate.read(*args, **kwargs)
+
+        def delete(self, key):
+            if not self.failed:
+                self.failed = True
+                raise OSError("storage unavailable")
+            return self.delegate.delete(key)
+
+    uploaded = resume_client.post(
+        "/api/v1/resumes",
+        files={"file": ("cleanup.txt", b"private Python resume", "text/plain")},
+    ).json()
+    with resume_client.app.state.session_factory() as session:
+        storage_key = session.get(Resume, uploaded["id"]).artifact.storage_key
+    original = resume_client.app.state.artifact_store
+    resume_client.app.state.artifact_store = FailOnceStore(original)
+
+    assert resume_client.delete(f"/api/v1/resumes/{uploaded['id']}").status_code == 204
+    assert original.read(storage_key) == b"private Python resume"
+    with resume_client.app.state.session_factory() as session:
+        assert session.get(Resume, uploaded["id"]).error_code == "artifact_delete_failed"
+
+    assert resume_client.delete(f"/api/v1/resumes/{uploaded['id']}").status_code == 204
+    with pytest.raises(ResourceNotFoundError):
+        original.read(storage_key)
+    with resume_client.app.state.session_factory() as session:
+        assert session.get(Resume, uploaded["id"]).error_code is None
 
 
 def test_list_and_soft_delete_hide_resume(resume_client):

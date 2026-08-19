@@ -95,6 +95,30 @@ def test_duplicate_worker_delivery_does_not_reprocess_ready_document(tmp_path):
         assert document.active_generation == 1
 
 
+def test_processing_lease_is_retried_then_stale_work_is_recovered(tmp_path):
+    from datetime import datetime, timedelta, timezone
+
+    factory = _database(tmp_path)
+    store, tenant_id, document_id = _stored_document(tmp_path, factory, b"recoverable policy")
+    with factory() as session:
+        document = KnowledgeRepository(session).get_document(tenant_id, document_id)
+        document.status = "processing"
+        document.updated_at = datetime.now(timezone.utc)
+        session.commit()
+    service = KnowledgeProcessingService(factory, store, FakeIndexer())
+    assert service.process(tenant_id, document_id) is False
+
+    with factory() as session:
+        document = KnowledgeRepository(session).get_document(tenant_id, document_id)
+        document.updated_at = datetime.now(timezone.utc) - timedelta(minutes=10)
+        session.commit()
+    assert service.process(tenant_id, document_id) is True
+    with factory() as session:
+        document = KnowledgeRepository(session).get_document(tenant_id, document_id)
+        assert document.status == "ready"
+        assert document.active_generation == 1
+
+
 def test_failed_reindex_keeps_previous_generation_active(tmp_path):
     factory = _database(tmp_path)
     store, tenant_id, document_id = _stored_document(tmp_path, factory, b"new policy")

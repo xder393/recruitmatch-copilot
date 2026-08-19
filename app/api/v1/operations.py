@@ -64,12 +64,12 @@ def ai_status(
         )
         or 0
     )
-    latest_failed = latest is not None and latest.status == "failed"
-    degraded = not settings.ai_enabled or latest is None or latest_failed or failed_indexes > 0
+    latest_unhealthy = latest is not None and latest.status != "succeeded"
+    degraded = not settings.ai_enabled or latest is None or latest_unhealthy or failed_indexes > 0
     return {
         "configured": bool(settings.api_key),
         "enabled": settings.ai_enabled,
-        "available": False if not settings.ai_enabled else (None if latest is None else not latest_failed),
+        "available": False if not settings.ai_enabled else (None if latest is None else not latest_unhealthy),
         "degraded": degraded,
         "fallback_mode": "rules-v1" if degraded else None,
         "provider": settings.model_provider,
@@ -77,7 +77,7 @@ def ai_status(
         "embedding_model": settings.embedding_model,
         "core_available": True,
         "latest_status": latest.status if latest else None,
-        "latest_error": latest.error_code if latest else None,
+        "latest_error": (latest.error_code or latest.fallback_reason) if latest else None,
         "latest_latency_ms": latest.latency_ms if latest else None,
         "failed_source_indexes": failed_indexes,
     }

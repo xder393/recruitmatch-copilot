@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from typing import Protocol
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -24,21 +24,28 @@ class ResumeParser(Protocol):
 
 
 class ResumeProcessingService:
+    lease_seconds = 300
+
     def __init__(self, session_factory, artifact_store: ArtifactReader, parser: ResumeParser, source_index=None):
         self.session_factory = session_factory
         self.artifact_store = artifact_store
         self.parser = parser
         self.source_index = source_index
 
-    def process(self, tenant_id: str, resume_id: str) -> None:
+    def process(self, tenant_id: str, resume_id: str) -> bool:
         with self.session_factory() as session:
             resume = self._get(session, tenant_id, resume_id)
-            if resume is None or resume.status is not ResumeStatus.QUEUED:
-                return
+            if resume is None or resume.status in {ResumeStatus.DELETED, ResumeStatus.SUCCEEDED, ResumeStatus.FAILED}:
+                return True
+            if resume.status is ResumeStatus.RUNNING and not self._lease_expired(resume.updated_at):
+                return False
+            if resume.status not in {ResumeStatus.QUEUED, ResumeStatus.RUNNING}:
+                return True
             if resume.artifact is None:
                 self._mark_failed(tenant_id, resume_id, "artifact_missing", "简历文件记录不存在")
-                return
+                return True
             resume.status = ResumeStatus.RUNNING
+            resume.updated_at = datetime.now(timezone.utc)
             resume.error_code = None
             resume.error_message = None
             filename = resume.original_filename
@@ -50,7 +57,7 @@ class ResumeProcessingService:
             content = self.artifact_store.read(storage_key)
         except Exception:
             self._mark_failed(tenant_id, resume_id, "artifact_read_failed", "无法读取简历文件")
-            return
+            return True
 
         try:
             text = extract_text(filename, content)
@@ -60,15 +67,15 @@ class ResumeProcessingService:
             profile = parse_result.profile if parse_result is not None else self.parser.parse(text)
         except AppError as exc:
             self._mark_failed(tenant_id, resume_id, exc.code, exc.message)
-            return
+            return True
         except Exception:
             self._mark_failed(tenant_id, resume_id, "resume_processing_failed", "简历处理失败")
-            return
+            return True
 
         with self.session_factory() as session:
             resume = self._get(session, tenant_id, resume_id)
             if resume is None or resume.status is ResumeStatus.DELETED:
-                return
+                return True
             resume.artifact.extracted_text = text
             resume.profile = profile.model_dump(mode="json")
             resume.status = ResumeStatus.SUCCEEDED
@@ -113,6 +120,11 @@ class ResumeProcessingService:
                 # Search enrichment must never roll back an otherwise valid
                 # resume; re-indexing can repair this side effect later.
                 self._mark_indexed(tenant_id, resume_id, "failed", "indexing_failed")
+        return True
+
+    def _lease_expired(self, updated_at: datetime) -> bool:
+        timestamp = updated_at if updated_at.tzinfo is not None else updated_at.replace(tzinfo=timezone.utc)
+        return timestamp <= datetime.now(timezone.utc) - timedelta(seconds=self.lease_seconds)
 
     def _mark_failed(self, tenant_id: str, resume_id: str, code: str, message: str) -> None:
         with self.session_factory() as session:

@@ -93,49 +93,61 @@ class ResumeService:
         return self.resumes.list(principal.tenant_id)
 
     def delete(self, principal: Principal, resume_id: str) -> None:
-        resume = self.get(principal, resume_id)
+        resume = self.resumes.get(principal.tenant_id, resume_id, include_deleted=True)
+        if resume is None:
+            raise ResourceNotFoundError("简历不存在")
         storage_key = resume.artifact.storage_key if resume.artifact else None
-        resume.sha256 = hashlib.sha256(f"deleted:{resume.id}".encode()).hexdigest()
-        resume.original_filename = "deleted"
-        resume.size_bytes = 0
-        resume.uploaded_by = None
-        resume.profile = {}
+        if resume.status is not ResumeStatus.DELETED:
+            resume.sha256 = hashlib.sha256(f"deleted:{resume.id}".encode()).hexdigest()
+            resume.original_filename = "deleted"
+            resume.size_bytes = 0
+            resume.uploaded_by = None
+            resume.profile = {}
+            resume.error_code = None
+            resume.error_message = None
+            resume.search_index_status = "deleted"
+            resume.search_index_error = None
+            resume.search_indexed_at = None
+            if resume.artifact is not None:
+                resume.artifact.extracted_text = None
+            self.session.execute(
+                delete(KnowledgeChunk).where(
+                    KnowledgeChunk.tenant_id == principal.tenant_id,
+                    KnowledgeChunk.source_type == "resume",
+                    KnowledgeChunk.source_id == resume.id,
+                )
+            )
+            run_ids = select(MatchRun.id).where(
+                MatchRun.tenant_id == principal.tenant_id,
+                MatchRun.resume_id == resume.id,
+            )
+            self.session.execute(
+                update(MatchResult)
+                .where(MatchResult.run_id.in_(run_ids))
+                .values(
+                    dimension_scores={},
+                    matched_items=[],
+                    missing_items=[],
+                    uncertain_items=[],
+                    evidence=[],
+                    risk_flags=[],
+                    summary=None,
+                    citations=[],
+                    grounded_explanation={},
+                    interview_questions=[],
+                )
+            )
+            resume.status = ResumeStatus.DELETED
+            resume.deleted_at = datetime.now(timezone.utc)
+            self.session.commit()
+        if storage_key:
+            try:
+                self.artifact_store.delete(storage_key)
+            except Exception:
+                resume.error_code = "artifact_delete_failed"
+                resume.error_message = "原始简历文件清理失败，可重试删除"
+                self.session.commit()
+                return
         resume.error_code = None
         resume.error_message = None
-        resume.search_index_status = "deleted"
-        resume.search_index_error = None
-        resume.search_indexed_at = None
-        if resume.artifact is not None:
-            resume.artifact.extracted_text = None
-        self.session.execute(
-            delete(KnowledgeChunk).where(
-                KnowledgeChunk.tenant_id == principal.tenant_id,
-                KnowledgeChunk.source_type == "resume",
-                KnowledgeChunk.source_id == resume.id,
-            )
-        )
-        run_ids = select(MatchRun.id).where(
-            MatchRun.tenant_id == principal.tenant_id,
-            MatchRun.resume_id == resume.id,
-        )
-        self.session.execute(
-            update(MatchResult)
-            .where(MatchResult.run_id.in_(run_ids))
-            .values(
-                dimension_scores={},
-                matched_items=[],
-                missing_items=[],
-                uncertain_items=[],
-                evidence=[],
-                risk_flags=[],
-                summary=None,
-                citations=[],
-                grounded_explanation={},
-                interview_questions=[],
-            )
-        )
-        resume.status = ResumeStatus.DELETED
-        resume.deleted_at = datetime.now(timezone.utc)
         self.session.commit()
-        if storage_key:
-            self.artifact_store.delete(storage_key)

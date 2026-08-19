@@ -101,6 +101,32 @@ def test_duplicate_worker_delivery_does_not_reprocess_succeeded_resume(tmp_path)
         assert session.get(Resume, resume_id).status is ResumeStatus.SUCCEEDED
 
 
+def test_running_worker_lease_is_retried_then_stale_work_is_recovered(tmp_path):
+    from datetime import datetime, timedelta, timezone
+
+    from app.domain.enums import ResumeStatus
+    from app.models.resumes import Resume
+    from app.resumes.parser import HeuristicResumeParser
+    from app.services.resume_processing import ResumeProcessingService
+
+    factory, tenant_id, resume_id = _resume_database(tmp_path)
+    with factory() as session:
+        resume = session.get(Resume, resume_id)
+        resume.status = ResumeStatus.RUNNING
+        resume.updated_at = datetime.now(timezone.utc)
+        session.commit()
+    service = ResumeProcessingService(factory, _MemoryStore(b"Python developer"), HeuristicResumeParser())
+    assert service.process(tenant_id, resume_id) is False
+
+    with factory() as session:
+        resume = session.get(Resume, resume_id)
+        resume.updated_at = datetime.now(timezone.utc) - timedelta(minutes=10)
+        session.commit()
+    assert service.process(tenant_id, resume_id) is True
+    with factory() as session:
+        assert session.get(Resume, resume_id).status is ResumeStatus.SUCCEEDED
+
+
 def test_traceable_parser_result_is_written_in_same_success_flow(tmp_path):
     from app.ai.resume_parser import LLMResumeParser
     from app.models.operations import ModelTrace
