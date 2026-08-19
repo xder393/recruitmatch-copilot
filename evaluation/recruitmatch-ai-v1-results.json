@@ -1,0 +1,22 @@
+{
+  "dataset_version": "recruitmatch-ai-v1",
+  "algorithm_version": "hybrid-v1",
+  "model_version": "fake-structured-v1",
+  "prompt_version": "semantic-project-v1",
+  "embedding_version": "fake-hash-v1",
+  "label_source": "synthetic_ai",
+  "metrics": {
+    "citation_coverage": 1.0,
+    "citation_validity": 1.0,
+    "unsupported_claim_rate": 0.0,
+    "cases": 150,
+    "extraction_precision": 1.0,
+    "extraction_recall": 1.0,
+    "top1_accuracy": 0.9867,
+    "top3_recall": 1.0,
+    "p50_latency_ms": 16.0,
+    "p95_latency_ms": 23.55,
+    "total_tokens": 22636,
+    "estimated_cost": 0.0
+  }
+}

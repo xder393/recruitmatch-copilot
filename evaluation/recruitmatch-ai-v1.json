@@ -1,0 +1,6452 @@
+[
+  {
+    "id": "ai_application-01",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Python、LLM API、LangChain、FastAPI、向量数据库、RAG",
+    "expected_facts": [
+      "Python",
+      "LLM API",
+      "LangChain",
+      "FastAPI",
+      "向量数据库",
+      "RAG"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "ai_application"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Python",
+        "start": 18,
+        "end": 24
+      },
+      {
+        "text": "LLM API",
+        "start": 27,
+        "end": 34
+      },
+      {
+        "text": "LangChain",
+        "start": 37,
+        "end": 46
+      },
+      {
+        "text": "FastAPI",
+        "start": 49,
+        "end": 56
+      },
+      {
+        "text": "向量数据库",
+        "start": 59,
+        "end": 64
+      },
+      {
+        "text": "RAG",
+        "start": 77,
+        "end": 80
+      }
+    ],
+    "policy_citations": [
+      "policy:ai_application"
+    ]
+  },
+  {
+    "id": "ai_application-02",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：LangChain、LLM API、Python、RAG、FastAPI、向量数据库",
+    "expected_facts": [
+      "LangChain",
+      "LLM API",
+      "Python",
+      "RAG",
+      "FastAPI",
+      "向量数据库"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "ai_application"
+    ],
+    "evidence_spans": [
+      {
+        "text": "LangChain",
+        "start": 18,
+        "end": 27
+      },
+      {
+        "text": "LLM API",
+        "start": 30,
+        "end": 37
+      },
+      {
+        "text": "Python",
+        "start": 40,
+        "end": 46
+      },
+      {
+        "text": "RAG",
+        "start": 49,
+        "end": 52
+      },
+      {
+        "text": "FastAPI",
+        "start": 55,
+        "end": 62
+      },
+      {
+        "text": "向量数据库",
+        "start": 65,
+        "end": 70
+      }
+    ],
+    "policy_citations": [
+      "policy:ai_application"
+    ]
+  },
+  {
+    "id": "ai_application-03",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：RAG、向量数据库、LangChain、LLM API、FastAPI、Python",
+    "expected_facts": [
+      "RAG",
+      "向量数据库",
+      "LangChain",
+      "LLM API",
+      "FastAPI",
+      "Python"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "ai_application"
+    ],
+    "evidence_spans": [
+      {
+        "text": "RAG",
+        "start": 18,
+        "end": 21
+      },
+      {
+        "text": "向量数据库",
+        "start": 24,
+        "end": 29
+      },
+      {
+        "text": "LangChain",
+        "start": 42,
+        "end": 51
+      },
+      {
+        "text": "LLM API",
+        "start": 54,
+        "end": 61
+      },
+      {
+        "text": "FastAPI",
+        "start": 64,
+        "end": 71
+      },
+      {
+        "text": "Python",
+        "start": 74,
+        "end": 80
+      }
+    ],
+    "policy_citations": [
+      "policy:ai_application"
+    ]
+  },
+  {
+    "id": "ai_application-04",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：向量数据库、RAG、LLM API、FastAPI、LangChain、Python",
+    "expected_facts": [
+      "向量数据库",
+      "RAG",
+      "LLM API",
+      "FastAPI",
+      "LangChain",
+      "Python"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "ai_application"
+    ],
+    "evidence_spans": [
+      {
+        "text": "向量数据库",
+        "start": 18,
+        "end": 23
+      },
+      {
+        "text": "RAG",
+        "start": 36,
+        "end": 39
+      },
+      {
+        "text": "LLM API",
+        "start": 42,
+        "end": 49
+      },
+      {
+        "text": "FastAPI",
+        "start": 52,
+        "end": 59
+      },
+      {
+        "text": "LangChain",
+        "start": 62,
+        "end": 71
+      },
+      {
+        "text": "Python",
+        "start": 74,
+        "end": 80
+      }
+    ],
+    "policy_citations": [
+      "policy:ai_application"
+    ]
+  },
+  {
+    "id": "ai_application-05",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：LLM API、向量数据库、LangChain、FastAPI、RAG、Python",
+    "expected_facts": [
+      "LLM API",
+      "向量数据库",
+      "LangChain",
+      "FastAPI",
+      "RAG",
+      "Python"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "ai_application"
+    ],
+    "evidence_spans": [
+      {
+        "text": "LLM API",
+        "start": 18,
+        "end": 25
+      },
+      {
+        "text": "向量数据库",
+        "start": 28,
+        "end": 33
+      },
+      {
+        "text": "LangChain",
+        "start": 46,
+        "end": 55
+      },
+      {
+        "text": "FastAPI",
+        "start": 58,
+        "end": 65
+      },
+      {
+        "text": "RAG",
+        "start": 68,
+        "end": 71
+      },
+      {
+        "text": "Python",
+        "start": 74,
+        "end": 80
+      }
+    ],
+    "policy_citations": [
+      "policy:ai_application"
+    ]
+  },
+  {
+    "id": "ai_application-06",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：向量数据库、FastAPI、RAG、LangChain、LLM API、Python",
+    "expected_facts": [
+      "向量数据库",
+      "FastAPI",
+      "RAG",
+      "LangChain",
+      "LLM API",
+      "Python"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "ai_application"
+    ],
+    "evidence_spans": [
+      {
+        "text": "向量数据库",
+        "start": 18,
+        "end": 23
+      },
+      {
+        "text": "FastAPI",
+        "start": 36,
+        "end": 43
+      },
+      {
+        "text": "RAG",
+        "start": 46,
+        "end": 49
+      },
+      {
+        "text": "LangChain",
+        "start": 52,
+        "end": 61
+      },
+      {
+        "text": "LLM API",
+        "start": 64,
+        "end": 71
+      },
+      {
+        "text": "Python",
+        "start": 74,
+        "end": 80
+      }
+    ],
+    "policy_citations": [
+      "policy:ai_application"
+    ]
+  },
+  {
+    "id": "ai_application-07",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Python、LLM API、FastAPI",
+    "expected_facts": [
+      "Python",
+      "LLM API",
+      "FastAPI"
+    ],
+    "experience_years": 2,
+    "expected_job_families": [
+      "ai_application"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Python",
+        "start": 18,
+        "end": 24
+      },
+      {
+        "text": "LLM API",
+        "start": 27,
+        "end": 34
+      },
+      {
+        "text": "FastAPI",
+        "start": 37,
+        "end": 44
+      }
+    ],
+    "policy_citations": [
+      "policy:ai_application"
+    ]
+  },
+  {
+    "id": "ai_application-08",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：LLM API、FastAPI、Python",
+    "expected_facts": [
+      "LLM API",
+      "FastAPI",
+      "Python"
+    ],
+    "experience_years": 4,
+    "expected_job_families": [
+      "ai_application"
+    ],
+    "evidence_spans": [
+      {
+        "text": "LLM API",
+        "start": 18,
+        "end": 25
+      },
+      {
+        "text": "FastAPI",
+        "start": 28,
+        "end": 35
+      },
+      {
+        "text": "Python",
+        "start": 38,
+        "end": 44
+      }
+    ],
+    "policy_citations": [
+      "policy:ai_application"
+    ]
+  },
+  {
+    "id": "ai_application-09",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：LLM API、Python、FastAPI",
+    "expected_facts": [
+      "LLM API",
+      "Python",
+      "FastAPI"
+    ],
+    "experience_years": 6,
+    "expected_job_families": [
+      "ai_application"
+    ],
+    "evidence_spans": [
+      {
+        "text": "LLM API",
+        "start": 18,
+        "end": 25
+      },
+      {
+        "text": "Python",
+        "start": 28,
+        "end": 34
+      },
+      {
+        "text": "FastAPI",
+        "start": 37,
+        "end": 44
+      }
+    ],
+    "policy_citations": [
+      "policy:ai_application"
+    ]
+  },
+  {
+    "id": "ai_application-10",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：LLM API、Python、FastAPI",
+    "expected_facts": [
+      "LLM API",
+      "Python",
+      "FastAPI"
+    ],
+    "experience_years": 8,
+    "expected_job_families": [
+      "ai_application"
+    ],
+    "evidence_spans": [
+      {
+        "text": "LLM API",
+        "start": 18,
+        "end": 25
+      },
+      {
+        "text": "Python",
+        "start": 28,
+        "end": 34
+      },
+      {
+        "text": "FastAPI",
+        "start": 37,
+        "end": 44
+      }
+    ],
+    "policy_citations": [
+      "policy:ai_application"
+    ]
+  },
+  {
+    "id": "ai_application-11",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Python、RAG、FastAPI",
+    "expected_facts": [
+      "Python",
+      "RAG",
+      "FastAPI"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "ai_application"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Python",
+        "start": 18,
+        "end": 24
+      },
+      {
+        "text": "RAG",
+        "start": 27,
+        "end": 30
+      },
+      {
+        "text": "FastAPI",
+        "start": 33,
+        "end": 40
+      }
+    ],
+    "policy_citations": [
+      "policy:ai_application"
+    ]
+  },
+  {
+    "id": "ai_application-12",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：RAG、Python、FastAPI",
+    "expected_facts": [
+      "RAG",
+      "Python",
+      "FastAPI"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "ai_application"
+    ],
+    "evidence_spans": [
+      {
+        "text": "RAG",
+        "start": 18,
+        "end": 21
+      },
+      {
+        "text": "Python",
+        "start": 24,
+        "end": 30
+      },
+      {
+        "text": "FastAPI",
+        "start": 33,
+        "end": 40
+      }
+    ],
+    "policy_citations": [
+      "policy:ai_application"
+    ]
+  },
+  {
+    "id": "ai_application-13",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：FastAPI、Python、RAG",
+    "expected_facts": [
+      "FastAPI",
+      "Python",
+      "RAG"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "ai_application"
+    ],
+    "evidence_spans": [
+      {
+        "text": "FastAPI",
+        "start": 18,
+        "end": 25
+      },
+      {
+        "text": "Python",
+        "start": 28,
+        "end": 34
+      },
+      {
+        "text": "RAG",
+        "start": 37,
+        "end": 40
+      }
+    ],
+    "policy_citations": [
+      "policy:ai_application"
+    ]
+  },
+  {
+    "id": "ai_application-14",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：RAG、Python",
+    "expected_facts": [
+      "RAG",
+      "Python"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "ai_application"
+    ],
+    "evidence_spans": [
+      {
+        "text": "RAG",
+        "start": 18,
+        "end": 21
+      },
+      {
+        "text": "Python",
+        "start": 24,
+        "end": 30
+      }
+    ],
+    "policy_citations": [
+      "policy:ai_application"
+    ]
+  },
+  {
+    "id": "ai_application-15",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：RAG、LangChain、向量数据库、Python、FastAPI、LLM API",
+    "expected_facts": [
+      "RAG",
+      "LangChain",
+      "向量数据库",
+      "Python",
+      "FastAPI",
+      "LLM API"
+    ],
+    "experience_years": null,
+    "expected_job_families": [
+      "ai_application"
+    ],
+    "evidence_spans": [
+      {
+        "text": "RAG",
+        "start": 18,
+        "end": 21
+      },
+      {
+        "text": "LangChain",
+        "start": 24,
+        "end": 33
+      },
+      {
+        "text": "向量数据库",
+        "start": 36,
+        "end": 41
+      },
+      {
+        "text": "Python",
+        "start": 54,
+        "end": 60
+      },
+      {
+        "text": "FastAPI",
+        "start": 63,
+        "end": 70
+      },
+      {
+        "text": "LLM API",
+        "start": 73,
+        "end": 80
+      }
+    ],
+    "policy_citations": [
+      "policy:ai_application"
+    ]
+  },
+  {
+    "id": "llm_algorithm-01",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Python、PyTorch、推理加速、PEFT、Transformer、分布式训练",
+    "expected_facts": [
+      "Python",
+      "PyTorch",
+      "推理加速",
+      "PEFT",
+      "Transformer",
+      "分布式训练"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "llm_algorithm"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Python",
+        "start": 18,
+        "end": 24
+      },
+      {
+        "text": "PyTorch",
+        "start": 27,
+        "end": 34
+      },
+      {
+        "text": "推理加速",
+        "start": 37,
+        "end": 41
+      },
+      {
+        "text": "PEFT",
+        "start": 52,
+        "end": 56
+      },
+      {
+        "text": "Transformer",
+        "start": 59,
+        "end": 70
+      },
+      {
+        "text": "分布式训练",
+        "start": 73,
+        "end": 78
+      }
+    ],
+    "policy_citations": [
+      "policy:llm_algorithm"
+    ]
+  },
+  {
+    "id": "llm_algorithm-02",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Python、分布式训练、推理加速、PyTorch、PEFT、Transformer",
+    "expected_facts": [
+      "Python",
+      "分布式训练",
+      "推理加速",
+      "PyTorch",
+      "PEFT",
+      "Transformer"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "llm_algorithm"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Python",
+        "start": 18,
+        "end": 24
+      },
+      {
+        "text": "分布式训练",
+        "start": 27,
+        "end": 32
+      },
+      {
+        "text": "推理加速",
+        "start": 45,
+        "end": 49
+      },
+      {
+        "text": "PyTorch",
+        "start": 60,
+        "end": 67
+      },
+      {
+        "text": "PEFT",
+        "start": 70,
+        "end": 74
+      },
+      {
+        "text": "Transformer",
+        "start": 77,
+        "end": 88
+      }
+    ],
+    "policy_citations": [
+      "policy:llm_algorithm"
+    ]
+  },
+  {
+    "id": "llm_algorithm-03",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Transformer、Python、PyTorch、PEFT、分布式训练、推理加速",
+    "expected_facts": [
+      "Transformer",
+      "Python",
+      "PyTorch",
+      "PEFT",
+      "分布式训练",
+      "推理加速"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "llm_algorithm"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Transformer",
+        "start": 18,
+        "end": 29
+      },
+      {
+        "text": "Python",
+        "start": 32,
+        "end": 38
+      },
+      {
+        "text": "PyTorch",
+        "start": 41,
+        "end": 48
+      },
+      {
+        "text": "PEFT",
+        "start": 51,
+        "end": 55
+      },
+      {
+        "text": "分布式训练",
+        "start": 58,
+        "end": 63
+      },
+      {
+        "text": "推理加速",
+        "start": 76,
+        "end": 80
+      }
+    ],
+    "policy_citations": [
+      "policy:llm_algorithm"
+    ]
+  },
+  {
+    "id": "llm_algorithm-04",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：推理加速、PEFT、PyTorch、分布式训练、Python、Transformer",
+    "expected_facts": [
+      "推理加速",
+      "PEFT",
+      "PyTorch",
+      "分布式训练",
+      "Python",
+      "Transformer"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "llm_algorithm"
+    ],
+    "evidence_spans": [
+      {
+        "text": "推理加速",
+        "start": 18,
+        "end": 22
+      },
+      {
+        "text": "PEFT",
+        "start": 33,
+        "end": 37
+      },
+      {
+        "text": "PyTorch",
+        "start": 40,
+        "end": 47
+      },
+      {
+        "text": "分布式训练",
+        "start": 50,
+        "end": 55
+      },
+      {
+        "text": "Python",
+        "start": 68,
+        "end": 74
+      },
+      {
+        "text": "Transformer",
+        "start": 77,
+        "end": 88
+      }
+    ],
+    "policy_citations": [
+      "policy:llm_algorithm"
+    ]
+  },
+  {
+    "id": "llm_algorithm-05",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：PyTorch、Python、PEFT、Transformer、推理加速、分布式训练",
+    "expected_facts": [
+      "PyTorch",
+      "Python",
+      "PEFT",
+      "Transformer",
+      "推理加速",
+      "分布式训练"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "llm_algorithm"
+    ],
+    "evidence_spans": [
+      {
+        "text": "PyTorch",
+        "start": 18,
+        "end": 25
+      },
+      {
+        "text": "Python",
+        "start": 28,
+        "end": 34
+      },
+      {
+        "text": "PEFT",
+        "start": 37,
+        "end": 41
+      },
+      {
+        "text": "Transformer",
+        "start": 44,
+        "end": 55
+      },
+      {
+        "text": "推理加速",
+        "start": 58,
+        "end": 62
+      },
+      {
+        "text": "分布式训练",
+        "start": 73,
+        "end": 78
+      }
+    ],
+    "policy_citations": [
+      "policy:llm_algorithm"
+    ]
+  },
+  {
+    "id": "llm_algorithm-06",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：PyTorch、分布式训练、推理加速、Python、Transformer、PEFT",
+    "expected_facts": [
+      "PyTorch",
+      "分布式训练",
+      "推理加速",
+      "Python",
+      "Transformer",
+      "PEFT"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "llm_algorithm"
+    ],
+    "evidence_spans": [
+      {
+        "text": "PyTorch",
+        "start": 18,
+        "end": 25
+      },
+      {
+        "text": "分布式训练",
+        "start": 28,
+        "end": 33
+      },
+      {
+        "text": "推理加速",
+        "start": 46,
+        "end": 50
+      },
+      {
+        "text": "Python",
+        "start": 61,
+        "end": 67
+      },
+      {
+        "text": "Transformer",
+        "start": 70,
+        "end": 81
+      },
+      {
+        "text": "PEFT",
+        "start": 84,
+        "end": 88
+      }
+    ],
+    "policy_citations": [
+      "policy:llm_algorithm"
+    ]
+  },
+  {
+    "id": "llm_algorithm-07",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Transformer、Python、PyTorch",
+    "expected_facts": [
+      "Transformer",
+      "Python",
+      "PyTorch"
+    ],
+    "experience_years": 2,
+    "expected_job_families": [
+      "llm_algorithm"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Transformer",
+        "start": 18,
+        "end": 29
+      },
+      {
+        "text": "Python",
+        "start": 32,
+        "end": 38
+      },
+      {
+        "text": "PyTorch",
+        "start": 41,
+        "end": 48
+      }
+    ],
+    "policy_citations": [
+      "policy:llm_algorithm"
+    ]
+  },
+  {
+    "id": "llm_algorithm-08",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：PyTorch、Python、Transformer",
+    "expected_facts": [
+      "PyTorch",
+      "Python",
+      "Transformer"
+    ],
+    "experience_years": 4,
+    "expected_job_families": [
+      "llm_algorithm"
+    ],
+    "evidence_spans": [
+      {
+        "text": "PyTorch",
+        "start": 18,
+        "end": 25
+      },
+      {
+        "text": "Python",
+        "start": 28,
+        "end": 34
+      },
+      {
+        "text": "Transformer",
+        "start": 37,
+        "end": 48
+      }
+    ],
+    "policy_citations": [
+      "policy:llm_algorithm"
+    ]
+  },
+  {
+    "id": "llm_algorithm-09",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Transformer、Python、PyTorch",
+    "expected_facts": [
+      "Transformer",
+      "Python",
+      "PyTorch"
+    ],
+    "experience_years": 6,
+    "expected_job_families": [
+      "llm_algorithm"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Transformer",
+        "start": 18,
+        "end": 29
+      },
+      {
+        "text": "Python",
+        "start": 32,
+        "end": 38
+      },
+      {
+        "text": "PyTorch",
+        "start": 41,
+        "end": 48
+      }
+    ],
+    "policy_citations": [
+      "policy:llm_algorithm"
+    ]
+  },
+  {
+    "id": "llm_algorithm-10",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：PyTorch、Transformer、Python",
+    "expected_facts": [
+      "PyTorch",
+      "Transformer",
+      "Python"
+    ],
+    "experience_years": 8,
+    "expected_job_families": [
+      "llm_algorithm"
+    ],
+    "evidence_spans": [
+      {
+        "text": "PyTorch",
+        "start": 18,
+        "end": 25
+      },
+      {
+        "text": "Transformer",
+        "start": 28,
+        "end": 39
+      },
+      {
+        "text": "Python",
+        "start": 42,
+        "end": 48
+      }
+    ],
+    "policy_citations": [
+      "policy:llm_algorithm"
+    ]
+  },
+  {
+    "id": "llm_algorithm-11",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Python、PyTorch、PEFT",
+    "expected_facts": [
+      "Python",
+      "PyTorch",
+      "PEFT"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "llm_algorithm"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Python",
+        "start": 18,
+        "end": 24
+      },
+      {
+        "text": "PyTorch",
+        "start": 27,
+        "end": 34
+      },
+      {
+        "text": "PEFT",
+        "start": 37,
+        "end": 41
+      }
+    ],
+    "policy_citations": [
+      "policy:llm_algorithm"
+    ]
+  },
+  {
+    "id": "llm_algorithm-12",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：PyTorch、PEFT、Python",
+    "expected_facts": [
+      "PyTorch",
+      "PEFT",
+      "Python"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "llm_algorithm"
+    ],
+    "evidence_spans": [
+      {
+        "text": "PyTorch",
+        "start": 18,
+        "end": 25
+      },
+      {
+        "text": "PEFT",
+        "start": 28,
+        "end": 32
+      },
+      {
+        "text": "Python",
+        "start": 35,
+        "end": 41
+      }
+    ],
+    "policy_citations": [
+      "policy:llm_algorithm"
+    ]
+  },
+  {
+    "id": "llm_algorithm-13",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：PyTorch、PEFT、Python",
+    "expected_facts": [
+      "PyTorch",
+      "PEFT",
+      "Python"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "llm_algorithm"
+    ],
+    "evidence_spans": [
+      {
+        "text": "PyTorch",
+        "start": 18,
+        "end": 25
+      },
+      {
+        "text": "PEFT",
+        "start": 28,
+        "end": 32
+      },
+      {
+        "text": "Python",
+        "start": 35,
+        "end": 41
+      }
+    ],
+    "policy_citations": [
+      "policy:llm_algorithm"
+    ]
+  },
+  {
+    "id": "llm_algorithm-14",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：PEFT、Python",
+    "expected_facts": [
+      "PEFT",
+      "Python"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "llm_algorithm"
+    ],
+    "evidence_spans": [
+      {
+        "text": "PEFT",
+        "start": 18,
+        "end": 22
+      },
+      {
+        "text": "Python",
+        "start": 25,
+        "end": 31
+      }
+    ],
+    "policy_citations": [
+      "policy:llm_algorithm"
+    ]
+  },
+  {
+    "id": "llm_algorithm-15",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：PyTorch、分布式训练、PEFT、Python、推理加速、Transformer",
+    "expected_facts": [
+      "PyTorch",
+      "分布式训练",
+      "PEFT",
+      "Python",
+      "推理加速",
+      "Transformer"
+    ],
+    "experience_years": null,
+    "expected_job_families": [
+      "llm_algorithm"
+    ],
+    "evidence_spans": [
+      {
+        "text": "PyTorch",
+        "start": 18,
+        "end": 25
+      },
+      {
+        "text": "分布式训练",
+        "start": 28,
+        "end": 33
+      },
+      {
+        "text": "PEFT",
+        "start": 46,
+        "end": 50
+      },
+      {
+        "text": "Python",
+        "start": 53,
+        "end": 59
+      },
+      {
+        "text": "推理加速",
+        "start": 62,
+        "end": 66
+      },
+      {
+        "text": "Transformer",
+        "start": 77,
+        "end": 88
+      }
+    ],
+    "policy_citations": [
+      "policy:llm_algorithm"
+    ]
+  },
+  {
+    "id": "machine_learning-01",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Python、Scikit-learn、MLOps、机器学习、特征工程、SQL",
+    "expected_facts": [
+      "Python",
+      "Scikit-learn",
+      "MLOps",
+      "机器学习",
+      "特征工程",
+      "SQL"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "machine_learning"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Python",
+        "start": 18,
+        "end": 24
+      },
+      {
+        "text": "Scikit-learn",
+        "start": 27,
+        "end": 39
+      },
+      {
+        "text": "MLOps",
+        "start": 42,
+        "end": 47
+      },
+      {
+        "text": "机器学习",
+        "start": 50,
+        "end": 54
+      },
+      {
+        "text": "特征工程",
+        "start": 65,
+        "end": 69
+      },
+      {
+        "text": "SQL",
+        "start": 80,
+        "end": 83
+      }
+    ],
+    "policy_citations": [
+      "policy:machine_learning"
+    ]
+  },
+  {
+    "id": "machine_learning-02",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Python、Scikit-learn、特征工程、SQL、MLOps、机器学习",
+    "expected_facts": [
+      "Python",
+      "Scikit-learn",
+      "特征工程",
+      "SQL",
+      "MLOps",
+      "机器学习"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "machine_learning"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Python",
+        "start": 18,
+        "end": 24
+      },
+      {
+        "text": "Scikit-learn",
+        "start": 27,
+        "end": 39
+      },
+      {
+        "text": "特征工程",
+        "start": 42,
+        "end": 46
+      },
+      {
+        "text": "SQL",
+        "start": 57,
+        "end": 60
+      },
+      {
+        "text": "MLOps",
+        "start": 63,
+        "end": 68
+      },
+      {
+        "text": "机器学习",
+        "start": 71,
+        "end": 75
+      }
+    ],
+    "policy_citations": [
+      "policy:machine_learning"
+    ]
+  },
+  {
+    "id": "machine_learning-03",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Scikit-learn、机器学习、MLOps、Python、特征工程、SQL",
+    "expected_facts": [
+      "Scikit-learn",
+      "机器学习",
+      "MLOps",
+      "Python",
+      "特征工程",
+      "SQL"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "machine_learning"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Scikit-learn",
+        "start": 18,
+        "end": 30
+      },
+      {
+        "text": "机器学习",
+        "start": 33,
+        "end": 37
+      },
+      {
+        "text": "MLOps",
+        "start": 48,
+        "end": 53
+      },
+      {
+        "text": "Python",
+        "start": 56,
+        "end": 62
+      },
+      {
+        "text": "特征工程",
+        "start": 65,
+        "end": 69
+      },
+      {
+        "text": "SQL",
+        "start": 80,
+        "end": 83
+      }
+    ],
+    "policy_citations": [
+      "policy:machine_learning"
+    ]
+  },
+  {
+    "id": "machine_learning-04",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：MLOps、特征工程、SQL、Python、Scikit-learn、机器学习",
+    "expected_facts": [
+      "MLOps",
+      "特征工程",
+      "SQL",
+      "Python",
+      "Scikit-learn",
+      "机器学习"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "machine_learning"
+    ],
+    "evidence_spans": [
+      {
+        "text": "MLOps",
+        "start": 18,
+        "end": 23
+      },
+      {
+        "text": "特征工程",
+        "start": 26,
+        "end": 30
+      },
+      {
+        "text": "SQL",
+        "start": 41,
+        "end": 44
+      },
+      {
+        "text": "Python",
+        "start": 47,
+        "end": 53
+      },
+      {
+        "text": "Scikit-learn",
+        "start": 56,
+        "end": 68
+      },
+      {
+        "text": "机器学习",
+        "start": 71,
+        "end": 75
+      }
+    ],
+    "policy_citations": [
+      "policy:machine_learning"
+    ]
+  },
+  {
+    "id": "machine_learning-05",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Python、特征工程、Scikit-learn、机器学习、MLOps、SQL",
+    "expected_facts": [
+      "Python",
+      "特征工程",
+      "Scikit-learn",
+      "机器学习",
+      "MLOps",
+      "SQL"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "machine_learning"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Python",
+        "start": 18,
+        "end": 24
+      },
+      {
+        "text": "特征工程",
+        "start": 27,
+        "end": 31
+      },
+      {
+        "text": "Scikit-learn",
+        "start": 42,
+        "end": 54
+      },
+      {
+        "text": "机器学习",
+        "start": 57,
+        "end": 61
+      },
+      {
+        "text": "MLOps",
+        "start": 72,
+        "end": 77
+      },
+      {
+        "text": "SQL",
+        "start": 80,
+        "end": 83
+      }
+    ],
+    "policy_citations": [
+      "policy:machine_learning"
+    ]
+  },
+  {
+    "id": "machine_learning-06",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：特征工程、Scikit-learn、Python、SQL、MLOps、机器学习",
+    "expected_facts": [
+      "特征工程",
+      "Scikit-learn",
+      "Python",
+      "SQL",
+      "MLOps",
+      "机器学习"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "machine_learning"
+    ],
+    "evidence_spans": [
+      {
+        "text": "特征工程",
+        "start": 18,
+        "end": 22
+      },
+      {
+        "text": "Scikit-learn",
+        "start": 33,
+        "end": 45
+      },
+      {
+        "text": "Python",
+        "start": 48,
+        "end": 54
+      },
+      {
+        "text": "SQL",
+        "start": 57,
+        "end": 60
+      },
+      {
+        "text": "MLOps",
+        "start": 63,
+        "end": 68
+      },
+      {
+        "text": "机器学习",
+        "start": 71,
+        "end": 75
+      }
+    ],
+    "policy_citations": [
+      "policy:machine_learning"
+    ]
+  },
+  {
+    "id": "machine_learning-07",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：SQL、Python、机器学习",
+    "expected_facts": [
+      "SQL",
+      "Python",
+      "机器学习"
+    ],
+    "experience_years": 2,
+    "expected_job_families": [
+      "machine_learning"
+    ],
+    "evidence_spans": [
+      {
+        "text": "SQL",
+        "start": 18,
+        "end": 21
+      },
+      {
+        "text": "Python",
+        "start": 24,
+        "end": 30
+      },
+      {
+        "text": "机器学习",
+        "start": 33,
+        "end": 37
+      }
+    ],
+    "policy_citations": [
+      "policy:machine_learning"
+    ]
+  },
+  {
+    "id": "machine_learning-08",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：机器学习、SQL、Python",
+    "expected_facts": [
+      "机器学习",
+      "SQL",
+      "Python"
+    ],
+    "experience_years": 4,
+    "expected_job_families": [
+      "machine_learning"
+    ],
+    "evidence_spans": [
+      {
+        "text": "机器学习",
+        "start": 18,
+        "end": 22
+      },
+      {
+        "text": "SQL",
+        "start": 33,
+        "end": 36
+      },
+      {
+        "text": "Python",
+        "start": 39,
+        "end": 45
+      }
+    ],
+    "policy_citations": [
+      "policy:machine_learning"
+    ]
+  },
+  {
+    "id": "machine_learning-09",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：SQL、Python、机器学习",
+    "expected_facts": [
+      "SQL",
+      "Python",
+      "机器学习"
+    ],
+    "experience_years": 6,
+    "expected_job_families": [
+      "machine_learning"
+    ],
+    "evidence_spans": [
+      {
+        "text": "SQL",
+        "start": 18,
+        "end": 21
+      },
+      {
+        "text": "Python",
+        "start": 24,
+        "end": 30
+      },
+      {
+        "text": "机器学习",
+        "start": 33,
+        "end": 37
+      }
+    ],
+    "policy_citations": [
+      "policy:machine_learning"
+    ]
+  },
+  {
+    "id": "machine_learning-10",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：SQL、机器学习、Python",
+    "expected_facts": [
+      "SQL",
+      "机器学习",
+      "Python"
+    ],
+    "experience_years": 8,
+    "expected_job_families": [
+      "machine_learning"
+    ],
+    "evidence_spans": [
+      {
+        "text": "SQL",
+        "start": 18,
+        "end": 21
+      },
+      {
+        "text": "机器学习",
+        "start": 24,
+        "end": 28
+      },
+      {
+        "text": "Python",
+        "start": 39,
+        "end": 45
+      }
+    ],
+    "policy_citations": [
+      "policy:machine_learning"
+    ]
+  },
+  {
+    "id": "machine_learning-11",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：机器学习、Python、Scikit-learn",
+    "expected_facts": [
+      "机器学习",
+      "Python",
+      "Scikit-learn"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "machine_learning"
+    ],
+    "evidence_spans": [
+      {
+        "text": "机器学习",
+        "start": 18,
+        "end": 22
+      },
+      {
+        "text": "Python",
+        "start": 33,
+        "end": 39
+      },
+      {
+        "text": "Scikit-learn",
+        "start": 42,
+        "end": 54
+      }
+    ],
+    "policy_citations": [
+      "policy:machine_learning"
+    ]
+  },
+  {
+    "id": "machine_learning-12",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Scikit-learn、Python、机器学习",
+    "expected_facts": [
+      "Scikit-learn",
+      "Python",
+      "机器学习"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "machine_learning"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Scikit-learn",
+        "start": 18,
+        "end": 30
+      },
+      {
+        "text": "Python",
+        "start": 33,
+        "end": 39
+      },
+      {
+        "text": "机器学习",
+        "start": 42,
+        "end": 46
+      }
+    ],
+    "policy_citations": [
+      "policy:machine_learning"
+    ]
+  },
+  {
+    "id": "machine_learning-13",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Scikit-learn、Python、机器学习",
+    "expected_facts": [
+      "Scikit-learn",
+      "Python",
+      "机器学习"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "machine_learning"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Scikit-learn",
+        "start": 18,
+        "end": 30
+      },
+      {
+        "text": "Python",
+        "start": 33,
+        "end": 39
+      },
+      {
+        "text": "机器学习",
+        "start": 42,
+        "end": 46
+      }
+    ],
+    "policy_citations": [
+      "policy:machine_learning"
+    ]
+  },
+  {
+    "id": "machine_learning-14",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Python、Scikit-learn",
+    "expected_facts": [
+      "Python",
+      "Scikit-learn"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "machine_learning"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Python",
+        "start": 18,
+        "end": 24
+      },
+      {
+        "text": "Scikit-learn",
+        "start": 27,
+        "end": 39
+      }
+    ],
+    "policy_citations": [
+      "policy:machine_learning"
+    ]
+  },
+  {
+    "id": "machine_learning-15",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：SQL、Python、机器学习、Scikit-learn、MLOps、特征工程",
+    "expected_facts": [
+      "SQL",
+      "Python",
+      "机器学习",
+      "Scikit-learn",
+      "MLOps",
+      "特征工程"
+    ],
+    "experience_years": null,
+    "expected_job_families": [
+      "machine_learning"
+    ],
+    "evidence_spans": [
+      {
+        "text": "SQL",
+        "start": 18,
+        "end": 21
+      },
+      {
+        "text": "Python",
+        "start": 24,
+        "end": 30
+      },
+      {
+        "text": "机器学习",
+        "start": 33,
+        "end": 37
+      },
+      {
+        "text": "Scikit-learn",
+        "start": 48,
+        "end": 60
+      },
+      {
+        "text": "MLOps",
+        "start": 63,
+        "end": 68
+      },
+      {
+        "text": "特征工程",
+        "start": 71,
+        "end": 75
+      }
+    ],
+    "policy_citations": [
+      "policy:machine_learning"
+    ]
+  },
+  {
+    "id": "data_engineering-01",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：ETL、数据仓库、Spark、SQL、Python、Flink",
+    "expected_facts": [
+      "ETL",
+      "数据仓库",
+      "Spark",
+      "SQL",
+      "Python",
+      "Flink"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "data_engineering"
+    ],
+    "evidence_spans": [
+      {
+        "text": "ETL",
+        "start": 18,
+        "end": 21
+      },
+      {
+        "text": "数据仓库",
+        "start": 24,
+        "end": 28
+      },
+      {
+        "text": "Spark",
+        "start": 39,
+        "end": 44
+      },
+      {
+        "text": "SQL",
+        "start": 47,
+        "end": 50
+      },
+      {
+        "text": "Python",
+        "start": 53,
+        "end": 59
+      },
+      {
+        "text": "Flink",
+        "start": 62,
+        "end": 67
+      }
+    ],
+    "policy_citations": [
+      "policy:data_engineering"
+    ]
+  },
+  {
+    "id": "data_engineering-02",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Python、数据仓库、Spark、Flink、ETL、SQL",
+    "expected_facts": [
+      "Python",
+      "数据仓库",
+      "Spark",
+      "Flink",
+      "ETL",
+      "SQL"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "data_engineering"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Python",
+        "start": 18,
+        "end": 24
+      },
+      {
+        "text": "数据仓库",
+        "start": 27,
+        "end": 31
+      },
+      {
+        "text": "Spark",
+        "start": 42,
+        "end": 47
+      },
+      {
+        "text": "Flink",
+        "start": 50,
+        "end": 55
+      },
+      {
+        "text": "ETL",
+        "start": 58,
+        "end": 61
+      },
+      {
+        "text": "SQL",
+        "start": 64,
+        "end": 67
+      }
+    ],
+    "policy_citations": [
+      "policy:data_engineering"
+    ]
+  },
+  {
+    "id": "data_engineering-03",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：ETL、Python、Spark、Flink、数据仓库、SQL",
+    "expected_facts": [
+      "ETL",
+      "Python",
+      "Spark",
+      "Flink",
+      "数据仓库",
+      "SQL"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "data_engineering"
+    ],
+    "evidence_spans": [
+      {
+        "text": "ETL",
+        "start": 18,
+        "end": 21
+      },
+      {
+        "text": "Python",
+        "start": 24,
+        "end": 30
+      },
+      {
+        "text": "Spark",
+        "start": 33,
+        "end": 38
+      },
+      {
+        "text": "Flink",
+        "start": 41,
+        "end": 46
+      },
+      {
+        "text": "数据仓库",
+        "start": 49,
+        "end": 53
+      },
+      {
+        "text": "SQL",
+        "start": 64,
+        "end": 67
+      }
+    ],
+    "policy_citations": [
+      "policy:data_engineering"
+    ]
+  },
+  {
+    "id": "data_engineering-04",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：SQL、Python、Spark、ETL、Flink、数据仓库",
+    "expected_facts": [
+      "SQL",
+      "Python",
+      "Spark",
+      "ETL",
+      "Flink",
+      "数据仓库"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "data_engineering"
+    ],
+    "evidence_spans": [
+      {
+        "text": "SQL",
+        "start": 18,
+        "end": 21
+      },
+      {
+        "text": "Python",
+        "start": 24,
+        "end": 30
+      },
+      {
+        "text": "Spark",
+        "start": 33,
+        "end": 38
+      },
+      {
+        "text": "ETL",
+        "start": 41,
+        "end": 44
+      },
+      {
+        "text": "Flink",
+        "start": 47,
+        "end": 52
+      },
+      {
+        "text": "数据仓库",
+        "start": 55,
+        "end": 59
+      }
+    ],
+    "policy_citations": [
+      "policy:data_engineering"
+    ]
+  },
+  {
+    "id": "data_engineering-05",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：数据仓库、ETL、SQL、Flink、Spark、Python",
+    "expected_facts": [
+      "数据仓库",
+      "ETL",
+      "SQL",
+      "Flink",
+      "Spark",
+      "Python"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "data_engineering"
+    ],
+    "evidence_spans": [
+      {
+        "text": "数据仓库",
+        "start": 18,
+        "end": 22
+      },
+      {
+        "text": "ETL",
+        "start": 33,
+        "end": 36
+      },
+      {
+        "text": "SQL",
+        "start": 39,
+        "end": 42
+      },
+      {
+        "text": "Flink",
+        "start": 45,
+        "end": 50
+      },
+      {
+        "text": "Spark",
+        "start": 53,
+        "end": 58
+      },
+      {
+        "text": "Python",
+        "start": 61,
+        "end": 67
+      }
+    ],
+    "policy_citations": [
+      "policy:data_engineering"
+    ]
+  },
+  {
+    "id": "data_engineering-06",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Spark、Python、SQL、数据仓库、Flink、ETL",
+    "expected_facts": [
+      "Spark",
+      "Python",
+      "SQL",
+      "数据仓库",
+      "Flink",
+      "ETL"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "data_engineering"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Spark",
+        "start": 18,
+        "end": 23
+      },
+      {
+        "text": "Python",
+        "start": 26,
+        "end": 32
+      },
+      {
+        "text": "SQL",
+        "start": 35,
+        "end": 38
+      },
+      {
+        "text": "数据仓库",
+        "start": 41,
+        "end": 45
+      },
+      {
+        "text": "Flink",
+        "start": 56,
+        "end": 61
+      },
+      {
+        "text": "ETL",
+        "start": 64,
+        "end": 67
+      }
+    ],
+    "policy_citations": [
+      "policy:data_engineering"
+    ]
+  },
+  {
+    "id": "data_engineering-07",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：SQL、ETL、Python",
+    "expected_facts": [
+      "SQL",
+      "ETL",
+      "Python"
+    ],
+    "experience_years": 2,
+    "expected_job_families": [
+      "data_engineering"
+    ],
+    "evidence_spans": [
+      {
+        "text": "SQL",
+        "start": 18,
+        "end": 21
+      },
+      {
+        "text": "ETL",
+        "start": 24,
+        "end": 27
+      },
+      {
+        "text": "Python",
+        "start": 30,
+        "end": 36
+      }
+    ],
+    "policy_citations": [
+      "policy:data_engineering"
+    ]
+  },
+  {
+    "id": "data_engineering-08",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：ETL、Python、SQL",
+    "expected_facts": [
+      "ETL",
+      "Python",
+      "SQL"
+    ],
+    "experience_years": 4,
+    "expected_job_families": [
+      "data_engineering"
+    ],
+    "evidence_spans": [
+      {
+        "text": "ETL",
+        "start": 18,
+        "end": 21
+      },
+      {
+        "text": "Python",
+        "start": 24,
+        "end": 30
+      },
+      {
+        "text": "SQL",
+        "start": 33,
+        "end": 36
+      }
+    ],
+    "policy_citations": [
+      "policy:data_engineering"
+    ]
+  },
+  {
+    "id": "data_engineering-09",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：ETL、SQL、Python",
+    "expected_facts": [
+      "ETL",
+      "SQL",
+      "Python"
+    ],
+    "experience_years": 6,
+    "expected_job_families": [
+      "data_engineering"
+    ],
+    "evidence_spans": [
+      {
+        "text": "ETL",
+        "start": 18,
+        "end": 21
+      },
+      {
+        "text": "SQL",
+        "start": 24,
+        "end": 27
+      },
+      {
+        "text": "Python",
+        "start": 30,
+        "end": 36
+      }
+    ],
+    "policy_citations": [
+      "policy:data_engineering"
+    ]
+  },
+  {
+    "id": "data_engineering-10",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：SQL、ETL、Python",
+    "expected_facts": [
+      "SQL",
+      "ETL",
+      "Python"
+    ],
+    "experience_years": 8,
+    "expected_job_families": [
+      "data_engineering"
+    ],
+    "evidence_spans": [
+      {
+        "text": "SQL",
+        "start": 18,
+        "end": 21
+      },
+      {
+        "text": "ETL",
+        "start": 24,
+        "end": 27
+      },
+      {
+        "text": "Python",
+        "start": 30,
+        "end": 36
+      }
+    ],
+    "policy_citations": [
+      "policy:data_engineering"
+    ]
+  },
+  {
+    "id": "data_engineering-11",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Python、SQL、Spark",
+    "expected_facts": [
+      "Python",
+      "SQL",
+      "Spark"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "data_engineering"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Python",
+        "start": 18,
+        "end": 24
+      },
+      {
+        "text": "SQL",
+        "start": 27,
+        "end": 30
+      },
+      {
+        "text": "Spark",
+        "start": 33,
+        "end": 38
+      }
+    ],
+    "policy_citations": [
+      "policy:data_engineering"
+    ]
+  },
+  {
+    "id": "data_engineering-12",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Spark、SQL、Python",
+    "expected_facts": [
+      "Spark",
+      "SQL",
+      "Python"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "data_engineering"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Spark",
+        "start": 18,
+        "end": 23
+      },
+      {
+        "text": "SQL",
+        "start": 26,
+        "end": 29
+      },
+      {
+        "text": "Python",
+        "start": 32,
+        "end": 38
+      }
+    ],
+    "policy_citations": [
+      "policy:data_engineering"
+    ]
+  },
+  {
+    "id": "data_engineering-13",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：SQL、Python、Spark",
+    "expected_facts": [
+      "SQL",
+      "Python",
+      "Spark"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "data_engineering"
+    ],
+    "evidence_spans": [
+      {
+        "text": "SQL",
+        "start": 18,
+        "end": 21
+      },
+      {
+        "text": "Python",
+        "start": 24,
+        "end": 30
+      },
+      {
+        "text": "Spark",
+        "start": 33,
+        "end": 38
+      }
+    ],
+    "policy_citations": [
+      "policy:data_engineering"
+    ]
+  },
+  {
+    "id": "data_engineering-14",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：SQL、Spark",
+    "expected_facts": [
+      "SQL",
+      "Spark"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "data_engineering"
+    ],
+    "evidence_spans": [
+      {
+        "text": "SQL",
+        "start": 18,
+        "end": 21
+      },
+      {
+        "text": "Spark",
+        "start": 24,
+        "end": 29
+      }
+    ],
+    "policy_citations": [
+      "policy:data_engineering"
+    ]
+  },
+  {
+    "id": "data_engineering-15",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：数据仓库、Python、ETL、Spark、Flink、SQL",
+    "expected_facts": [
+      "数据仓库",
+      "Python",
+      "ETL",
+      "Spark",
+      "Flink",
+      "SQL"
+    ],
+    "experience_years": null,
+    "expected_job_families": [
+      "data_engineering"
+    ],
+    "evidence_spans": [
+      {
+        "text": "数据仓库",
+        "start": 18,
+        "end": 22
+      },
+      {
+        "text": "Python",
+        "start": 33,
+        "end": 39
+      },
+      {
+        "text": "ETL",
+        "start": 42,
+        "end": 45
+      },
+      {
+        "text": "Spark",
+        "start": 48,
+        "end": 53
+      },
+      {
+        "text": "Flink",
+        "start": 56,
+        "end": 61
+      },
+      {
+        "text": "SQL",
+        "start": 64,
+        "end": 67
+      }
+    ],
+    "policy_citations": [
+      "policy:data_engineering"
+    ]
+  },
+  {
+    "id": "data_analysis-01",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：SQL、Python、数据可视化、Tableau、A/B 测试、统计学",
+    "expected_facts": [
+      "SQL",
+      "Python",
+      "数据可视化",
+      "Tableau",
+      "A/B 测试",
+      "统计学"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "data_analysis"
+    ],
+    "evidence_spans": [
+      {
+        "text": "SQL",
+        "start": 18,
+        "end": 21
+      },
+      {
+        "text": "Python",
+        "start": 24,
+        "end": 30
+      },
+      {
+        "text": "数据可视化",
+        "start": 33,
+        "end": 38
+      },
+      {
+        "text": "Tableau",
+        "start": 51,
+        "end": 58
+      },
+      {
+        "text": "A/B 测试",
+        "start": 61,
+        "end": 67
+      },
+      {
+        "text": "统计学",
+        "start": 74,
+        "end": 77
+      }
+    ],
+    "policy_citations": [
+      "policy:data_analysis"
+    ]
+  },
+  {
+    "id": "data_analysis-02",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Python、数据可视化、Tableau、统计学、A/B 测试、SQL",
+    "expected_facts": [
+      "Python",
+      "数据可视化",
+      "Tableau",
+      "统计学",
+      "A/B 测试",
+      "SQL"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "data_analysis"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Python",
+        "start": 18,
+        "end": 24
+      },
+      {
+        "text": "数据可视化",
+        "start": 27,
+        "end": 32
+      },
+      {
+        "text": "Tableau",
+        "start": 45,
+        "end": 52
+      },
+      {
+        "text": "统计学",
+        "start": 55,
+        "end": 58
+      },
+      {
+        "text": "A/B 测试",
+        "start": 67,
+        "end": 73
+      },
+      {
+        "text": "SQL",
+        "start": 80,
+        "end": 83
+      }
+    ],
+    "policy_citations": [
+      "policy:data_analysis"
+    ]
+  },
+  {
+    "id": "data_analysis-03",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：数据可视化、A/B 测试、Python、统计学、SQL、Tableau",
+    "expected_facts": [
+      "数据可视化",
+      "A/B 测试",
+      "Python",
+      "统计学",
+      "SQL",
+      "Tableau"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "data_analysis"
+    ],
+    "evidence_spans": [
+      {
+        "text": "数据可视化",
+        "start": 18,
+        "end": 23
+      },
+      {
+        "text": "A/B 测试",
+        "start": 36,
+        "end": 42
+      },
+      {
+        "text": "Python",
+        "start": 49,
+        "end": 55
+      },
+      {
+        "text": "统计学",
+        "start": 58,
+        "end": 61
+      },
+      {
+        "text": "SQL",
+        "start": 70,
+        "end": 73
+      },
+      {
+        "text": "Tableau",
+        "start": 76,
+        "end": 83
+      }
+    ],
+    "policy_citations": [
+      "policy:data_analysis"
+    ]
+  },
+  {
+    "id": "data_analysis-04",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：A/B 测试、统计学、Tableau、SQL、数据可视化、Python",
+    "expected_facts": [
+      "A/B 测试",
+      "统计学",
+      "Tableau",
+      "SQL",
+      "数据可视化",
+      "Python"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "data_analysis"
+    ],
+    "evidence_spans": [
+      {
+        "text": "A/B 测试",
+        "start": 18,
+        "end": 24
+      },
+      {
+        "text": "统计学",
+        "start": 31,
+        "end": 34
+      },
+      {
+        "text": "Tableau",
+        "start": 43,
+        "end": 50
+      },
+      {
+        "text": "SQL",
+        "start": 53,
+        "end": 56
+      },
+      {
+        "text": "数据可视化",
+        "start": 59,
+        "end": 64
+      },
+      {
+        "text": "Python",
+        "start": 77,
+        "end": 83
+      }
+    ],
+    "policy_citations": [
+      "policy:data_analysis"
+    ]
+  },
+  {
+    "id": "data_analysis-05",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：数据可视化、SQL、Python、统计学、Tableau、A/B 测试",
+    "expected_facts": [
+      "数据可视化",
+      "SQL",
+      "Python",
+      "统计学",
+      "Tableau",
+      "A/B 测试"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "data_analysis"
+    ],
+    "evidence_spans": [
+      {
+        "text": "数据可视化",
+        "start": 18,
+        "end": 23
+      },
+      {
+        "text": "SQL",
+        "start": 36,
+        "end": 39
+      },
+      {
+        "text": "Python",
+        "start": 42,
+        "end": 48
+      },
+      {
+        "text": "统计学",
+        "start": 51,
+        "end": 54
+      },
+      {
+        "text": "Tableau",
+        "start": 63,
+        "end": 70
+      },
+      {
+        "text": "A/B 测试",
+        "start": 73,
+        "end": 79
+      }
+    ],
+    "policy_citations": [
+      "policy:data_analysis"
+    ]
+  },
+  {
+    "id": "data_analysis-06",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：数据可视化、Tableau、Python、统计学、SQL、A/B 测试",
+    "expected_facts": [
+      "数据可视化",
+      "Tableau",
+      "Python",
+      "统计学",
+      "SQL",
+      "A/B 测试"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "data_analysis"
+    ],
+    "evidence_spans": [
+      {
+        "text": "数据可视化",
+        "start": 18,
+        "end": 23
+      },
+      {
+        "text": "Tableau",
+        "start": 36,
+        "end": 43
+      },
+      {
+        "text": "Python",
+        "start": 46,
+        "end": 52
+      },
+      {
+        "text": "统计学",
+        "start": 55,
+        "end": 58
+      },
+      {
+        "text": "SQL",
+        "start": 67,
+        "end": 70
+      },
+      {
+        "text": "A/B 测试",
+        "start": 73,
+        "end": 79
+      }
+    ],
+    "policy_citations": [
+      "policy:data_analysis"
+    ]
+  },
+  {
+    "id": "data_analysis-07",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：数据可视化、统计学、SQL",
+    "expected_facts": [
+      "数据可视化",
+      "统计学",
+      "SQL"
+    ],
+    "experience_years": 2,
+    "expected_job_families": [
+      "data_analysis"
+    ],
+    "evidence_spans": [
+      {
+        "text": "数据可视化",
+        "start": 18,
+        "end": 23
+      },
+      {
+        "text": "统计学",
+        "start": 36,
+        "end": 39
+      },
+      {
+        "text": "SQL",
+        "start": 48,
+        "end": 51
+      }
+    ],
+    "policy_citations": [
+      "policy:data_analysis"
+    ]
+  },
+  {
+    "id": "data_analysis-08",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：统计学、数据可视化、SQL",
+    "expected_facts": [
+      "统计学",
+      "数据可视化",
+      "SQL"
+    ],
+    "experience_years": 4,
+    "expected_job_families": [
+      "data_analysis"
+    ],
+    "evidence_spans": [
+      {
+        "text": "统计学",
+        "start": 18,
+        "end": 21
+      },
+      {
+        "text": "数据可视化",
+        "start": 30,
+        "end": 35
+      },
+      {
+        "text": "SQL",
+        "start": 48,
+        "end": 51
+      }
+    ],
+    "policy_citations": [
+      "policy:data_analysis"
+    ]
+  },
+  {
+    "id": "data_analysis-09",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：SQL、统计学、数据可视化",
+    "expected_facts": [
+      "SQL",
+      "统计学",
+      "数据可视化"
+    ],
+    "experience_years": 6,
+    "expected_job_families": [
+      "data_analysis"
+    ],
+    "evidence_spans": [
+      {
+        "text": "SQL",
+        "start": 18,
+        "end": 21
+      },
+      {
+        "text": "统计学",
+        "start": 24,
+        "end": 27
+      },
+      {
+        "text": "数据可视化",
+        "start": 36,
+        "end": 41
+      }
+    ],
+    "policy_citations": [
+      "policy:data_analysis"
+    ]
+  },
+  {
+    "id": "data_analysis-10",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：数据可视化、SQL、统计学",
+    "expected_facts": [
+      "数据可视化",
+      "SQL",
+      "统计学"
+    ],
+    "experience_years": 8,
+    "expected_job_families": [
+      "data_analysis"
+    ],
+    "evidence_spans": [
+      {
+        "text": "数据可视化",
+        "start": 18,
+        "end": 23
+      },
+      {
+        "text": "SQL",
+        "start": 36,
+        "end": 39
+      },
+      {
+        "text": "统计学",
+        "start": 42,
+        "end": 45
+      }
+    ],
+    "policy_citations": [
+      "policy:data_analysis"
+    ]
+  },
+  {
+    "id": "data_analysis-11",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Python、SQL、统计学",
+    "expected_facts": [
+      "Python",
+      "SQL",
+      "统计学"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "data_analysis"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Python",
+        "start": 18,
+        "end": 24
+      },
+      {
+        "text": "SQL",
+        "start": 27,
+        "end": 30
+      },
+      {
+        "text": "统计学",
+        "start": 33,
+        "end": 36
+      }
+    ],
+    "policy_citations": [
+      "policy:data_analysis"
+    ]
+  },
+  {
+    "id": "data_analysis-12",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：统计学、Python、SQL",
+    "expected_facts": [
+      "统计学",
+      "Python",
+      "SQL"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "data_analysis"
+    ],
+    "evidence_spans": [
+      {
+        "text": "统计学",
+        "start": 18,
+        "end": 21
+      },
+      {
+        "text": "Python",
+        "start": 30,
+        "end": 36
+      },
+      {
+        "text": "SQL",
+        "start": 39,
+        "end": 42
+      }
+    ],
+    "policy_citations": [
+      "policy:data_analysis"
+    ]
+  },
+  {
+    "id": "data_analysis-13",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：统计学、SQL、Python",
+    "expected_facts": [
+      "统计学",
+      "SQL",
+      "Python"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "data_analysis"
+    ],
+    "evidence_spans": [
+      {
+        "text": "统计学",
+        "start": 18,
+        "end": 21
+      },
+      {
+        "text": "SQL",
+        "start": 30,
+        "end": 33
+      },
+      {
+        "text": "Python",
+        "start": 36,
+        "end": 42
+      }
+    ],
+    "policy_citations": [
+      "policy:data_analysis"
+    ]
+  },
+  {
+    "id": "data_analysis-14",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：SQL、Python",
+    "expected_facts": [
+      "SQL",
+      "Python"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "data_analysis"
+    ],
+    "evidence_spans": [
+      {
+        "text": "SQL",
+        "start": 18,
+        "end": 21
+      },
+      {
+        "text": "Python",
+        "start": 24,
+        "end": 30
+      }
+    ],
+    "policy_citations": [
+      "policy:data_analysis"
+    ]
+  },
+  {
+    "id": "data_analysis-15",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：统计学、Python、数据可视化、SQL、A/B 测试、Tableau",
+    "expected_facts": [
+      "统计学",
+      "Python",
+      "数据可视化",
+      "SQL",
+      "A/B 测试",
+      "Tableau"
+    ],
+    "experience_years": null,
+    "expected_job_families": [
+      "data_analysis"
+    ],
+    "evidence_spans": [
+      {
+        "text": "统计学",
+        "start": 18,
+        "end": 21
+      },
+      {
+        "text": "Python",
+        "start": 30,
+        "end": 36
+      },
+      {
+        "text": "数据可视化",
+        "start": 39,
+        "end": 44
+      },
+      {
+        "text": "SQL",
+        "start": 57,
+        "end": 60
+      },
+      {
+        "text": "A/B 测试",
+        "start": 63,
+        "end": 69
+      },
+      {
+        "text": "Tableau",
+        "start": 76,
+        "end": 83
+      }
+    ],
+    "policy_citations": [
+      "policy:data_analysis"
+    ]
+  },
+  {
+    "id": "backend-01",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：消息队列、API 设计、Python/Java、Redis、数据库、微服务",
+    "expected_facts": [
+      "消息队列",
+      "API 设计",
+      "Python/Java",
+      "Redis",
+      "数据库",
+      "微服务"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "backend"
+    ],
+    "evidence_spans": [
+      {
+        "text": "消息队列",
+        "start": 18,
+        "end": 22
+      },
+      {
+        "text": "API 设计",
+        "start": 33,
+        "end": 39
+      },
+      {
+        "text": "Python/Java",
+        "start": 46,
+        "end": 57
+      },
+      {
+        "text": "Redis",
+        "start": 60,
+        "end": 65
+      },
+      {
+        "text": "数据库",
+        "start": 68,
+        "end": 71
+      },
+      {
+        "text": "微服务",
+        "start": 80,
+        "end": 83
+      }
+    ],
+    "policy_citations": [
+      "policy:backend"
+    ]
+  },
+  {
+    "id": "backend-02",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：微服务、数据库、Python/Java、Redis、API 设计、消息队列",
+    "expected_facts": [
+      "微服务",
+      "数据库",
+      "Python/Java",
+      "Redis",
+      "API 设计",
+      "消息队列"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "backend"
+    ],
+    "evidence_spans": [
+      {
+        "text": "微服务",
+        "start": 18,
+        "end": 21
+      },
+      {
+        "text": "数据库",
+        "start": 30,
+        "end": 33
+      },
+      {
+        "text": "Python/Java",
+        "start": 42,
+        "end": 53
+      },
+      {
+        "text": "Redis",
+        "start": 56,
+        "end": 61
+      },
+      {
+        "text": "API 设计",
+        "start": 64,
+        "end": 70
+      },
+      {
+        "text": "消息队列",
+        "start": 77,
+        "end": 81
+      }
+    ],
+    "policy_citations": [
+      "policy:backend"
+    ]
+  },
+  {
+    "id": "backend-03",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Redis、消息队列、API 设计、微服务、Python/Java、数据库",
+    "expected_facts": [
+      "Redis",
+      "消息队列",
+      "API 设计",
+      "微服务",
+      "Python/Java",
+      "数据库"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "backend"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Redis",
+        "start": 18,
+        "end": 23
+      },
+      {
+        "text": "消息队列",
+        "start": 26,
+        "end": 30
+      },
+      {
+        "text": "API 设计",
+        "start": 41,
+        "end": 47
+      },
+      {
+        "text": "微服务",
+        "start": 54,
+        "end": 57
+      },
+      {
+        "text": "Python/Java",
+        "start": 66,
+        "end": 77
+      },
+      {
+        "text": "数据库",
+        "start": 80,
+        "end": 83
+      }
+    ],
+    "policy_citations": [
+      "policy:backend"
+    ]
+  },
+  {
+    "id": "backend-04",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：数据库、Python/Java、Redis、消息队列、微服务、API 设计",
+    "expected_facts": [
+      "数据库",
+      "Python/Java",
+      "Redis",
+      "消息队列",
+      "微服务",
+      "API 设计"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "backend"
+    ],
+    "evidence_spans": [
+      {
+        "text": "数据库",
+        "start": 18,
+        "end": 21
+      },
+      {
+        "text": "Python/Java",
+        "start": 30,
+        "end": 41
+      },
+      {
+        "text": "Redis",
+        "start": 44,
+        "end": 49
+      },
+      {
+        "text": "消息队列",
+        "start": 52,
+        "end": 56
+      },
+      {
+        "text": "微服务",
+        "start": 67,
+        "end": 70
+      },
+      {
+        "text": "API 设计",
+        "start": 79,
+        "end": 85
+      }
+    ],
+    "policy_citations": [
+      "policy:backend"
+    ]
+  },
+  {
+    "id": "backend-05",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Python/Java、微服务、数据库、API 设计、Redis、消息队列",
+    "expected_facts": [
+      "Python/Java",
+      "微服务",
+      "数据库",
+      "API 设计",
+      "Redis",
+      "消息队列"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "backend"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Python/Java",
+        "start": 18,
+        "end": 29
+      },
+      {
+        "text": "微服务",
+        "start": 32,
+        "end": 35
+      },
+      {
+        "text": "数据库",
+        "start": 44,
+        "end": 47
+      },
+      {
+        "text": "API 设计",
+        "start": 56,
+        "end": 62
+      },
+      {
+        "text": "Redis",
+        "start": 69,
+        "end": 74
+      },
+      {
+        "text": "消息队列",
+        "start": 77,
+        "end": 81
+      }
+    ],
+    "policy_citations": [
+      "policy:backend"
+    ]
+  },
+  {
+    "id": "backend-06",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：微服务、API 设计、消息队列、数据库、Redis、Python/Java",
+    "expected_facts": [
+      "微服务",
+      "API 设计",
+      "消息队列",
+      "数据库",
+      "Redis",
+      "Python/Java"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "backend"
+    ],
+    "evidence_spans": [
+      {
+        "text": "微服务",
+        "start": 18,
+        "end": 21
+      },
+      {
+        "text": "API 设计",
+        "start": 30,
+        "end": 36
+      },
+      {
+        "text": "消息队列",
+        "start": 43,
+        "end": 47
+      },
+      {
+        "text": "数据库",
+        "start": 58,
+        "end": 61
+      },
+      {
+        "text": "Redis",
+        "start": 70,
+        "end": 75
+      },
+      {
+        "text": "Python/Java",
+        "start": 78,
+        "end": 89
+      }
+    ],
+    "policy_citations": [
+      "policy:backend"
+    ]
+  },
+  {
+    "id": "backend-07",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Python/Java、API 设计、数据库",
+    "expected_facts": [
+      "Python/Java",
+      "API 设计",
+      "数据库"
+    ],
+    "experience_years": 2,
+    "expected_job_families": [
+      "backend"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Python/Java",
+        "start": 18,
+        "end": 29
+      },
+      {
+        "text": "API 设计",
+        "start": 32,
+        "end": 38
+      },
+      {
+        "text": "数据库",
+        "start": 45,
+        "end": 48
+      }
+    ],
+    "policy_citations": [
+      "policy:backend"
+    ]
+  },
+  {
+    "id": "backend-08",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Python/Java、API 设计、数据库",
+    "expected_facts": [
+      "Python/Java",
+      "API 设计",
+      "数据库"
+    ],
+    "experience_years": 4,
+    "expected_job_families": [
+      "backend"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Python/Java",
+        "start": 18,
+        "end": 29
+      },
+      {
+        "text": "API 设计",
+        "start": 32,
+        "end": 38
+      },
+      {
+        "text": "数据库",
+        "start": 45,
+        "end": 48
+      }
+    ],
+    "policy_citations": [
+      "policy:backend"
+    ]
+  },
+  {
+    "id": "backend-09",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：API 设计、Python/Java、数据库",
+    "expected_facts": [
+      "API 设计",
+      "Python/Java",
+      "数据库"
+    ],
+    "experience_years": 6,
+    "expected_job_families": [
+      "backend"
+    ],
+    "evidence_spans": [
+      {
+        "text": "API 设计",
+        "start": 18,
+        "end": 24
+      },
+      {
+        "text": "Python/Java",
+        "start": 31,
+        "end": 42
+      },
+      {
+        "text": "数据库",
+        "start": 45,
+        "end": 48
+      }
+    ],
+    "policy_citations": [
+      "policy:backend"
+    ]
+  },
+  {
+    "id": "backend-10",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：数据库、Python/Java、API 设计",
+    "expected_facts": [
+      "数据库",
+      "Python/Java",
+      "API 设计"
+    ],
+    "experience_years": 8,
+    "expected_job_families": [
+      "backend"
+    ],
+    "evidence_spans": [
+      {
+        "text": "数据库",
+        "start": 18,
+        "end": 21
+      },
+      {
+        "text": "Python/Java",
+        "start": 30,
+        "end": 41
+      },
+      {
+        "text": "API 设计",
+        "start": 44,
+        "end": 50
+      }
+    ],
+    "policy_citations": [
+      "policy:backend"
+    ]
+  },
+  {
+    "id": "backend-11",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：微服务、数据库、Python/Java",
+    "expected_facts": [
+      "微服务",
+      "数据库",
+      "Python/Java"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "backend"
+    ],
+    "evidence_spans": [
+      {
+        "text": "微服务",
+        "start": 18,
+        "end": 21
+      },
+      {
+        "text": "数据库",
+        "start": 30,
+        "end": 33
+      },
+      {
+        "text": "Python/Java",
+        "start": 42,
+        "end": 53
+      }
+    ],
+    "policy_citations": [
+      "policy:backend"
+    ]
+  },
+  {
+    "id": "backend-12",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Python/Java、数据库、微服务",
+    "expected_facts": [
+      "Python/Java",
+      "数据库",
+      "微服务"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "backend"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Python/Java",
+        "start": 18,
+        "end": 29
+      },
+      {
+        "text": "数据库",
+        "start": 32,
+        "end": 35
+      },
+      {
+        "text": "微服务",
+        "start": 44,
+        "end": 47
+      }
+    ],
+    "policy_citations": [
+      "policy:backend"
+    ]
+  },
+  {
+    "id": "backend-13",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：微服务、Python/Java、数据库",
+    "expected_facts": [
+      "微服务",
+      "Python/Java",
+      "数据库"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "backend"
+    ],
+    "evidence_spans": [
+      {
+        "text": "微服务",
+        "start": 18,
+        "end": 21
+      },
+      {
+        "text": "Python/Java",
+        "start": 30,
+        "end": 41
+      },
+      {
+        "text": "数据库",
+        "start": 44,
+        "end": 47
+      }
+    ],
+    "policy_citations": [
+      "policy:backend"
+    ]
+  },
+  {
+    "id": "backend-14",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Python/Java、微服务",
+    "expected_facts": [
+      "Python/Java",
+      "微服务"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "backend"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Python/Java",
+        "start": 18,
+        "end": 29
+      },
+      {
+        "text": "微服务",
+        "start": 32,
+        "end": 35
+      }
+    ],
+    "policy_citations": [
+      "policy:backend"
+    ]
+  },
+  {
+    "id": "backend-15",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：消息队列、Redis、数据库、微服务、API 设计、Python/Java",
+    "expected_facts": [
+      "消息队列",
+      "Redis",
+      "数据库",
+      "微服务",
+      "API 设计",
+      "Python/Java"
+    ],
+    "experience_years": null,
+    "expected_job_families": [
+      "backend"
+    ],
+    "evidence_spans": [
+      {
+        "text": "消息队列",
+        "start": 18,
+        "end": 22
+      },
+      {
+        "text": "Redis",
+        "start": 33,
+        "end": 38
+      },
+      {
+        "text": "数据库",
+        "start": 41,
+        "end": 44
+      },
+      {
+        "text": "微服务",
+        "start": 53,
+        "end": 56
+      },
+      {
+        "text": "API 设计",
+        "start": 65,
+        "end": 71
+      },
+      {
+        "text": "Python/Java",
+        "start": 78,
+        "end": 89
+      }
+    ],
+    "policy_citations": [
+      "policy:backend"
+    ]
+  },
+  {
+    "id": "frontend-01",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：JavaScript、TypeScript、性能优化、HTML/CSS、React/Vue、前端工程化",
+    "expected_facts": [
+      "JavaScript",
+      "TypeScript",
+      "性能优化",
+      "HTML/CSS",
+      "React/Vue",
+      "前端工程化"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "frontend"
+    ],
+    "evidence_spans": [
+      {
+        "text": "JavaScript",
+        "start": 18,
+        "end": 28
+      },
+      {
+        "text": "TypeScript",
+        "start": 31,
+        "end": 41
+      },
+      {
+        "text": "性能优化",
+        "start": 44,
+        "end": 48
+      },
+      {
+        "text": "HTML/CSS",
+        "start": 59,
+        "end": 67
+      },
+      {
+        "text": "React/Vue",
+        "start": 70,
+        "end": 79
+      },
+      {
+        "text": "前端工程化",
+        "start": 82,
+        "end": 87
+      }
+    ],
+    "policy_citations": [
+      "policy:frontend"
+    ]
+  },
+  {
+    "id": "frontend-02",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：前端工程化、JavaScript、性能优化、HTML/CSS、React/Vue、TypeScript",
+    "expected_facts": [
+      "前端工程化",
+      "JavaScript",
+      "性能优化",
+      "HTML/CSS",
+      "React/Vue",
+      "TypeScript"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "frontend"
+    ],
+    "evidence_spans": [
+      {
+        "text": "前端工程化",
+        "start": 18,
+        "end": 23
+      },
+      {
+        "text": "JavaScript",
+        "start": 36,
+        "end": 46
+      },
+      {
+        "text": "性能优化",
+        "start": 49,
+        "end": 53
+      },
+      {
+        "text": "HTML/CSS",
+        "start": 64,
+        "end": 72
+      },
+      {
+        "text": "React/Vue",
+        "start": 75,
+        "end": 84
+      },
+      {
+        "text": "TypeScript",
+        "start": 87,
+        "end": 97
+      }
+    ],
+    "policy_citations": [
+      "policy:frontend"
+    ]
+  },
+  {
+    "id": "frontend-03",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：HTML/CSS、React/Vue、TypeScript、性能优化、JavaScript、前端工程化",
+    "expected_facts": [
+      "HTML/CSS",
+      "React/Vue",
+      "TypeScript",
+      "性能优化",
+      "JavaScript",
+      "前端工程化"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "frontend"
+    ],
+    "evidence_spans": [
+      {
+        "text": "HTML/CSS",
+        "start": 18,
+        "end": 26
+      },
+      {
+        "text": "React/Vue",
+        "start": 29,
+        "end": 38
+      },
+      {
+        "text": "TypeScript",
+        "start": 41,
+        "end": 51
+      },
+      {
+        "text": "性能优化",
+        "start": 54,
+        "end": 58
+      },
+      {
+        "text": "JavaScript",
+        "start": 69,
+        "end": 79
+      },
+      {
+        "text": "前端工程化",
+        "start": 82,
+        "end": 87
+      }
+    ],
+    "policy_citations": [
+      "policy:frontend"
+    ]
+  },
+  {
+    "id": "frontend-04",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：性能优化、JavaScript、TypeScript、React/Vue、HTML/CSS、前端工程化",
+    "expected_facts": [
+      "性能优化",
+      "JavaScript",
+      "TypeScript",
+      "React/Vue",
+      "HTML/CSS",
+      "前端工程化"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "frontend"
+    ],
+    "evidence_spans": [
+      {
+        "text": "性能优化",
+        "start": 18,
+        "end": 22
+      },
+      {
+        "text": "JavaScript",
+        "start": 33,
+        "end": 43
+      },
+      {
+        "text": "TypeScript",
+        "start": 46,
+        "end": 56
+      },
+      {
+        "text": "React/Vue",
+        "start": 59,
+        "end": 68
+      },
+      {
+        "text": "HTML/CSS",
+        "start": 71,
+        "end": 79
+      },
+      {
+        "text": "前端工程化",
+        "start": 82,
+        "end": 87
+      }
+    ],
+    "policy_citations": [
+      "policy:frontend"
+    ]
+  },
+  {
+    "id": "frontend-05",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：性能优化、前端工程化、TypeScript、HTML/CSS、React/Vue、JavaScript",
+    "expected_facts": [
+      "性能优化",
+      "前端工程化",
+      "TypeScript",
+      "HTML/CSS",
+      "React/Vue",
+      "JavaScript"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "frontend"
+    ],
+    "evidence_spans": [
+      {
+        "text": "性能优化",
+        "start": 18,
+        "end": 22
+      },
+      {
+        "text": "前端工程化",
+        "start": 33,
+        "end": 38
+      },
+      {
+        "text": "TypeScript",
+        "start": 51,
+        "end": 61
+      },
+      {
+        "text": "HTML/CSS",
+        "start": 64,
+        "end": 72
+      },
+      {
+        "text": "React/Vue",
+        "start": 75,
+        "end": 84
+      },
+      {
+        "text": "JavaScript",
+        "start": 87,
+        "end": 97
+      }
+    ],
+    "policy_citations": [
+      "policy:frontend"
+    ]
+  },
+  {
+    "id": "frontend-06",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：性能优化、前端工程化、TypeScript、HTML/CSS、JavaScript、React/Vue",
+    "expected_facts": [
+      "性能优化",
+      "前端工程化",
+      "TypeScript",
+      "HTML/CSS",
+      "JavaScript",
+      "React/Vue"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "frontend"
+    ],
+    "evidence_spans": [
+      {
+        "text": "性能优化",
+        "start": 18,
+        "end": 22
+      },
+      {
+        "text": "前端工程化",
+        "start": 33,
+        "end": 38
+      },
+      {
+        "text": "TypeScript",
+        "start": 51,
+        "end": 61
+      },
+      {
+        "text": "HTML/CSS",
+        "start": 64,
+        "end": 72
+      },
+      {
+        "text": "JavaScript",
+        "start": 75,
+        "end": 85
+      },
+      {
+        "text": "React/Vue",
+        "start": 88,
+        "end": 97
+      }
+    ],
+    "policy_citations": [
+      "policy:frontend"
+    ]
+  },
+  {
+    "id": "frontend-07",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：React/Vue、JavaScript、HTML/CSS",
+    "expected_facts": [
+      "React/Vue",
+      "JavaScript",
+      "HTML/CSS"
+    ],
+    "experience_years": 2,
+    "expected_job_families": [
+      "frontend"
+    ],
+    "evidence_spans": [
+      {
+        "text": "React/Vue",
+        "start": 18,
+        "end": 27
+      },
+      {
+        "text": "JavaScript",
+        "start": 30,
+        "end": 40
+      },
+      {
+        "text": "HTML/CSS",
+        "start": 43,
+        "end": 51
+      }
+    ],
+    "policy_citations": [
+      "policy:frontend"
+    ]
+  },
+  {
+    "id": "frontend-08",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：React/Vue、JavaScript、HTML/CSS",
+    "expected_facts": [
+      "React/Vue",
+      "JavaScript",
+      "HTML/CSS"
+    ],
+    "experience_years": 4,
+    "expected_job_families": [
+      "frontend"
+    ],
+    "evidence_spans": [
+      {
+        "text": "React/Vue",
+        "start": 18,
+        "end": 27
+      },
+      {
+        "text": "JavaScript",
+        "start": 30,
+        "end": 40
+      },
+      {
+        "text": "HTML/CSS",
+        "start": 43,
+        "end": 51
+      }
+    ],
+    "policy_citations": [
+      "policy:frontend"
+    ]
+  },
+  {
+    "id": "frontend-09",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：HTML/CSS、JavaScript、React/Vue",
+    "expected_facts": [
+      "HTML/CSS",
+      "JavaScript",
+      "React/Vue"
+    ],
+    "experience_years": 6,
+    "expected_job_families": [
+      "frontend"
+    ],
+    "evidence_spans": [
+      {
+        "text": "HTML/CSS",
+        "start": 18,
+        "end": 26
+      },
+      {
+        "text": "JavaScript",
+        "start": 29,
+        "end": 39
+      },
+      {
+        "text": "React/Vue",
+        "start": 42,
+        "end": 51
+      }
+    ],
+    "policy_citations": [
+      "policy:frontend"
+    ]
+  },
+  {
+    "id": "frontend-10",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：React/Vue、HTML/CSS、JavaScript",
+    "expected_facts": [
+      "React/Vue",
+      "HTML/CSS",
+      "JavaScript"
+    ],
+    "experience_years": 8,
+    "expected_job_families": [
+      "frontend"
+    ],
+    "evidence_spans": [
+      {
+        "text": "React/Vue",
+        "start": 18,
+        "end": 27
+      },
+      {
+        "text": "HTML/CSS",
+        "start": 30,
+        "end": 38
+      },
+      {
+        "text": "JavaScript",
+        "start": 41,
+        "end": 51
+      }
+    ],
+    "policy_citations": [
+      "policy:frontend"
+    ]
+  },
+  {
+    "id": "frontend-11",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：JavaScript、TypeScript、HTML/CSS",
+    "expected_facts": [
+      "JavaScript",
+      "TypeScript",
+      "HTML/CSS"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "frontend"
+    ],
+    "evidence_spans": [
+      {
+        "text": "JavaScript",
+        "start": 18,
+        "end": 28
+      },
+      {
+        "text": "TypeScript",
+        "start": 31,
+        "end": 41
+      },
+      {
+        "text": "HTML/CSS",
+        "start": 44,
+        "end": 52
+      }
+    ],
+    "policy_citations": [
+      "policy:frontend"
+    ]
+  },
+  {
+    "id": "frontend-12",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：HTML/CSS、JavaScript、TypeScript",
+    "expected_facts": [
+      "HTML/CSS",
+      "JavaScript",
+      "TypeScript"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "frontend"
+    ],
+    "evidence_spans": [
+      {
+        "text": "HTML/CSS",
+        "start": 18,
+        "end": 26
+      },
+      {
+        "text": "JavaScript",
+        "start": 29,
+        "end": 39
+      },
+      {
+        "text": "TypeScript",
+        "start": 42,
+        "end": 52
+      }
+    ],
+    "policy_citations": [
+      "policy:frontend"
+    ]
+  },
+  {
+    "id": "frontend-13",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：HTML/CSS、TypeScript、JavaScript",
+    "expected_facts": [
+      "HTML/CSS",
+      "TypeScript",
+      "JavaScript"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "frontend"
+    ],
+    "evidence_spans": [
+      {
+        "text": "HTML/CSS",
+        "start": 18,
+        "end": 26
+      },
+      {
+        "text": "TypeScript",
+        "start": 29,
+        "end": 39
+      },
+      {
+        "text": "JavaScript",
+        "start": 42,
+        "end": 52
+      }
+    ],
+    "policy_citations": [
+      "policy:frontend"
+    ]
+  },
+  {
+    "id": "frontend-14",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：JavaScript、TypeScript",
+    "expected_facts": [
+      "JavaScript",
+      "TypeScript"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "frontend"
+    ],
+    "evidence_spans": [
+      {
+        "text": "JavaScript",
+        "start": 18,
+        "end": 28
+      },
+      {
+        "text": "TypeScript",
+        "start": 31,
+        "end": 41
+      }
+    ],
+    "policy_citations": [
+      "policy:frontend"
+    ]
+  },
+  {
+    "id": "frontend-15",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：React/Vue、性能优化、HTML/CSS、TypeScript、前端工程化、JavaScript",
+    "expected_facts": [
+      "React/Vue",
+      "性能优化",
+      "HTML/CSS",
+      "TypeScript",
+      "前端工程化",
+      "JavaScript"
+    ],
+    "experience_years": null,
+    "expected_job_families": [
+      "frontend"
+    ],
+    "evidence_spans": [
+      {
+        "text": "React/Vue",
+        "start": 18,
+        "end": 27
+      },
+      {
+        "text": "性能优化",
+        "start": 30,
+        "end": 34
+      },
+      {
+        "text": "HTML/CSS",
+        "start": 45,
+        "end": 53
+      },
+      {
+        "text": "TypeScript",
+        "start": 56,
+        "end": 66
+      },
+      {
+        "text": "前端工程化",
+        "start": 69,
+        "end": 74
+      },
+      {
+        "text": "JavaScript",
+        "start": 87,
+        "end": 97
+      }
+    ],
+    "policy_citations": [
+      "policy:frontend"
+    ]
+  },
+  {
+    "id": "full_stack-01",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Python、后端开发、数据库、JavaScript、云部署、TypeScript",
+    "expected_facts": [
+      "Python",
+      "后端开发",
+      "数据库",
+      "JavaScript",
+      "云部署",
+      "TypeScript"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "full_stack"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Python",
+        "start": 18,
+        "end": 24
+      },
+      {
+        "text": "后端开发",
+        "start": 27,
+        "end": 31
+      },
+      {
+        "text": "数据库",
+        "start": 42,
+        "end": 45
+      },
+      {
+        "text": "JavaScript",
+        "start": 54,
+        "end": 64
+      },
+      {
+        "text": "云部署",
+        "start": 67,
+        "end": 70
+      },
+      {
+        "text": "TypeScript",
+        "start": 79,
+        "end": 89
+      }
+    ],
+    "policy_citations": [
+      "policy:full_stack"
+    ]
+  },
+  {
+    "id": "full_stack-02",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Python、JavaScript、后端开发、TypeScript、数据库、云部署",
+    "expected_facts": [
+      "Python",
+      "JavaScript",
+      "后端开发",
+      "TypeScript",
+      "数据库",
+      "云部署"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "full_stack"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Python",
+        "start": 18,
+        "end": 24
+      },
+      {
+        "text": "JavaScript",
+        "start": 27,
+        "end": 37
+      },
+      {
+        "text": "后端开发",
+        "start": 40,
+        "end": 44
+      },
+      {
+        "text": "TypeScript",
+        "start": 55,
+        "end": 65
+      },
+      {
+        "text": "数据库",
+        "start": 68,
+        "end": 71
+      },
+      {
+        "text": "云部署",
+        "start": 80,
+        "end": 83
+      }
+    ],
+    "policy_citations": [
+      "policy:full_stack"
+    ]
+  },
+  {
+    "id": "full_stack-03",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：JavaScript、后端开发、TypeScript、云部署、数据库、Python",
+    "expected_facts": [
+      "JavaScript",
+      "后端开发",
+      "TypeScript",
+      "云部署",
+      "数据库",
+      "Python"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "full_stack"
+    ],
+    "evidence_spans": [
+      {
+        "text": "JavaScript",
+        "start": 18,
+        "end": 28
+      },
+      {
+        "text": "后端开发",
+        "start": 31,
+        "end": 35
+      },
+      {
+        "text": "TypeScript",
+        "start": 46,
+        "end": 56
+      },
+      {
+        "text": "云部署",
+        "start": 59,
+        "end": 62
+      },
+      {
+        "text": "数据库",
+        "start": 71,
+        "end": 74
+      },
+      {
+        "text": "Python",
+        "start": 83,
+        "end": 89
+      }
+    ],
+    "policy_citations": [
+      "policy:full_stack"
+    ]
+  },
+  {
+    "id": "full_stack-04",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：后端开发、云部署、数据库、Python、JavaScript、TypeScript",
+    "expected_facts": [
+      "后端开发",
+      "云部署",
+      "数据库",
+      "Python",
+      "JavaScript",
+      "TypeScript"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "full_stack"
+    ],
+    "evidence_spans": [
+      {
+        "text": "后端开发",
+        "start": 18,
+        "end": 22
+      },
+      {
+        "text": "云部署",
+        "start": 33,
+        "end": 36
+      },
+      {
+        "text": "数据库",
+        "start": 45,
+        "end": 48
+      },
+      {
+        "text": "Python",
+        "start": 57,
+        "end": 63
+      },
+      {
+        "text": "JavaScript",
+        "start": 66,
+        "end": 76
+      },
+      {
+        "text": "TypeScript",
+        "start": 79,
+        "end": 89
+      }
+    ],
+    "policy_citations": [
+      "policy:full_stack"
+    ]
+  },
+  {
+    "id": "full_stack-05",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：TypeScript、Python、数据库、JavaScript、云部署、后端开发",
+    "expected_facts": [
+      "TypeScript",
+      "Python",
+      "数据库",
+      "JavaScript",
+      "云部署",
+      "后端开发"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "full_stack"
+    ],
+    "evidence_spans": [
+      {
+        "text": "TypeScript",
+        "start": 18,
+        "end": 28
+      },
+      {
+        "text": "Python",
+        "start": 31,
+        "end": 37
+      },
+      {
+        "text": "数据库",
+        "start": 40,
+        "end": 43
+      },
+      {
+        "text": "JavaScript",
+        "start": 52,
+        "end": 62
+      },
+      {
+        "text": "云部署",
+        "start": 65,
+        "end": 68
+      },
+      {
+        "text": "后端开发",
+        "start": 77,
+        "end": 81
+      }
+    ],
+    "policy_citations": [
+      "policy:full_stack"
+    ]
+  },
+  {
+    "id": "full_stack-06",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：数据库、后端开发、云部署、TypeScript、JavaScript、Python",
+    "expected_facts": [
+      "数据库",
+      "后端开发",
+      "云部署",
+      "TypeScript",
+      "JavaScript",
+      "Python"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "full_stack"
+    ],
+    "evidence_spans": [
+      {
+        "text": "数据库",
+        "start": 18,
+        "end": 21
+      },
+      {
+        "text": "后端开发",
+        "start": 30,
+        "end": 34
+      },
+      {
+        "text": "云部署",
+        "start": 45,
+        "end": 48
+      },
+      {
+        "text": "TypeScript",
+        "start": 57,
+        "end": 67
+      },
+      {
+        "text": "JavaScript",
+        "start": 70,
+        "end": 80
+      },
+      {
+        "text": "Python",
+        "start": 83,
+        "end": 89
+      }
+    ],
+    "policy_citations": [
+      "policy:full_stack"
+    ]
+  },
+  {
+    "id": "full_stack-07",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：后端开发、JavaScript、数据库",
+    "expected_facts": [
+      "后端开发",
+      "JavaScript",
+      "数据库"
+    ],
+    "experience_years": 2,
+    "expected_job_families": [
+      "full_stack"
+    ],
+    "evidence_spans": [
+      {
+        "text": "后端开发",
+        "start": 18,
+        "end": 22
+      },
+      {
+        "text": "JavaScript",
+        "start": 33,
+        "end": 43
+      },
+      {
+        "text": "数据库",
+        "start": 46,
+        "end": 49
+      }
+    ],
+    "policy_citations": [
+      "policy:full_stack"
+    ]
+  },
+  {
+    "id": "full_stack-08",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：数据库、后端开发、JavaScript",
+    "expected_facts": [
+      "数据库",
+      "后端开发",
+      "JavaScript"
+    ],
+    "experience_years": 4,
+    "expected_job_families": [
+      "full_stack"
+    ],
+    "evidence_spans": [
+      {
+        "text": "数据库",
+        "start": 18,
+        "end": 21
+      },
+      {
+        "text": "后端开发",
+        "start": 30,
+        "end": 34
+      },
+      {
+        "text": "JavaScript",
+        "start": 45,
+        "end": 55
+      }
+    ],
+    "policy_citations": [
+      "policy:full_stack"
+    ]
+  },
+  {
+    "id": "full_stack-09",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：JavaScript、后端开发、数据库",
+    "expected_facts": [
+      "JavaScript",
+      "后端开发",
+      "数据库"
+    ],
+    "experience_years": 6,
+    "expected_job_families": [
+      "full_stack"
+    ],
+    "evidence_spans": [
+      {
+        "text": "JavaScript",
+        "start": 18,
+        "end": 28
+      },
+      {
+        "text": "后端开发",
+        "start": 31,
+        "end": 35
+      },
+      {
+        "text": "数据库",
+        "start": 46,
+        "end": 49
+      }
+    ],
+    "policy_citations": [
+      "policy:full_stack"
+    ]
+  },
+  {
+    "id": "full_stack-10",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：JavaScript、后端开发、数据库",
+    "expected_facts": [
+      "JavaScript",
+      "后端开发",
+      "数据库"
+    ],
+    "experience_years": 8,
+    "expected_job_families": [
+      "full_stack"
+    ],
+    "evidence_spans": [
+      {
+        "text": "JavaScript",
+        "start": 18,
+        "end": 28
+      },
+      {
+        "text": "后端开发",
+        "start": 31,
+        "end": 35
+      },
+      {
+        "text": "数据库",
+        "start": 46,
+        "end": 49
+      }
+    ],
+    "policy_citations": [
+      "policy:full_stack"
+    ]
+  },
+  {
+    "id": "full_stack-11",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：JavaScript、后端开发、TypeScript",
+    "expected_facts": [
+      "JavaScript",
+      "后端开发",
+      "TypeScript"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "full_stack"
+    ],
+    "evidence_spans": [
+      {
+        "text": "JavaScript",
+        "start": 18,
+        "end": 28
+      },
+      {
+        "text": "后端开发",
+        "start": 31,
+        "end": 35
+      },
+      {
+        "text": "TypeScript",
+        "start": 46,
+        "end": 56
+      }
+    ],
+    "policy_citations": [
+      "policy:full_stack"
+    ]
+  },
+  {
+    "id": "full_stack-12",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：JavaScript、TypeScript、后端开发",
+    "expected_facts": [
+      "JavaScript",
+      "TypeScript",
+      "后端开发"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "full_stack"
+    ],
+    "evidence_spans": [
+      {
+        "text": "JavaScript",
+        "start": 18,
+        "end": 28
+      },
+      {
+        "text": "TypeScript",
+        "start": 31,
+        "end": 41
+      },
+      {
+        "text": "后端开发",
+        "start": 44,
+        "end": 48
+      }
+    ],
+    "policy_citations": [
+      "policy:full_stack"
+    ]
+  },
+  {
+    "id": "full_stack-13",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：JavaScript、TypeScript、后端开发",
+    "expected_facts": [
+      "JavaScript",
+      "TypeScript",
+      "后端开发"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "full_stack"
+    ],
+    "evidence_spans": [
+      {
+        "text": "JavaScript",
+        "start": 18,
+        "end": 28
+      },
+      {
+        "text": "TypeScript",
+        "start": 31,
+        "end": 41
+      },
+      {
+        "text": "后端开发",
+        "start": 44,
+        "end": 48
+      }
+    ],
+    "policy_citations": [
+      "policy:full_stack"
+    ]
+  },
+  {
+    "id": "full_stack-14",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：JavaScript、TypeScript",
+    "expected_facts": [
+      "JavaScript",
+      "TypeScript"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "full_stack"
+    ],
+    "evidence_spans": [
+      {
+        "text": "JavaScript",
+        "start": 18,
+        "end": 28
+      },
+      {
+        "text": "TypeScript",
+        "start": 31,
+        "end": 41
+      }
+    ],
+    "policy_citations": [
+      "policy:full_stack"
+    ]
+  },
+  {
+    "id": "full_stack-15",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Python、JavaScript、后端开发、数据库、TypeScript、云部署",
+    "expected_facts": [
+      "Python",
+      "JavaScript",
+      "后端开发",
+      "数据库",
+      "TypeScript",
+      "云部署"
+    ],
+    "experience_years": null,
+    "expected_job_families": [
+      "full_stack"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Python",
+        "start": 18,
+        "end": 24
+      },
+      {
+        "text": "JavaScript",
+        "start": 27,
+        "end": 37
+      },
+      {
+        "text": "后端开发",
+        "start": 40,
+        "end": 44
+      },
+      {
+        "text": "数据库",
+        "start": 55,
+        "end": 58
+      },
+      {
+        "text": "TypeScript",
+        "start": 67,
+        "end": 77
+      },
+      {
+        "text": "云部署",
+        "start": 80,
+        "end": 83
+      }
+    ],
+    "policy_citations": [
+      "policy:full_stack"
+    ]
+  },
+  {
+    "id": "test_development-01",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：自动化测试、CI/CD、Python/Java、测试平台、性能测试、接口测试",
+    "expected_facts": [
+      "自动化测试",
+      "CI/CD",
+      "Python/Java",
+      "测试平台",
+      "性能测试",
+      "接口测试"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "test_development"
+    ],
+    "evidence_spans": [
+      {
+        "text": "自动化测试",
+        "start": 18,
+        "end": 23
+      },
+      {
+        "text": "CI/CD",
+        "start": 36,
+        "end": 41
+      },
+      {
+        "text": "Python/Java",
+        "start": 44,
+        "end": 55
+      },
+      {
+        "text": "测试平台",
+        "start": 58,
+        "end": 62
+      },
+      {
+        "text": "性能测试",
+        "start": 73,
+        "end": 77
+      },
+      {
+        "text": "接口测试",
+        "start": 88,
+        "end": 92
+      }
+    ],
+    "policy_citations": [
+      "policy:test_development"
+    ]
+  },
+  {
+    "id": "test_development-02",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：接口测试、测试平台、CI/CD、Python/Java、自动化测试、性能测试",
+    "expected_facts": [
+      "接口测试",
+      "测试平台",
+      "CI/CD",
+      "Python/Java",
+      "自动化测试",
+      "性能测试"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "test_development"
+    ],
+    "evidence_spans": [
+      {
+        "text": "接口测试",
+        "start": 18,
+        "end": 22
+      },
+      {
+        "text": "测试平台",
+        "start": 33,
+        "end": 37
+      },
+      {
+        "text": "CI/CD",
+        "start": 48,
+        "end": 53
+      },
+      {
+        "text": "Python/Java",
+        "start": 56,
+        "end": 67
+      },
+      {
+        "text": "自动化测试",
+        "start": 70,
+        "end": 75
+      },
+      {
+        "text": "性能测试",
+        "start": 88,
+        "end": 92
+      }
+    ],
+    "policy_citations": [
+      "policy:test_development"
+    ]
+  },
+  {
+    "id": "test_development-03",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：测试平台、CI/CD、自动化测试、性能测试、Python/Java、接口测试",
+    "expected_facts": [
+      "测试平台",
+      "CI/CD",
+      "自动化测试",
+      "性能测试",
+      "Python/Java",
+      "接口测试"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "test_development"
+    ],
+    "evidence_spans": [
+      {
+        "text": "测试平台",
+        "start": 18,
+        "end": 22
+      },
+      {
+        "text": "CI/CD",
+        "start": 33,
+        "end": 38
+      },
+      {
+        "text": "自动化测试",
+        "start": 41,
+        "end": 46
+      },
+      {
+        "text": "性能测试",
+        "start": 59,
+        "end": 63
+      },
+      {
+        "text": "Python/Java",
+        "start": 74,
+        "end": 85
+      },
+      {
+        "text": "接口测试",
+        "start": 88,
+        "end": 92
+      }
+    ],
+    "policy_citations": [
+      "policy:test_development"
+    ]
+  },
+  {
+    "id": "test_development-04",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：CI/CD、性能测试、自动化测试、Python/Java、测试平台、接口测试",
+    "expected_facts": [
+      "CI/CD",
+      "性能测试",
+      "自动化测试",
+      "Python/Java",
+      "测试平台",
+      "接口测试"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "test_development"
+    ],
+    "evidence_spans": [
+      {
+        "text": "CI/CD",
+        "start": 18,
+        "end": 23
+      },
+      {
+        "text": "性能测试",
+        "start": 26,
+        "end": 30
+      },
+      {
+        "text": "自动化测试",
+        "start": 41,
+        "end": 46
+      },
+      {
+        "text": "Python/Java",
+        "start": 59,
+        "end": 70
+      },
+      {
+        "text": "测试平台",
+        "start": 73,
+        "end": 77
+      },
+      {
+        "text": "接口测试",
+        "start": 88,
+        "end": 92
+      }
+    ],
+    "policy_citations": [
+      "policy:test_development"
+    ]
+  },
+  {
+    "id": "test_development-05",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：接口测试、测试平台、CI/CD、性能测试、Python/Java、自动化测试",
+    "expected_facts": [
+      "接口测试",
+      "测试平台",
+      "CI/CD",
+      "性能测试",
+      "Python/Java",
+      "自动化测试"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "test_development"
+    ],
+    "evidence_spans": [
+      {
+        "text": "接口测试",
+        "start": 18,
+        "end": 22
+      },
+      {
+        "text": "测试平台",
+        "start": 33,
+        "end": 37
+      },
+      {
+        "text": "CI/CD",
+        "start": 48,
+        "end": 53
+      },
+      {
+        "text": "性能测试",
+        "start": 56,
+        "end": 60
+      },
+      {
+        "text": "Python/Java",
+        "start": 71,
+        "end": 82
+      },
+      {
+        "text": "自动化测试",
+        "start": 85,
+        "end": 90
+      }
+    ],
+    "policy_citations": [
+      "policy:test_development"
+    ]
+  },
+  {
+    "id": "test_development-06",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：接口测试、CI/CD、自动化测试、测试平台、性能测试、Python/Java",
+    "expected_facts": [
+      "接口测试",
+      "CI/CD",
+      "自动化测试",
+      "测试平台",
+      "性能测试",
+      "Python/Java"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "test_development"
+    ],
+    "evidence_spans": [
+      {
+        "text": "接口测试",
+        "start": 18,
+        "end": 22
+      },
+      {
+        "text": "CI/CD",
+        "start": 33,
+        "end": 38
+      },
+      {
+        "text": "自动化测试",
+        "start": 41,
+        "end": 46
+      },
+      {
+        "text": "测试平台",
+        "start": 59,
+        "end": 63
+      },
+      {
+        "text": "性能测试",
+        "start": 74,
+        "end": 78
+      },
+      {
+        "text": "Python/Java",
+        "start": 89,
+        "end": 100
+      }
+    ],
+    "policy_citations": [
+      "policy:test_development"
+    ]
+  },
+  {
+    "id": "test_development-07",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Python/Java、自动化测试、接口测试",
+    "expected_facts": [
+      "Python/Java",
+      "自动化测试",
+      "接口测试"
+    ],
+    "experience_years": 2,
+    "expected_job_families": [
+      "test_development"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Python/Java",
+        "start": 18,
+        "end": 29
+      },
+      {
+        "text": "自动化测试",
+        "start": 32,
+        "end": 37
+      },
+      {
+        "text": "接口测试",
+        "start": 50,
+        "end": 54
+      }
+    ],
+    "policy_citations": [
+      "policy:test_development"
+    ]
+  },
+  {
+    "id": "test_development-08",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：接口测试、自动化测试、Python/Java",
+    "expected_facts": [
+      "接口测试",
+      "自动化测试",
+      "Python/Java"
+    ],
+    "experience_years": 4,
+    "expected_job_families": [
+      "test_development"
+    ],
+    "evidence_spans": [
+      {
+        "text": "接口测试",
+        "start": 18,
+        "end": 22
+      },
+      {
+        "text": "自动化测试",
+        "start": 33,
+        "end": 38
+      },
+      {
+        "text": "Python/Java",
+        "start": 51,
+        "end": 62
+      }
+    ],
+    "policy_citations": [
+      "policy:test_development"
+    ]
+  },
+  {
+    "id": "test_development-09",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：自动化测试、Python/Java、接口测试",
+    "expected_facts": [
+      "自动化测试",
+      "Python/Java",
+      "接口测试"
+    ],
+    "experience_years": 6,
+    "expected_job_families": [
+      "test_development"
+    ],
+    "evidence_spans": [
+      {
+        "text": "自动化测试",
+        "start": 18,
+        "end": 23
+      },
+      {
+        "text": "Python/Java",
+        "start": 36,
+        "end": 47
+      },
+      {
+        "text": "接口测试",
+        "start": 50,
+        "end": 54
+      }
+    ],
+    "policy_citations": [
+      "policy:test_development"
+    ]
+  },
+  {
+    "id": "test_development-10",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Python/Java、自动化测试、接口测试",
+    "expected_facts": [
+      "Python/Java",
+      "自动化测试",
+      "接口测试"
+    ],
+    "experience_years": 8,
+    "expected_job_families": [
+      "test_development"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Python/Java",
+        "start": 18,
+        "end": 29
+      },
+      {
+        "text": "自动化测试",
+        "start": 32,
+        "end": 37
+      },
+      {
+        "text": "接口测试",
+        "start": 50,
+        "end": 54
+      }
+    ],
+    "policy_citations": [
+      "policy:test_development"
+    ]
+  },
+  {
+    "id": "test_development-11",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Python/Java、自动化测试、性能测试",
+    "expected_facts": [
+      "Python/Java",
+      "自动化测试",
+      "性能测试"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "test_development"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Python/Java",
+        "start": 18,
+        "end": 29
+      },
+      {
+        "text": "自动化测试",
+        "start": 32,
+        "end": 37
+      },
+      {
+        "text": "性能测试",
+        "start": 50,
+        "end": 54
+      }
+    ],
+    "policy_citations": [
+      "policy:test_development"
+    ]
+  },
+  {
+    "id": "test_development-12",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：自动化测试、性能测试、Python/Java",
+    "expected_facts": [
+      "自动化测试",
+      "性能测试",
+      "Python/Java"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "test_development"
+    ],
+    "evidence_spans": [
+      {
+        "text": "自动化测试",
+        "start": 18,
+        "end": 23
+      },
+      {
+        "text": "性能测试",
+        "start": 36,
+        "end": 40
+      },
+      {
+        "text": "Python/Java",
+        "start": 51,
+        "end": 62
+      }
+    ],
+    "policy_citations": [
+      "policy:test_development"
+    ]
+  },
+  {
+    "id": "test_development-13",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：性能测试、Python/Java、自动化测试",
+    "expected_facts": [
+      "性能测试",
+      "Python/Java",
+      "自动化测试"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "test_development"
+    ],
+    "evidence_spans": [
+      {
+        "text": "性能测试",
+        "start": 18,
+        "end": 22
+      },
+      {
+        "text": "Python/Java",
+        "start": 33,
+        "end": 44
+      },
+      {
+        "text": "自动化测试",
+        "start": 47,
+        "end": 52
+      }
+    ],
+    "policy_citations": [
+      "policy:test_development"
+    ]
+  },
+  {
+    "id": "test_development-14",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：性能测试、自动化测试",
+    "expected_facts": [
+      "性能测试",
+      "自动化测试"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "test_development"
+    ],
+    "evidence_spans": [
+      {
+        "text": "性能测试",
+        "start": 18,
+        "end": 22
+      },
+      {
+        "text": "自动化测试",
+        "start": 33,
+        "end": 38
+      }
+    ],
+    "policy_citations": [
+      "policy:test_development"
+    ]
+  },
+  {
+    "id": "test_development-15",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：CI/CD、自动化测试、接口测试、测试平台、性能测试、Python/Java",
+    "expected_facts": [
+      "CI/CD",
+      "自动化测试",
+      "接口测试",
+      "测试平台",
+      "性能测试",
+      "Python/Java"
+    ],
+    "experience_years": null,
+    "expected_job_families": [
+      "test_development"
+    ],
+    "evidence_spans": [
+      {
+        "text": "CI/CD",
+        "start": 18,
+        "end": 23
+      },
+      {
+        "text": "自动化测试",
+        "start": 26,
+        "end": 31
+      },
+      {
+        "text": "接口测试",
+        "start": 44,
+        "end": 48
+      },
+      {
+        "text": "测试平台",
+        "start": 59,
+        "end": 63
+      },
+      {
+        "text": "性能测试",
+        "start": 74,
+        "end": 78
+      },
+      {
+        "text": "Python/Java",
+        "start": 89,
+        "end": 100
+      }
+    ],
+    "policy_citations": [
+      "policy:test_development"
+    ]
+  },
+  {
+    "id": "devops_sre-01",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：CI/CD、Prometheus、Terraform、Kubernetes、容器、Linux",
+    "expected_facts": [
+      "CI/CD",
+      "Prometheus",
+      "Terraform",
+      "Kubernetes",
+      "容器",
+      "Linux"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "devops_sre"
+    ],
+    "evidence_spans": [
+      {
+        "text": "CI/CD",
+        "start": 18,
+        "end": 23
+      },
+      {
+        "text": "Prometheus",
+        "start": 26,
+        "end": 36
+      },
+      {
+        "text": "Terraform",
+        "start": 39,
+        "end": 48
+      },
+      {
+        "text": "Kubernetes",
+        "start": 51,
+        "end": 61
+      },
+      {
+        "text": "容器",
+        "start": 64,
+        "end": 66
+      },
+      {
+        "text": "Linux",
+        "start": 73,
+        "end": 78
+      }
+    ],
+    "policy_citations": [
+      "policy:devops_sre"
+    ]
+  },
+  {
+    "id": "devops_sre-02",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Linux、容器、Prometheus、Kubernetes、Terraform、CI/CD",
+    "expected_facts": [
+      "Linux",
+      "容器",
+      "Prometheus",
+      "Kubernetes",
+      "Terraform",
+      "CI/CD"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "devops_sre"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Linux",
+        "start": 18,
+        "end": 23
+      },
+      {
+        "text": "容器",
+        "start": 26,
+        "end": 28
+      },
+      {
+        "text": "Prometheus",
+        "start": 35,
+        "end": 45
+      },
+      {
+        "text": "Kubernetes",
+        "start": 48,
+        "end": 58
+      },
+      {
+        "text": "Terraform",
+        "start": 61,
+        "end": 70
+      },
+      {
+        "text": "CI/CD",
+        "start": 73,
+        "end": 78
+      }
+    ],
+    "policy_citations": [
+      "policy:devops_sre"
+    ]
+  },
+  {
+    "id": "devops_sre-03",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：CI/CD、Linux、容器、Terraform、Prometheus、Kubernetes",
+    "expected_facts": [
+      "CI/CD",
+      "Linux",
+      "容器",
+      "Terraform",
+      "Prometheus",
+      "Kubernetes"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "devops_sre"
+    ],
+    "evidence_spans": [
+      {
+        "text": "CI/CD",
+        "start": 18,
+        "end": 23
+      },
+      {
+        "text": "Linux",
+        "start": 26,
+        "end": 31
+      },
+      {
+        "text": "容器",
+        "start": 34,
+        "end": 36
+      },
+      {
+        "text": "Terraform",
+        "start": 43,
+        "end": 52
+      },
+      {
+        "text": "Prometheus",
+        "start": 55,
+        "end": 65
+      },
+      {
+        "text": "Kubernetes",
+        "start": 68,
+        "end": 78
+      }
+    ],
+    "policy_citations": [
+      "policy:devops_sre"
+    ]
+  },
+  {
+    "id": "devops_sre-04",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Linux、Kubernetes、Prometheus、Terraform、CI/CD、容器",
+    "expected_facts": [
+      "Linux",
+      "Kubernetes",
+      "Prometheus",
+      "Terraform",
+      "CI/CD",
+      "容器"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "devops_sre"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Linux",
+        "start": 18,
+        "end": 23
+      },
+      {
+        "text": "Kubernetes",
+        "start": 26,
+        "end": 36
+      },
+      {
+        "text": "Prometheus",
+        "start": 39,
+        "end": 49
+      },
+      {
+        "text": "Terraform",
+        "start": 52,
+        "end": 61
+      },
+      {
+        "text": "CI/CD",
+        "start": 64,
+        "end": 69
+      },
+      {
+        "text": "容器",
+        "start": 72,
+        "end": 74
+      }
+    ],
+    "policy_citations": [
+      "policy:devops_sre"
+    ]
+  },
+  {
+    "id": "devops_sre-05",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Kubernetes、CI/CD、Prometheus、Terraform、容器、Linux",
+    "expected_facts": [
+      "Kubernetes",
+      "CI/CD",
+      "Prometheus",
+      "Terraform",
+      "容器",
+      "Linux"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "devops_sre"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Kubernetes",
+        "start": 18,
+        "end": 28
+      },
+      {
+        "text": "CI/CD",
+        "start": 31,
+        "end": 36
+      },
+      {
+        "text": "Prometheus",
+        "start": 39,
+        "end": 49
+      },
+      {
+        "text": "Terraform",
+        "start": 52,
+        "end": 61
+      },
+      {
+        "text": "容器",
+        "start": 64,
+        "end": 66
+      },
+      {
+        "text": "Linux",
+        "start": 73,
+        "end": 78
+      }
+    ],
+    "policy_citations": [
+      "policy:devops_sre"
+    ]
+  },
+  {
+    "id": "devops_sre-06",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Linux、容器、Terraform、Kubernetes、CI/CD、Prometheus",
+    "expected_facts": [
+      "Linux",
+      "容器",
+      "Terraform",
+      "Kubernetes",
+      "CI/CD",
+      "Prometheus"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "devops_sre"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Linux",
+        "start": 18,
+        "end": 23
+      },
+      {
+        "text": "容器",
+        "start": 26,
+        "end": 28
+      },
+      {
+        "text": "Terraform",
+        "start": 35,
+        "end": 44
+      },
+      {
+        "text": "Kubernetes",
+        "start": 47,
+        "end": 57
+      },
+      {
+        "text": "CI/CD",
+        "start": 60,
+        "end": 65
+      },
+      {
+        "text": "Prometheus",
+        "start": 68,
+        "end": 78
+      }
+    ],
+    "policy_citations": [
+      "policy:devops_sre"
+    ]
+  },
+  {
+    "id": "devops_sre-07",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：容器、Linux、CI/CD",
+    "expected_facts": [
+      "容器",
+      "Linux",
+      "CI/CD"
+    ],
+    "experience_years": 2,
+    "expected_job_families": [
+      "devops_sre"
+    ],
+    "evidence_spans": [
+      {
+        "text": "容器",
+        "start": 18,
+        "end": 20
+      },
+      {
+        "text": "Linux",
+        "start": 27,
+        "end": 32
+      },
+      {
+        "text": "CI/CD",
+        "start": 35,
+        "end": 40
+      }
+    ],
+    "policy_citations": [
+      "policy:devops_sre"
+    ]
+  },
+  {
+    "id": "devops_sre-08",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：容器、CI/CD、Linux",
+    "expected_facts": [
+      "容器",
+      "CI/CD",
+      "Linux"
+    ],
+    "experience_years": 4,
+    "expected_job_families": [
+      "devops_sre"
+    ],
+    "evidence_spans": [
+      {
+        "text": "容器",
+        "start": 18,
+        "end": 20
+      },
+      {
+        "text": "CI/CD",
+        "start": 27,
+        "end": 32
+      },
+      {
+        "text": "Linux",
+        "start": 35,
+        "end": 40
+      }
+    ],
+    "policy_citations": [
+      "policy:devops_sre"
+    ]
+  },
+  {
+    "id": "devops_sre-09",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：容器、CI/CD、Linux",
+    "expected_facts": [
+      "容器",
+      "CI/CD",
+      "Linux"
+    ],
+    "experience_years": 6,
+    "expected_job_families": [
+      "devops_sre"
+    ],
+    "evidence_spans": [
+      {
+        "text": "容器",
+        "start": 18,
+        "end": 20
+      },
+      {
+        "text": "CI/CD",
+        "start": 27,
+        "end": 32
+      },
+      {
+        "text": "Linux",
+        "start": 35,
+        "end": 40
+      }
+    ],
+    "policy_citations": [
+      "policy:devops_sre"
+    ]
+  },
+  {
+    "id": "devops_sre-10",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Linux、CI/CD、容器",
+    "expected_facts": [
+      "Linux",
+      "CI/CD",
+      "容器"
+    ],
+    "experience_years": 8,
+    "expected_job_families": [
+      "devops_sre"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Linux",
+        "start": 18,
+        "end": 23
+      },
+      {
+        "text": "CI/CD",
+        "start": 26,
+        "end": 31
+      },
+      {
+        "text": "容器",
+        "start": 34,
+        "end": 36
+      }
+    ],
+    "policy_citations": [
+      "policy:devops_sre"
+    ]
+  },
+  {
+    "id": "devops_sre-11",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：容器、Kubernetes、Linux",
+    "expected_facts": [
+      "容器",
+      "Kubernetes",
+      "Linux"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "devops_sre"
+    ],
+    "evidence_spans": [
+      {
+        "text": "容器",
+        "start": 18,
+        "end": 20
+      },
+      {
+        "text": "Kubernetes",
+        "start": 27,
+        "end": 37
+      },
+      {
+        "text": "Linux",
+        "start": 40,
+        "end": 45
+      }
+    ],
+    "policy_citations": [
+      "policy:devops_sre"
+    ]
+  },
+  {
+    "id": "devops_sre-12",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Linux、Kubernetes、容器",
+    "expected_facts": [
+      "Linux",
+      "Kubernetes",
+      "容器"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "devops_sre"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Linux",
+        "start": 18,
+        "end": 23
+      },
+      {
+        "text": "Kubernetes",
+        "start": 26,
+        "end": 36
+      },
+      {
+        "text": "容器",
+        "start": 39,
+        "end": 41
+      }
+    ],
+    "policy_citations": [
+      "policy:devops_sre"
+    ]
+  },
+  {
+    "id": "devops_sre-13",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：容器、Kubernetes、Linux",
+    "expected_facts": [
+      "容器",
+      "Kubernetes",
+      "Linux"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "devops_sre"
+    ],
+    "evidence_spans": [
+      {
+        "text": "容器",
+        "start": 18,
+        "end": 20
+      },
+      {
+        "text": "Kubernetes",
+        "start": 27,
+        "end": 37
+      },
+      {
+        "text": "Linux",
+        "start": 40,
+        "end": 45
+      }
+    ],
+    "policy_citations": [
+      "policy:devops_sre"
+    ]
+  },
+  {
+    "id": "devops_sre-14",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Kubernetes、Linux",
+    "expected_facts": [
+      "Kubernetes",
+      "Linux"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "devops_sre"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Kubernetes",
+        "start": 18,
+        "end": 28
+      },
+      {
+        "text": "Linux",
+        "start": 31,
+        "end": 36
+      }
+    ],
+    "policy_citations": [
+      "policy:devops_sre"
+    ]
+  },
+  {
+    "id": "devops_sre-15",
+    "dataset_version": "recruitmatch-ai-v1",
+    "label_source": "synthetic_ai",
+    "resume_text": "候选人技能：Prometheus、Terraform、容器、Kubernetes、Linux、CI/CD",
+    "expected_facts": [
+      "Prometheus",
+      "Terraform",
+      "容器",
+      "Kubernetes",
+      "Linux",
+      "CI/CD"
+    ],
+    "experience_years": null,
+    "expected_job_families": [
+      "devops_sre"
+    ],
+    "evidence_spans": [
+      {
+        "text": "Prometheus",
+        "start": 18,
+        "end": 28
+      },
+      {
+        "text": "Terraform",
+        "start": 31,
+        "end": 40
+      },
+      {
+        "text": "容器",
+        "start": 43,
+        "end": 45
+      },
+      {
+        "text": "Kubernetes",
+        "start": 52,
+        "end": 62
+      },
+      {
+        "text": "Linux",
+        "start": 65,
+        "end": 70
+      },
+      {
+        "text": "CI/CD",
+        "start": 73,
+        "end": 78
+      }
+    ],
+    "policy_citations": [
+      "policy:devops_sre"
+    ]
+  }
+]
