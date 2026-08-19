@@ -41,4 +41,4 @@ class HybridMatchRecommendation(MatchRecommendation):
     semantic_score: Optional[float] = Field(default=None, ge=0, le=1)
     grounding_status: str
     fallback_reason: Optional[str] = None
-    citations: List[Dict[str, Any]] = Field(default_factory=list)
+    citations: List[Any] = Field(default_factory=list)

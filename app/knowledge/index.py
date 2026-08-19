@@ -155,3 +155,32 @@ class RecruitingVectorIndex:
             )
             for score, chunk in scored[:top_k]
         ]
+
+    def source_chunks(self, tenant_id: str, source_type: str, source_id: str) -> list[RetrievedChunk]:
+        """Return active chunks for one tenant-owned source without semantic broadening."""
+        with self.session_factory() as session:
+            chunks = list(
+                session.scalars(
+                    select(KnowledgeChunk)
+                    .where(
+                        KnowledgeChunk.tenant_id == tenant_id,
+                        KnowledgeChunk.source_type == source_type,
+                        KnowledgeChunk.source_id == source_id,
+                        KnowledgeChunk.is_active.is_(True),
+                    )
+                    .order_by(KnowledgeChunk.start, KnowledgeChunk.id)
+                )
+            )
+        return [
+            RetrievedChunk(
+                citation_id=_citation_id(chunk),
+                source_type=chunk.source_type,
+                source_id=chunk.source_id,
+                content=chunk.content,
+                start=chunk.start,
+                end=chunk.end,
+                page=chunk.page,
+                score=1.0,
+            )
+            for chunk in chunks
+        ]
