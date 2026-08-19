@@ -61,9 +61,13 @@ def test_hybrid_components_round_trip(tmp_path):
             grounding_status="grounded",
             fallback_reason=None,
             citations=[{"id": "c1", "source_type": "resume"}],
+            grounded_explanation={"strengths": [{"text": "Python", "citation_ids": ["c1"]}]},
+            interview_questions=[{"text": "请说明项目", "citation_ids": ["c1"]}],
         )
         session.add(result)
         session.commit()
         session.refresh(result)
         assert result.total_score == 0.78
         assert result.citations[0]["id"] == "c1"
+        assert result.grounded_explanation["strengths"][0]["text"] == "Python"
+        assert result.interview_questions[0]["text"] == "请说明项目"

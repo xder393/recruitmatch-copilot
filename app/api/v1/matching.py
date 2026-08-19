@@ -34,6 +34,8 @@ def _result_response(result: MatchResult) -> MatchResultResponse:
         grounding_status=result.grounding_status,
         fallback_reason=result.fallback_reason,
         citations=result.citations or [],
+        grounded_explanation=result.grounded_explanation or {},
+        interview_questions=result.interview_questions or [],
     )
 
 
@@ -57,7 +59,14 @@ def run_matches(
     session: Session = Depends(get_db),
 ):
     return _run_response(
-        MatchingService(session, hybrid_engine=request.app.state.hybrid_matching_engine).run(
+        MatchingService(
+            session,
+            hybrid_engine=request.app.state.hybrid_matching_engine,
+            explanation_service=request.app.state.grounded_explanation_service,
+            source_index=request.app.state.knowledge_index,
+            retrieval_top_k=request.app.state.settings.retrieval_top_k,
+            retrieval_min_score=request.app.state.settings.retrieval_min_score,
+        ).run(
             principal, resume_id, mode=mode
         )
     )

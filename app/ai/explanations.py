@@ -50,11 +50,13 @@ class GroundedExplanationService:
         enabled: bool = True,
         prompt_version: str = "match-explanation-v1",
         max_evidence_characters: int = 8000,
+        citation_resolver=None,
     ):
         self.model = model
         self.enabled = enabled
         self.prompt_version = prompt_version
         self.max_evidence_characters = max_evidence_characters
+        self.citation_resolver = citation_resolver
 
     def generate(
         self,
@@ -64,11 +66,13 @@ class GroundedExplanationService:
         rule_result: Dict[str, Any],
         hits: List[RetrievedChunk],
     ) -> GroundedExplanation:
-        del tenant_id  # Retrieval has already applied the tenant boundary.
         if not self.enabled:
             return self._fallback(rule_result, "rules_fallback")
 
         permitted = authorized_hits(hits, resume_id, job_version_id)
+        if self.citation_resolver is not None:
+            permitted = self.citation_resolver(tenant_id, {hit.citation_id for hit in permitted})
+            permitted = authorized_hits(permitted, resume_id, job_version_id)
         evidence = format_evidence(permitted, self.max_evidence_characters)
         if not evidence:
             return self._fallback(rule_result, "insufficient_evidence")
@@ -144,9 +148,14 @@ class GroundedExplanationService:
         strengths = [GroundedClaim(text=f"已匹配：{item}") for item in rule_result.get("matched", [])]
         gaps = [GroundedClaim(text=f"待补足：{item}") for item in rule_result.get("missing", [])]
         risks = [GroundedClaim(text=f"待核实：{item}") for item in rule_result.get("uncertain", [])]
+        questions = [
+            GroundedClaim(text=f"请结合项目证据说明：{item}")
+            for item in [*rule_result.get("missing", []), *rule_result.get("uncertain", [])]
+        ]
         return GroundedExplanation(
             strengths=strengths,
             gaps=gaps,
             risk_flags=risks,
+            interview_questions=questions,
             grounding_status=status,
         )

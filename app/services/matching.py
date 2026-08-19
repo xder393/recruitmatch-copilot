@@ -22,10 +22,18 @@ class MatchingService:
         session: Session,
         engine: MatchingEngine | None = None,
         hybrid_engine: HybridMatchingEngine | None = None,
+        explanation_service=None,
+        source_index=None,
+        retrieval_top_k: int = 6,
+        retrieval_min_score: float = 0.35,
     ):
         self.session = session
         self.engine = engine or MatchingEngine()
         self.hybrid_engine = hybrid_engine
+        self.explanation_service = explanation_service
+        self.source_index = source_index
+        self.retrieval_top_k = retrieval_top_k
+        self.retrieval_min_score = retrieval_min_score
         self.repository = MatchingRepository(session)
 
     def run(self, principal: Principal, resume_id: str, mode: str = "rules-v1") -> MatchRun:
@@ -74,6 +82,12 @@ class MatchingService:
                 HybridTenantContext(principal.tenant_id, resume.id),
                 top_k=3,
             )
+            recommendations = self._add_grounded_guidance(
+                principal.tenant_id,
+                resume.id,
+                candidates,
+                recommendations,
+            )
         else:
             recommendations = self.engine.rank(profile, candidates, top_k=3)
         for rank, item in enumerate(recommendations, start=1):
@@ -97,6 +111,8 @@ class MatchingService:
                         citation if isinstance(citation, dict) else {"id": citation}
                         for citation in getattr(item, "citations", [])
                     ],
+                    grounded_explanation=getattr(item, "grounded_explanation", {}),
+                    interview_questions=getattr(item, "interview_questions", []),
                 )
             )
         run.status = MatchStatus.SUCCEEDED
@@ -112,6 +128,67 @@ class MatchingService:
         if run is None:
             raise ResourceNotFoundError("匹配任务不存在")
         return run
+
+    def _add_grounded_guidance(self, tenant_id, resume_id, candidates, recommendations):
+        if self.explanation_service is None or self.source_index is None:
+            return recommendations
+        by_version = {item.job_version_id: item for item in candidates}
+        enriched = []
+        knowledge_types = {"policy", "interview_guide", "competency", "assessment_rubric"}
+        for item in recommendations:
+            job = by_version[item.job_version_id]
+            hits = self.source_index.source_chunks(tenant_id, "resume", resume_id)
+            hits += self.source_index.source_chunks(tenant_id, "job", item.job_version_id)
+            hits += self.source_index.search(
+                tenant_id,
+                job.jd_text,
+                knowledge_types,
+                self.retrieval_top_k,
+                self.retrieval_min_score,
+            )
+            explanation = self.explanation_service.generate(
+                tenant_id,
+                resume_id,
+                item.job_version_id,
+                {
+                    "matched": item.matched_items,
+                    "missing": item.missing_items,
+                    "uncertain": item.uncertain_items,
+                },
+                hits,
+            )
+            used_ids = set(item.citations)
+            used_ids.update(explanation.citations)
+            citations = [self._citation_payload(hit) for hit in hits if hit.citation_id in used_ids]
+            guidance = explanation.model_dump(mode="json", exclude={"citations", "interview_questions"})
+            update = {
+                "citations": citations,
+                "grounded_explanation": guidance,
+                "interview_questions": [
+                    question.model_dump(mode="json") for question in explanation.interview_questions
+                ],
+                "grounding_status": explanation.grounding_status,
+                "fallback_reason": (
+                    item.fallback_reason
+                    or (None if explanation.grounding_status == "grounded" else explanation.grounding_status)
+                ),
+            }
+            if explanation.summary is not None:
+                update["summary"] = explanation.summary.text
+            enriched.append(item.model_copy(update=update))
+        return enriched
+
+    @staticmethod
+    def _citation_payload(hit):
+        return {
+            "id": hit.citation_id,
+            "source_type": hit.source_type,
+            "source_id": hit.source_id,
+            "content": hit.content,
+            "start": hit.start,
+            "end": hit.end,
+            "page": hit.page,
+        }
 
     def latest_for_resume(self, principal: Principal, resume_id: str) -> MatchRun:
         run = self.repository.latest_for_resume(principal.tenant_id, resume_id)

@@ -5,6 +5,8 @@ from typing import Iterable
 
 from app.knowledge.index import RetrievedChunk
 
+_ALLOWED_SOURCE_TYPES = {"resume", "job", "policy", "interview_guide", "competency", "assessment_rubric"}
+
 
 def authorized_hits(
     hits: Iterable[RetrievedChunk],
@@ -14,6 +16,8 @@ def authorized_hits(
     """Keep only the selected resume/JD plus already tenant-filtered knowledge."""
     allowed = []
     for hit in hits:
+        if hit.source_type not in _ALLOWED_SOURCE_TYPES:
+            continue
         if hit.source_type == "resume" and hit.source_id != resume_id:
             continue
         if hit.source_type == "job" and hit.source_id != job_version_id:

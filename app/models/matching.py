@@ -59,6 +59,8 @@ class MatchResult(Base):
     grounding_status: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     fallback_reason: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     citations: Mapped[Optional[List[Any]]] = mapped_column(JSON, default=list, nullable=True)
+    grounded_explanation: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
+    interview_questions: Mapped[Optional[List[Any]]] = mapped_column(JSON, default=list, nullable=True)
     dimension_scores: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
     matched_items: Mapped[List[Any]] = mapped_column(JSON, default=list, nullable=False)
     missing_items: Mapped[List[Any]] = mapped_column(JSON, default=list, nullable=False)

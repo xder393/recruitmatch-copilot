@@ -184,3 +184,36 @@ class RecruitingVectorIndex:
             )
             for chunk in chunks
         ]
+
+    def resolve_citations(self, tenant_id: str, citation_ids: set[str]) -> list[RetrievedChunk]:
+        """Re-resolve active citations inside the tenant boundary before disclosure."""
+        if not citation_ids:
+            return []
+        with self.session_factory() as session:
+            chunks = list(
+                session.scalars(
+                    select(KnowledgeChunk)
+                    .where(
+                        KnowledgeChunk.tenant_id == tenant_id,
+                        KnowledgeChunk.is_active.is_(True),
+                    )
+                    .order_by(KnowledgeChunk.source_type, KnowledgeChunk.source_id, KnowledgeChunk.start)
+                )
+            )
+        resolved = []
+        for chunk in chunks:
+            citation_id = _citation_id(chunk)
+            if citation_id in citation_ids:
+                resolved.append(
+                    RetrievedChunk(
+                        citation_id=citation_id,
+                        source_type=chunk.source_type,
+                        source_id=chunk.source_id,
+                        content=chunk.content,
+                        start=chunk.start,
+                        end=chunk.end,
+                        page=chunk.page,
+                        score=1.0,
+                    )
+                )
+        return resolved

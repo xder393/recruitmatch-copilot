@@ -108,6 +108,8 @@ class MatchResultResponse(BaseModel):
     grounding_status: Optional[str] = None
     fallback_reason: Optional[str] = None
     citations: List[Any] = Field(default_factory=list)
+    grounded_explanation: Dict[str, Any] = Field(default_factory=dict)
+    interview_questions: List[Any] = Field(default_factory=list)
 
 
 class MatchRunResponse(BaseModel):

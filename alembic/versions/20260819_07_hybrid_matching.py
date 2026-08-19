@@ -14,6 +14,8 @@ def upgrade() -> None:
     op.add_column("match_results", sa.Column("grounding_status", sa.String(50), nullable=True))
     op.add_column("match_results", sa.Column("fallback_reason", sa.String(100), nullable=True))
     op.add_column("match_results", sa.Column("citations", sa.JSON(), nullable=True))
+    op.add_column("match_results", sa.Column("grounded_explanation", sa.JSON(), nullable=True))
+    op.add_column("match_results", sa.Column("interview_questions", sa.JSON(), nullable=True))
     op.create_index(
         "ix_match_results_run_grounding",
         "match_results",
@@ -24,6 +26,8 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_index("ix_match_results_run_grounding", table_name="match_results")
     op.drop_column("match_results", "citations")
+    op.drop_column("match_results", "interview_questions")
+    op.drop_column("match_results", "grounded_explanation")
     op.drop_column("match_results", "fallback_reason")
     op.drop_column("match_results", "grounding_status")
     op.drop_column("match_results", "semantic_score")

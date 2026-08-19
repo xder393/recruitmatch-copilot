@@ -40,6 +40,7 @@ from app.services.knowledge_processing import KnowledgeProcessingService
 from app.ai.semantic_matching import SemanticMatcher
 from app.matching.engine import MatchingEngine
 from app.matching.hybrid import HybridMatchingEngine
+from app.ai.explanations import GroundedExplanationService
 
 logger = get_logger(__name__)
 
@@ -139,6 +140,13 @@ def init_recruiting_state(app: FastAPI, settings: Settings, structured_model=Non
             enabled=settings.ai_enabled,
             max_evidence_characters=settings.max_evidence_characters,
         ),
+    )
+    app.state.grounded_explanation_service = GroundedExplanationService(
+        recruiting_model,
+        enabled=settings.ai_enabled,
+        prompt_version=settings.explanation_prompt_version,
+        max_evidence_characters=settings.max_evidence_characters,
+        citation_resolver=knowledge_index.resolve_citations,
     )
     app.state.task_dispatcher = (
         CeleryTaskDispatcher() if settings.task_mode == "celery" else InlineTaskDispatcher(processor)

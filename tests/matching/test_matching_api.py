@@ -86,18 +86,45 @@ def test_hybrid_mode_persists_score_components(matching_client):
     from app.ai.semantic_matching import SemanticProjectScore
     from app.matching.engine import MatchingEngine
     from app.matching.hybrid import HybridMatchingEngine
+    from app.ai.explanations import GroundedClaim, GroundedExplanation
+    from app.knowledge.index import RetrievedChunk
 
     class Semantic:
         def score(self, tenant_id, resume_id, job_version_id):
             return SemanticProjectScore(
                 score=0.75,
                 rationale="项目证据匹配",
-                resume_citation_ids=[f"resume-{resume_id}"],
-                job_citation_ids=[f"job-{job_version_id}"],
+                resume_citation_ids=["resume-citation"],
+                job_citation_ids=["job-citation"],
             )
+
+    class Explanation:
+        prompt_version = "match-explanation-v1"
+
+        def generate(self, tenant_id, resume_id, job_version_id, rule_result, hits):
+            resume_citation = next(hit.citation_id for hit in hits if hit.source_type == "resume")
+            job_citation = next(hit.citation_id for hit in hits if hit.source_type == "job")
+            return GroundedExplanation(
+                summary=GroundedClaim(text="项目与岗位有可核验证据", citation_ids=[resume_citation, job_citation]),
+                strengths=[GroundedClaim(text="Python 项目匹配", citation_ids=[resume_citation])],
+                interview_questions=[
+                    GroundedClaim(text="请说明该项目的职责边界", citation_ids=[resume_citation, job_citation])
+                ],
+                citations={},
+                grounding_status="grounded",
+            )
+
+    class SourceIndex:
+        def source_chunks(self, tenant_id, source_type, source_id):
+            return [RetrievedChunk(f"{source_type}-citation", source_type, source_id, "Python RAG", 0, 10, None, 1)]
+
+        def search(self, *args, **kwargs):
+            return [RetrievedChunk("policy-citation", "policy", "policy-1", "统一面试标准", 0, 6, None, 1)]
 
     client, resume_id = matching_client
     client.app.state.hybrid_matching_engine = HybridMatchingEngine(MatchingEngine(), Semantic())
+    client.app.state.grounded_explanation_service = Explanation()
+    client.app.state.knowledge_index = SourceIndex()
     response = client.post(f"/api/v1/resumes/{resume_id}/matches?mode=hybrid-v1")
     assert response.status_code == 201
     body = response.json()
@@ -105,6 +132,9 @@ def test_hybrid_mode_persists_score_components(matching_client):
     assert body["results"][0]["rule_score"] is not None
     assert body["results"][0]["semantic_score"] == 0.75
     assert body["results"][0]["citations"]
+    assert body["results"][0]["grounded_explanation"]["strengths"][0]["text"] == "Python 项目匹配"
+    assert body["results"][0]["interview_questions"][0]["text"] == "请说明该项目的职责边界"
+    assert body["results"][0]["citations"][0]["content"]
 
 
 def test_match_run_is_hidden_from_another_tenant(matching_client):

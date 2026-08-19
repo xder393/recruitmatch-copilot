@@ -70,3 +70,13 @@ def test_embed_populates_vectors_without_mutating_inputs(tmp_path):
     embedded = index.embed(original)
     assert original[0].vector == []
     assert len(embedded[0].vector) == 3
+
+
+def test_citation_resolution_rechecks_tenant_and_active_state(tmp_path):
+    _, acme, globex, index = _index(tmp_path)
+    index.index_source(acme, "policy", "a-policy", "v1", [_chunk("policy", "Python")])
+    index.index_source(globex, "policy", "g-policy", "v1", [_chunk("policy", "Python secret")])
+    acme_id = index.search(acme, "Python", {"policy"}, 5, 0)[0].citation_id
+    globex_id = index.search(globex, "Python", {"policy"}, 5, 0)[0].citation_id
+    resolved = index.resolve_citations(acme, {acme_id, globex_id})
+    assert [item.citation_id for item in resolved] == [acme_id]
