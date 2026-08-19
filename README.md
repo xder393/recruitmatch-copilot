@@ -23,7 +23,7 @@
 | 数据集 | 标签来源 | 样本 | Top-1 Accuracy | Top-3 Recall | 证据覆盖率 |
 |---|---|---:|---:|---:|---:|
 | recruitmatch-v1 | synthetic_heuristic | 150 | 98.67% | 100% | 100% |
-| recruitmatch-ai-v1 / hybrid-v1 | synthetic_ai | 150 | 98.67% | 100% | 引用有效率 100% |
+| recruitmatch-ai-v1 / hybrid-v1 | synthetic_ai | 150 | 95.33% | 98% | 引用有效率 100% |
 
 这些数字只表示对应算法在固定合成基准上的回归表现，不代表真实招聘准确率。真实上线前必须由招聘专家对脱敏样本重新标注并审查公平性。
 
@@ -59,7 +59,7 @@ flowchart LR
 
 采用模块化单体而非为了展示而拆微服务。领域服务依赖仓储和任务接口，测试可替换基础设施；后续只有在吞吐或团队边界真正需要时才拆分。
 
-详细设计见 [docs/architecture.md](docs/architecture.md)，完整规格见 [docs/superpowers/specs/2026-08-19-recruitmatch-copilot-design.md](docs/superpowers/specs/2026-08-19-recruitmatch-copilot-design.md)。
+详细设计见 [docs/architecture.md](docs/architecture.md)，业务规格见 [RecruitMatch Copilot 设计](docs/superpowers/specs/2026-08-19-recruitmatch-copilot-design.md)，AI/RAG 边界见 [AI Layer 设计](docs/superpowers/specs/2026-08-19-recruitmatch-ai-layer-design.md)。
 
 ## 快速启动
 
@@ -119,7 +119,9 @@ export OPENAI_MODEL='deepseek-chat'
 | POST/GET | `/api/v1/knowledge-documents` | 上传/查询招聘知识 |
 | POST | `/api/v1/knowledge-documents/{id}/reindex` | 重建知识索引 |
 | POST | `/api/v1/knowledge-documents/{id}/deactivate` | 停用知识文档 |
+| POST | `/api/v1/knowledge-documents/rebuild-sources` | 为旧简历和岗位版本补建语义索引 |
 | GET | `/api/v1/ai/status` | 查看模型、Embedding 与降级状态 |
+| GET | `/api/v1/evaluations/summary` | 查看当前租户的脱敏评测摘要与失败分类 |
 | GET | `/api/v1/match-runs/{id}` | 查询版本化结果 |
 | POST | `/api/v1/match-results/{id}/feedback` | 确认、驳回或改选 |
 | GET | `/api/v1/analytics/summary` | 租户级业务统计 |

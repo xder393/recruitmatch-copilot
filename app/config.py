@@ -92,7 +92,7 @@ class Settings:
     model_input_cost_per_million: float = 0.0
     model_output_cost_per_million: float = 0.0
     resume_prompt_version: str = "resume-extract-v1"
-    explanation_prompt_version: str = "match-explain-v1"
+    explanation_prompt_version: str = "match-explanation-v1"
     retrieval_top_k: int = 6
     retrieval_min_score: float = 0.35
     max_evidence_characters: int = 8000

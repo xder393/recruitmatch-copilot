@@ -18,13 +18,15 @@
 - Unsupported Claim Rate：无引用或包含未知引用的结论比例。
 - p50/p95 Latency、Token、Estimated Cost：对比模型路径的性能和成本预算。
 
-当前机器生成结果位于 `evaluation/recruitmatch-v1-results.json`。复现命令：
+当前机器生成结果位于 `evaluation/recruitmatch-v1-results.json` 和 `evaluation/recruitmatch-ai-v1-results.json`。AI 基准会真实调用可控 Fake Model、LLM 解析器、语义检索、混合排序与受约束解释链路；Fake Model 只用于离线确定性和无外部费用，不是线上模型效果证明。当前 `hybrid-v1` 在该合成集上为 Top-1 95.33%、Top-3 98%、引用有效率 100%。复现命令：
 
 ```bash
 python scripts/generate_recruitment_eval.py --seed 20260819
 python scripts/evaluate_recruitment.py
 python scripts/evaluate_ai_pipeline.py --dataset evaluation/recruitmatch-ai-v1.json --mode hybrid-v1 --fake-model
 ```
+
+可选使用 `--persist-database-url` 和 `--tenant-id` 将脱敏汇总与逐样本失败分类持久化；不会写入简历或知识正文。租户可通过 `/api/v1/evaluations/summary` 查看自己的评测摘要。
 
 ## 上线前缺口
 
