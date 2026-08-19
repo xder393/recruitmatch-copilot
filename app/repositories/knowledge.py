@@ -68,6 +68,8 @@ class KnowledgeRepository:
                     tenant_id=document.tenant_id,
                     document_id=document.id,
                     source_type=item.source_type,
+                    source_id=document.id,
+                    source_version=str(generation),
                     generation=generation,
                     start=item.start,
                     end=item.end,

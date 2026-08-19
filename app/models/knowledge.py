@@ -52,10 +52,12 @@ class KnowledgeChunk(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), index=True)
-    document_id: Mapped[str] = mapped_column(
-        ForeignKey("knowledge_documents.id", ondelete="CASCADE"), index=True
+    document_id: Mapped[Optional[str]] = mapped_column(
+        ForeignKey("knowledge_documents.id", ondelete="CASCADE"), index=True, nullable=True
     )
     source_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    source_id: Mapped[str] = mapped_column(String(100), index=True, nullable=False)
+    source_version: Mapped[str] = mapped_column(String(100), nullable=False)
     generation: Mapped[int] = mapped_column(Integer, nullable=False)
     start: Mapped[int] = mapped_column(Integer, nullable=False)
     end: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -65,4 +67,4 @@ class KnowledgeChunk(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=False, index=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
 
-    document: Mapped[KnowledgeDocument] = relationship(back_populates="chunks")
+    document: Mapped[Optional[KnowledgeDocument]] = relationship(back_populates="chunks")

@@ -37,9 +37,11 @@ def upgrade() -> None:
             "document_id",
             sa.String(36),
             sa.ForeignKey("knowledge_documents.id", ondelete="CASCADE"),
-            nullable=False,
+            nullable=True,
         ),
         sa.Column("source_type", sa.String(50), nullable=False),
+        sa.Column("source_id", sa.String(100), nullable=False),
+        sa.Column("source_version", sa.String(100), nullable=False),
         sa.Column("generation", sa.Integer(), nullable=False),
         sa.Column("start", sa.Integer(), nullable=False),
         sa.Column("end", sa.Integer(), nullable=False),
@@ -51,6 +53,7 @@ def upgrade() -> None:
     )
     op.create_index("ix_knowledge_chunks_tenant_id", "knowledge_chunks", ["tenant_id"])
     op.create_index("ix_knowledge_chunks_document_id", "knowledge_chunks", ["document_id"])
+    op.create_index("ix_knowledge_chunks_source_id", "knowledge_chunks", ["source_id"])
     op.create_index("ix_knowledge_chunks_is_active", "knowledge_chunks", ["is_active"])
     op.create_index(
         "ix_knowledge_chunks_tenant_document_generation_active",
