@@ -1,0 +1,2452 @@
+[
+  {
+    "id": "ai_application-01",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Python、LLM API、LangChain、FastAPI、向量数据库、RAG",
+    "skills": [
+      "Python",
+      "LLM API",
+      "LangChain",
+      "FastAPI",
+      "向量数据库",
+      "RAG"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "ai_application"
+    ]
+  },
+  {
+    "id": "ai_application-02",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：LangChain、LLM API、Python、RAG、FastAPI、向量数据库",
+    "skills": [
+      "LangChain",
+      "LLM API",
+      "Python",
+      "RAG",
+      "FastAPI",
+      "向量数据库"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "ai_application"
+    ]
+  },
+  {
+    "id": "ai_application-03",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：RAG、向量数据库、LangChain、LLM API、FastAPI、Python",
+    "skills": [
+      "RAG",
+      "向量数据库",
+      "LangChain",
+      "LLM API",
+      "FastAPI",
+      "Python"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "ai_application"
+    ]
+  },
+  {
+    "id": "ai_application-04",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：向量数据库、RAG、LLM API、FastAPI、LangChain、Python",
+    "skills": [
+      "向量数据库",
+      "RAG",
+      "LLM API",
+      "FastAPI",
+      "LangChain",
+      "Python"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "ai_application"
+    ]
+  },
+  {
+    "id": "ai_application-05",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：LLM API、向量数据库、LangChain、FastAPI、RAG、Python",
+    "skills": [
+      "LLM API",
+      "向量数据库",
+      "LangChain",
+      "FastAPI",
+      "RAG",
+      "Python"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "ai_application"
+    ]
+  },
+  {
+    "id": "ai_application-06",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：向量数据库、FastAPI、RAG、LangChain、LLM API、Python",
+    "skills": [
+      "向量数据库",
+      "FastAPI",
+      "RAG",
+      "LangChain",
+      "LLM API",
+      "Python"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "ai_application"
+    ]
+  },
+  {
+    "id": "ai_application-07",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Python、LLM API、FastAPI",
+    "skills": [
+      "Python",
+      "LLM API",
+      "FastAPI"
+    ],
+    "experience_years": 2,
+    "expected_job_families": [
+      "ai_application"
+    ]
+  },
+  {
+    "id": "ai_application-08",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：LLM API、FastAPI、Python",
+    "skills": [
+      "LLM API",
+      "FastAPI",
+      "Python"
+    ],
+    "experience_years": 4,
+    "expected_job_families": [
+      "ai_application"
+    ]
+  },
+  {
+    "id": "ai_application-09",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：LLM API、Python、FastAPI",
+    "skills": [
+      "LLM API",
+      "Python",
+      "FastAPI"
+    ],
+    "experience_years": 6,
+    "expected_job_families": [
+      "ai_application"
+    ]
+  },
+  {
+    "id": "ai_application-10",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：LLM API、Python、FastAPI",
+    "skills": [
+      "LLM API",
+      "Python",
+      "FastAPI"
+    ],
+    "experience_years": 8,
+    "expected_job_families": [
+      "ai_application"
+    ]
+  },
+  {
+    "id": "ai_application-11",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Python、RAG、FastAPI",
+    "skills": [
+      "Python",
+      "RAG",
+      "FastAPI"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "ai_application"
+    ]
+  },
+  {
+    "id": "ai_application-12",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：RAG、Python、FastAPI",
+    "skills": [
+      "RAG",
+      "Python",
+      "FastAPI"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "ai_application"
+    ]
+  },
+  {
+    "id": "ai_application-13",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：FastAPI、Python、RAG",
+    "skills": [
+      "FastAPI",
+      "Python",
+      "RAG"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "ai_application"
+    ]
+  },
+  {
+    "id": "ai_application-14",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：RAG、Python",
+    "skills": [
+      "RAG",
+      "Python"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "ai_application"
+    ]
+  },
+  {
+    "id": "ai_application-15",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：RAG、LangChain、向量数据库、Python、FastAPI、LLM API",
+    "skills": [
+      "RAG",
+      "LangChain",
+      "向量数据库",
+      "Python",
+      "FastAPI",
+      "LLM API"
+    ],
+    "experience_years": null,
+    "expected_job_families": [
+      "ai_application"
+    ]
+  },
+  {
+    "id": "llm_algorithm-01",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Python、PyTorch、推理加速、PEFT、Transformer、分布式训练",
+    "skills": [
+      "Python",
+      "PyTorch",
+      "推理加速",
+      "PEFT",
+      "Transformer",
+      "分布式训练"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "llm_algorithm"
+    ]
+  },
+  {
+    "id": "llm_algorithm-02",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Python、分布式训练、推理加速、PyTorch、PEFT、Transformer",
+    "skills": [
+      "Python",
+      "分布式训练",
+      "推理加速",
+      "PyTorch",
+      "PEFT",
+      "Transformer"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "llm_algorithm"
+    ]
+  },
+  {
+    "id": "llm_algorithm-03",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Transformer、Python、PyTorch、PEFT、分布式训练、推理加速",
+    "skills": [
+      "Transformer",
+      "Python",
+      "PyTorch",
+      "PEFT",
+      "分布式训练",
+      "推理加速"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "llm_algorithm"
+    ]
+  },
+  {
+    "id": "llm_algorithm-04",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：推理加速、PEFT、PyTorch、分布式训练、Python、Transformer",
+    "skills": [
+      "推理加速",
+      "PEFT",
+      "PyTorch",
+      "分布式训练",
+      "Python",
+      "Transformer"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "llm_algorithm"
+    ]
+  },
+  {
+    "id": "llm_algorithm-05",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：PyTorch、Python、PEFT、Transformer、推理加速、分布式训练",
+    "skills": [
+      "PyTorch",
+      "Python",
+      "PEFT",
+      "Transformer",
+      "推理加速",
+      "分布式训练"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "llm_algorithm"
+    ]
+  },
+  {
+    "id": "llm_algorithm-06",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：PyTorch、分布式训练、推理加速、Python、Transformer、PEFT",
+    "skills": [
+      "PyTorch",
+      "分布式训练",
+      "推理加速",
+      "Python",
+      "Transformer",
+      "PEFT"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "llm_algorithm"
+    ]
+  },
+  {
+    "id": "llm_algorithm-07",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Transformer、Python、PyTorch",
+    "skills": [
+      "Transformer",
+      "Python",
+      "PyTorch"
+    ],
+    "experience_years": 2,
+    "expected_job_families": [
+      "llm_algorithm"
+    ]
+  },
+  {
+    "id": "llm_algorithm-08",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：PyTorch、Python、Transformer",
+    "skills": [
+      "PyTorch",
+      "Python",
+      "Transformer"
+    ],
+    "experience_years": 4,
+    "expected_job_families": [
+      "llm_algorithm"
+    ]
+  },
+  {
+    "id": "llm_algorithm-09",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Transformer、Python、PyTorch",
+    "skills": [
+      "Transformer",
+      "Python",
+      "PyTorch"
+    ],
+    "experience_years": 6,
+    "expected_job_families": [
+      "llm_algorithm"
+    ]
+  },
+  {
+    "id": "llm_algorithm-10",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：PyTorch、Transformer、Python",
+    "skills": [
+      "PyTorch",
+      "Transformer",
+      "Python"
+    ],
+    "experience_years": 8,
+    "expected_job_families": [
+      "llm_algorithm"
+    ]
+  },
+  {
+    "id": "llm_algorithm-11",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Python、PyTorch、PEFT",
+    "skills": [
+      "Python",
+      "PyTorch",
+      "PEFT"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "llm_algorithm"
+    ]
+  },
+  {
+    "id": "llm_algorithm-12",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：PyTorch、PEFT、Python",
+    "skills": [
+      "PyTorch",
+      "PEFT",
+      "Python"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "llm_algorithm"
+    ]
+  },
+  {
+    "id": "llm_algorithm-13",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：PyTorch、PEFT、Python",
+    "skills": [
+      "PyTorch",
+      "PEFT",
+      "Python"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "llm_algorithm"
+    ]
+  },
+  {
+    "id": "llm_algorithm-14",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：PEFT、Python",
+    "skills": [
+      "PEFT",
+      "Python"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "llm_algorithm"
+    ]
+  },
+  {
+    "id": "llm_algorithm-15",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：PyTorch、分布式训练、PEFT、Python、推理加速、Transformer",
+    "skills": [
+      "PyTorch",
+      "分布式训练",
+      "PEFT",
+      "Python",
+      "推理加速",
+      "Transformer"
+    ],
+    "experience_years": null,
+    "expected_job_families": [
+      "llm_algorithm"
+    ]
+  },
+  {
+    "id": "machine_learning-01",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Python、Scikit-learn、MLOps、机器学习、特征工程、SQL",
+    "skills": [
+      "Python",
+      "Scikit-learn",
+      "MLOps",
+      "机器学习",
+      "特征工程",
+      "SQL"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "machine_learning"
+    ]
+  },
+  {
+    "id": "machine_learning-02",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Python、Scikit-learn、特征工程、SQL、MLOps、机器学习",
+    "skills": [
+      "Python",
+      "Scikit-learn",
+      "特征工程",
+      "SQL",
+      "MLOps",
+      "机器学习"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "machine_learning"
+    ]
+  },
+  {
+    "id": "machine_learning-03",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Scikit-learn、机器学习、MLOps、Python、特征工程、SQL",
+    "skills": [
+      "Scikit-learn",
+      "机器学习",
+      "MLOps",
+      "Python",
+      "特征工程",
+      "SQL"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "machine_learning"
+    ]
+  },
+  {
+    "id": "machine_learning-04",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：MLOps、特征工程、SQL、Python、Scikit-learn、机器学习",
+    "skills": [
+      "MLOps",
+      "特征工程",
+      "SQL",
+      "Python",
+      "Scikit-learn",
+      "机器学习"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "machine_learning"
+    ]
+  },
+  {
+    "id": "machine_learning-05",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Python、特征工程、Scikit-learn、机器学习、MLOps、SQL",
+    "skills": [
+      "Python",
+      "特征工程",
+      "Scikit-learn",
+      "机器学习",
+      "MLOps",
+      "SQL"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "machine_learning"
+    ]
+  },
+  {
+    "id": "machine_learning-06",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：特征工程、Scikit-learn、Python、SQL、MLOps、机器学习",
+    "skills": [
+      "特征工程",
+      "Scikit-learn",
+      "Python",
+      "SQL",
+      "MLOps",
+      "机器学习"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "machine_learning"
+    ]
+  },
+  {
+    "id": "machine_learning-07",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：SQL、Python、机器学习",
+    "skills": [
+      "SQL",
+      "Python",
+      "机器学习"
+    ],
+    "experience_years": 2,
+    "expected_job_families": [
+      "machine_learning"
+    ]
+  },
+  {
+    "id": "machine_learning-08",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：机器学习、SQL、Python",
+    "skills": [
+      "机器学习",
+      "SQL",
+      "Python"
+    ],
+    "experience_years": 4,
+    "expected_job_families": [
+      "machine_learning"
+    ]
+  },
+  {
+    "id": "machine_learning-09",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：SQL、Python、机器学习",
+    "skills": [
+      "SQL",
+      "Python",
+      "机器学习"
+    ],
+    "experience_years": 6,
+    "expected_job_families": [
+      "machine_learning"
+    ]
+  },
+  {
+    "id": "machine_learning-10",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：SQL、机器学习、Python",
+    "skills": [
+      "SQL",
+      "机器学习",
+      "Python"
+    ],
+    "experience_years": 8,
+    "expected_job_families": [
+      "machine_learning"
+    ]
+  },
+  {
+    "id": "machine_learning-11",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：机器学习、Python、Scikit-learn",
+    "skills": [
+      "机器学习",
+      "Python",
+      "Scikit-learn"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "machine_learning"
+    ]
+  },
+  {
+    "id": "machine_learning-12",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Scikit-learn、Python、机器学习",
+    "skills": [
+      "Scikit-learn",
+      "Python",
+      "机器学习"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "machine_learning"
+    ]
+  },
+  {
+    "id": "machine_learning-13",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Scikit-learn、Python、机器学习",
+    "skills": [
+      "Scikit-learn",
+      "Python",
+      "机器学习"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "machine_learning"
+    ]
+  },
+  {
+    "id": "machine_learning-14",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Python、Scikit-learn",
+    "skills": [
+      "Python",
+      "Scikit-learn"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "machine_learning"
+    ]
+  },
+  {
+    "id": "machine_learning-15",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：SQL、Python、机器学习、Scikit-learn、MLOps、特征工程",
+    "skills": [
+      "SQL",
+      "Python",
+      "机器学习",
+      "Scikit-learn",
+      "MLOps",
+      "特征工程"
+    ],
+    "experience_years": null,
+    "expected_job_families": [
+      "machine_learning"
+    ]
+  },
+  {
+    "id": "data_engineering-01",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：ETL、数据仓库、Spark、SQL、Python、Flink",
+    "skills": [
+      "ETL",
+      "数据仓库",
+      "Spark",
+      "SQL",
+      "Python",
+      "Flink"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "data_engineering"
+    ]
+  },
+  {
+    "id": "data_engineering-02",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Python、数据仓库、Spark、Flink、ETL、SQL",
+    "skills": [
+      "Python",
+      "数据仓库",
+      "Spark",
+      "Flink",
+      "ETL",
+      "SQL"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "data_engineering"
+    ]
+  },
+  {
+    "id": "data_engineering-03",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：ETL、Python、Spark、Flink、数据仓库、SQL",
+    "skills": [
+      "ETL",
+      "Python",
+      "Spark",
+      "Flink",
+      "数据仓库",
+      "SQL"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "data_engineering"
+    ]
+  },
+  {
+    "id": "data_engineering-04",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：SQL、Python、Spark、ETL、Flink、数据仓库",
+    "skills": [
+      "SQL",
+      "Python",
+      "Spark",
+      "ETL",
+      "Flink",
+      "数据仓库"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "data_engineering"
+    ]
+  },
+  {
+    "id": "data_engineering-05",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：数据仓库、ETL、SQL、Flink、Spark、Python",
+    "skills": [
+      "数据仓库",
+      "ETL",
+      "SQL",
+      "Flink",
+      "Spark",
+      "Python"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "data_engineering"
+    ]
+  },
+  {
+    "id": "data_engineering-06",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Spark、Python、SQL、数据仓库、Flink、ETL",
+    "skills": [
+      "Spark",
+      "Python",
+      "SQL",
+      "数据仓库",
+      "Flink",
+      "ETL"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "data_engineering"
+    ]
+  },
+  {
+    "id": "data_engineering-07",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：SQL、ETL、Python",
+    "skills": [
+      "SQL",
+      "ETL",
+      "Python"
+    ],
+    "experience_years": 2,
+    "expected_job_families": [
+      "data_engineering"
+    ]
+  },
+  {
+    "id": "data_engineering-08",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：ETL、Python、SQL",
+    "skills": [
+      "ETL",
+      "Python",
+      "SQL"
+    ],
+    "experience_years": 4,
+    "expected_job_families": [
+      "data_engineering"
+    ]
+  },
+  {
+    "id": "data_engineering-09",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：ETL、SQL、Python",
+    "skills": [
+      "ETL",
+      "SQL",
+      "Python"
+    ],
+    "experience_years": 6,
+    "expected_job_families": [
+      "data_engineering"
+    ]
+  },
+  {
+    "id": "data_engineering-10",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：SQL、ETL、Python",
+    "skills": [
+      "SQL",
+      "ETL",
+      "Python"
+    ],
+    "experience_years": 8,
+    "expected_job_families": [
+      "data_engineering"
+    ]
+  },
+  {
+    "id": "data_engineering-11",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Python、SQL、Spark",
+    "skills": [
+      "Python",
+      "SQL",
+      "Spark"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "data_engineering"
+    ]
+  },
+  {
+    "id": "data_engineering-12",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Spark、SQL、Python",
+    "skills": [
+      "Spark",
+      "SQL",
+      "Python"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "data_engineering"
+    ]
+  },
+  {
+    "id": "data_engineering-13",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：SQL、Python、Spark",
+    "skills": [
+      "SQL",
+      "Python",
+      "Spark"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "data_engineering"
+    ]
+  },
+  {
+    "id": "data_engineering-14",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：SQL、Spark",
+    "skills": [
+      "SQL",
+      "Spark"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "data_engineering"
+    ]
+  },
+  {
+    "id": "data_engineering-15",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：数据仓库、Python、ETL、Spark、Flink、SQL",
+    "skills": [
+      "数据仓库",
+      "Python",
+      "ETL",
+      "Spark",
+      "Flink",
+      "SQL"
+    ],
+    "experience_years": null,
+    "expected_job_families": [
+      "data_engineering"
+    ]
+  },
+  {
+    "id": "data_analysis-01",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：SQL、Python、数据可视化、Tableau、A/B 测试、统计学",
+    "skills": [
+      "SQL",
+      "Python",
+      "数据可视化",
+      "Tableau",
+      "A/B 测试",
+      "统计学"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "data_analysis"
+    ]
+  },
+  {
+    "id": "data_analysis-02",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Python、数据可视化、Tableau、统计学、A/B 测试、SQL",
+    "skills": [
+      "Python",
+      "数据可视化",
+      "Tableau",
+      "统计学",
+      "A/B 测试",
+      "SQL"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "data_analysis"
+    ]
+  },
+  {
+    "id": "data_analysis-03",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：数据可视化、A/B 测试、Python、统计学、SQL、Tableau",
+    "skills": [
+      "数据可视化",
+      "A/B 测试",
+      "Python",
+      "统计学",
+      "SQL",
+      "Tableau"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "data_analysis"
+    ]
+  },
+  {
+    "id": "data_analysis-04",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：A/B 测试、统计学、Tableau、SQL、数据可视化、Python",
+    "skills": [
+      "A/B 测试",
+      "统计学",
+      "Tableau",
+      "SQL",
+      "数据可视化",
+      "Python"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "data_analysis"
+    ]
+  },
+  {
+    "id": "data_analysis-05",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：数据可视化、SQL、Python、统计学、Tableau、A/B 测试",
+    "skills": [
+      "数据可视化",
+      "SQL",
+      "Python",
+      "统计学",
+      "Tableau",
+      "A/B 测试"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "data_analysis"
+    ]
+  },
+  {
+    "id": "data_analysis-06",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：数据可视化、Tableau、Python、统计学、SQL、A/B 测试",
+    "skills": [
+      "数据可视化",
+      "Tableau",
+      "Python",
+      "统计学",
+      "SQL",
+      "A/B 测试"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "data_analysis"
+    ]
+  },
+  {
+    "id": "data_analysis-07",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：数据可视化、统计学、SQL",
+    "skills": [
+      "数据可视化",
+      "统计学",
+      "SQL"
+    ],
+    "experience_years": 2,
+    "expected_job_families": [
+      "data_analysis"
+    ]
+  },
+  {
+    "id": "data_analysis-08",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：统计学、数据可视化、SQL",
+    "skills": [
+      "统计学",
+      "数据可视化",
+      "SQL"
+    ],
+    "experience_years": 4,
+    "expected_job_families": [
+      "data_analysis"
+    ]
+  },
+  {
+    "id": "data_analysis-09",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：SQL、统计学、数据可视化",
+    "skills": [
+      "SQL",
+      "统计学",
+      "数据可视化"
+    ],
+    "experience_years": 6,
+    "expected_job_families": [
+      "data_analysis"
+    ]
+  },
+  {
+    "id": "data_analysis-10",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：数据可视化、SQL、统计学",
+    "skills": [
+      "数据可视化",
+      "SQL",
+      "统计学"
+    ],
+    "experience_years": 8,
+    "expected_job_families": [
+      "data_analysis"
+    ]
+  },
+  {
+    "id": "data_analysis-11",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Python、SQL、统计学",
+    "skills": [
+      "Python",
+      "SQL",
+      "统计学"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "data_analysis"
+    ]
+  },
+  {
+    "id": "data_analysis-12",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：统计学、Python、SQL",
+    "skills": [
+      "统计学",
+      "Python",
+      "SQL"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "data_analysis"
+    ]
+  },
+  {
+    "id": "data_analysis-13",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：统计学、SQL、Python",
+    "skills": [
+      "统计学",
+      "SQL",
+      "Python"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "data_analysis"
+    ]
+  },
+  {
+    "id": "data_analysis-14",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：SQL、Python",
+    "skills": [
+      "SQL",
+      "Python"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "data_analysis"
+    ]
+  },
+  {
+    "id": "data_analysis-15",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：统计学、Python、数据可视化、SQL、A/B 测试、Tableau",
+    "skills": [
+      "统计学",
+      "Python",
+      "数据可视化",
+      "SQL",
+      "A/B 测试",
+      "Tableau"
+    ],
+    "experience_years": null,
+    "expected_job_families": [
+      "data_analysis"
+    ]
+  },
+  {
+    "id": "backend-01",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：消息队列、API 设计、Python/Java、Redis、数据库、微服务",
+    "skills": [
+      "消息队列",
+      "API 设计",
+      "Python/Java",
+      "Redis",
+      "数据库",
+      "微服务"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "backend"
+    ]
+  },
+  {
+    "id": "backend-02",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：微服务、数据库、Python/Java、Redis、API 设计、消息队列",
+    "skills": [
+      "微服务",
+      "数据库",
+      "Python/Java",
+      "Redis",
+      "API 设计",
+      "消息队列"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "backend"
+    ]
+  },
+  {
+    "id": "backend-03",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Redis、消息队列、API 设计、微服务、Python/Java、数据库",
+    "skills": [
+      "Redis",
+      "消息队列",
+      "API 设计",
+      "微服务",
+      "Python/Java",
+      "数据库"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "backend"
+    ]
+  },
+  {
+    "id": "backend-04",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：数据库、Python/Java、Redis、消息队列、微服务、API 设计",
+    "skills": [
+      "数据库",
+      "Python/Java",
+      "Redis",
+      "消息队列",
+      "微服务",
+      "API 设计"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "backend"
+    ]
+  },
+  {
+    "id": "backend-05",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Python/Java、微服务、数据库、API 设计、Redis、消息队列",
+    "skills": [
+      "Python/Java",
+      "微服务",
+      "数据库",
+      "API 设计",
+      "Redis",
+      "消息队列"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "backend"
+    ]
+  },
+  {
+    "id": "backend-06",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：微服务、API 设计、消息队列、数据库、Redis、Python/Java",
+    "skills": [
+      "微服务",
+      "API 设计",
+      "消息队列",
+      "数据库",
+      "Redis",
+      "Python/Java"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "backend"
+    ]
+  },
+  {
+    "id": "backend-07",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Python/Java、API 设计、数据库",
+    "skills": [
+      "Python/Java",
+      "API 设计",
+      "数据库"
+    ],
+    "experience_years": 2,
+    "expected_job_families": [
+      "backend"
+    ]
+  },
+  {
+    "id": "backend-08",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Python/Java、API 设计、数据库",
+    "skills": [
+      "Python/Java",
+      "API 设计",
+      "数据库"
+    ],
+    "experience_years": 4,
+    "expected_job_families": [
+      "backend"
+    ]
+  },
+  {
+    "id": "backend-09",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：API 设计、Python/Java、数据库",
+    "skills": [
+      "API 设计",
+      "Python/Java",
+      "数据库"
+    ],
+    "experience_years": 6,
+    "expected_job_families": [
+      "backend"
+    ]
+  },
+  {
+    "id": "backend-10",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：数据库、Python/Java、API 设计",
+    "skills": [
+      "数据库",
+      "Python/Java",
+      "API 设计"
+    ],
+    "experience_years": 8,
+    "expected_job_families": [
+      "backend"
+    ]
+  },
+  {
+    "id": "backend-11",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：微服务、数据库、Python/Java",
+    "skills": [
+      "微服务",
+      "数据库",
+      "Python/Java"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "backend"
+    ]
+  },
+  {
+    "id": "backend-12",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Python/Java、数据库、微服务",
+    "skills": [
+      "Python/Java",
+      "数据库",
+      "微服务"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "backend"
+    ]
+  },
+  {
+    "id": "backend-13",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：微服务、Python/Java、数据库",
+    "skills": [
+      "微服务",
+      "Python/Java",
+      "数据库"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "backend"
+    ]
+  },
+  {
+    "id": "backend-14",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Python/Java、微服务",
+    "skills": [
+      "Python/Java",
+      "微服务"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "backend"
+    ]
+  },
+  {
+    "id": "backend-15",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：消息队列、Redis、数据库、微服务、API 设计、Python/Java",
+    "skills": [
+      "消息队列",
+      "Redis",
+      "数据库",
+      "微服务",
+      "API 设计",
+      "Python/Java"
+    ],
+    "experience_years": null,
+    "expected_job_families": [
+      "backend"
+    ]
+  },
+  {
+    "id": "frontend-01",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：JavaScript、TypeScript、性能优化、HTML/CSS、React/Vue、前端工程化",
+    "skills": [
+      "JavaScript",
+      "TypeScript",
+      "性能优化",
+      "HTML/CSS",
+      "React/Vue",
+      "前端工程化"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "frontend"
+    ]
+  },
+  {
+    "id": "frontend-02",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：前端工程化、JavaScript、性能优化、HTML/CSS、React/Vue、TypeScript",
+    "skills": [
+      "前端工程化",
+      "JavaScript",
+      "性能优化",
+      "HTML/CSS",
+      "React/Vue",
+      "TypeScript"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "frontend"
+    ]
+  },
+  {
+    "id": "frontend-03",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：HTML/CSS、React/Vue、TypeScript、性能优化、JavaScript、前端工程化",
+    "skills": [
+      "HTML/CSS",
+      "React/Vue",
+      "TypeScript",
+      "性能优化",
+      "JavaScript",
+      "前端工程化"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "frontend"
+    ]
+  },
+  {
+    "id": "frontend-04",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：性能优化、JavaScript、TypeScript、React/Vue、HTML/CSS、前端工程化",
+    "skills": [
+      "性能优化",
+      "JavaScript",
+      "TypeScript",
+      "React/Vue",
+      "HTML/CSS",
+      "前端工程化"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "frontend"
+    ]
+  },
+  {
+    "id": "frontend-05",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：性能优化、前端工程化、TypeScript、HTML/CSS、React/Vue、JavaScript",
+    "skills": [
+      "性能优化",
+      "前端工程化",
+      "TypeScript",
+      "HTML/CSS",
+      "React/Vue",
+      "JavaScript"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "frontend"
+    ]
+  },
+  {
+    "id": "frontend-06",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：性能优化、前端工程化、TypeScript、HTML/CSS、JavaScript、React/Vue",
+    "skills": [
+      "性能优化",
+      "前端工程化",
+      "TypeScript",
+      "HTML/CSS",
+      "JavaScript",
+      "React/Vue"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "frontend"
+    ]
+  },
+  {
+    "id": "frontend-07",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：React/Vue、JavaScript、HTML/CSS",
+    "skills": [
+      "React/Vue",
+      "JavaScript",
+      "HTML/CSS"
+    ],
+    "experience_years": 2,
+    "expected_job_families": [
+      "frontend"
+    ]
+  },
+  {
+    "id": "frontend-08",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：React/Vue、JavaScript、HTML/CSS",
+    "skills": [
+      "React/Vue",
+      "JavaScript",
+      "HTML/CSS"
+    ],
+    "experience_years": 4,
+    "expected_job_families": [
+      "frontend"
+    ]
+  },
+  {
+    "id": "frontend-09",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：HTML/CSS、JavaScript、React/Vue",
+    "skills": [
+      "HTML/CSS",
+      "JavaScript",
+      "React/Vue"
+    ],
+    "experience_years": 6,
+    "expected_job_families": [
+      "frontend"
+    ]
+  },
+  {
+    "id": "frontend-10",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：React/Vue、HTML/CSS、JavaScript",
+    "skills": [
+      "React/Vue",
+      "HTML/CSS",
+      "JavaScript"
+    ],
+    "experience_years": 8,
+    "expected_job_families": [
+      "frontend"
+    ]
+  },
+  {
+    "id": "frontend-11",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：JavaScript、TypeScript、HTML/CSS",
+    "skills": [
+      "JavaScript",
+      "TypeScript",
+      "HTML/CSS"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "frontend"
+    ]
+  },
+  {
+    "id": "frontend-12",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：HTML/CSS、JavaScript、TypeScript",
+    "skills": [
+      "HTML/CSS",
+      "JavaScript",
+      "TypeScript"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "frontend"
+    ]
+  },
+  {
+    "id": "frontend-13",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：HTML/CSS、TypeScript、JavaScript",
+    "skills": [
+      "HTML/CSS",
+      "TypeScript",
+      "JavaScript"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "frontend"
+    ]
+  },
+  {
+    "id": "frontend-14",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：JavaScript、TypeScript",
+    "skills": [
+      "JavaScript",
+      "TypeScript"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "frontend"
+    ]
+  },
+  {
+    "id": "frontend-15",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：React/Vue、性能优化、HTML/CSS、TypeScript、前端工程化、JavaScript",
+    "skills": [
+      "React/Vue",
+      "性能优化",
+      "HTML/CSS",
+      "TypeScript",
+      "前端工程化",
+      "JavaScript"
+    ],
+    "experience_years": null,
+    "expected_job_families": [
+      "frontend"
+    ]
+  },
+  {
+    "id": "full_stack-01",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Python、后端开发、数据库、JavaScript、云部署、TypeScript",
+    "skills": [
+      "Python",
+      "后端开发",
+      "数据库",
+      "JavaScript",
+      "云部署",
+      "TypeScript"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "full_stack"
+    ]
+  },
+  {
+    "id": "full_stack-02",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Python、JavaScript、后端开发、TypeScript、数据库、云部署",
+    "skills": [
+      "Python",
+      "JavaScript",
+      "后端开发",
+      "TypeScript",
+      "数据库",
+      "云部署"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "full_stack"
+    ]
+  },
+  {
+    "id": "full_stack-03",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：JavaScript、后端开发、TypeScript、云部署、数据库、Python",
+    "skills": [
+      "JavaScript",
+      "后端开发",
+      "TypeScript",
+      "云部署",
+      "数据库",
+      "Python"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "full_stack"
+    ]
+  },
+  {
+    "id": "full_stack-04",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：后端开发、云部署、数据库、Python、JavaScript、TypeScript",
+    "skills": [
+      "后端开发",
+      "云部署",
+      "数据库",
+      "Python",
+      "JavaScript",
+      "TypeScript"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "full_stack"
+    ]
+  },
+  {
+    "id": "full_stack-05",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：TypeScript、Python、数据库、JavaScript、云部署、后端开发",
+    "skills": [
+      "TypeScript",
+      "Python",
+      "数据库",
+      "JavaScript",
+      "云部署",
+      "后端开发"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "full_stack"
+    ]
+  },
+  {
+    "id": "full_stack-06",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：数据库、后端开发、云部署、TypeScript、JavaScript、Python",
+    "skills": [
+      "数据库",
+      "后端开发",
+      "云部署",
+      "TypeScript",
+      "JavaScript",
+      "Python"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "full_stack"
+    ]
+  },
+  {
+    "id": "full_stack-07",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：后端开发、JavaScript、数据库",
+    "skills": [
+      "后端开发",
+      "JavaScript",
+      "数据库"
+    ],
+    "experience_years": 2,
+    "expected_job_families": [
+      "full_stack"
+    ]
+  },
+  {
+    "id": "full_stack-08",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：数据库、后端开发、JavaScript",
+    "skills": [
+      "数据库",
+      "后端开发",
+      "JavaScript"
+    ],
+    "experience_years": 4,
+    "expected_job_families": [
+      "full_stack"
+    ]
+  },
+  {
+    "id": "full_stack-09",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：JavaScript、后端开发、数据库",
+    "skills": [
+      "JavaScript",
+      "后端开发",
+      "数据库"
+    ],
+    "experience_years": 6,
+    "expected_job_families": [
+      "full_stack"
+    ]
+  },
+  {
+    "id": "full_stack-10",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：JavaScript、后端开发、数据库",
+    "skills": [
+      "JavaScript",
+      "后端开发",
+      "数据库"
+    ],
+    "experience_years": 8,
+    "expected_job_families": [
+      "full_stack"
+    ]
+  },
+  {
+    "id": "full_stack-11",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：JavaScript、后端开发、TypeScript",
+    "skills": [
+      "JavaScript",
+      "后端开发",
+      "TypeScript"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "full_stack"
+    ]
+  },
+  {
+    "id": "full_stack-12",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：JavaScript、TypeScript、后端开发",
+    "skills": [
+      "JavaScript",
+      "TypeScript",
+      "后端开发"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "full_stack"
+    ]
+  },
+  {
+    "id": "full_stack-13",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：JavaScript、TypeScript、后端开发",
+    "skills": [
+      "JavaScript",
+      "TypeScript",
+      "后端开发"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "full_stack"
+    ]
+  },
+  {
+    "id": "full_stack-14",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：JavaScript、TypeScript",
+    "skills": [
+      "JavaScript",
+      "TypeScript"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "full_stack"
+    ]
+  },
+  {
+    "id": "full_stack-15",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Python、JavaScript、后端开发、数据库、TypeScript、云部署",
+    "skills": [
+      "Python",
+      "JavaScript",
+      "后端开发",
+      "数据库",
+      "TypeScript",
+      "云部署"
+    ],
+    "experience_years": null,
+    "expected_job_families": [
+      "full_stack"
+    ]
+  },
+  {
+    "id": "test_development-01",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：自动化测试、CI/CD、Python/Java、测试平台、性能测试、接口测试",
+    "skills": [
+      "自动化测试",
+      "CI/CD",
+      "Python/Java",
+      "测试平台",
+      "性能测试",
+      "接口测试"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "test_development"
+    ]
+  },
+  {
+    "id": "test_development-02",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：接口测试、测试平台、CI/CD、Python/Java、自动化测试、性能测试",
+    "skills": [
+      "接口测试",
+      "测试平台",
+      "CI/CD",
+      "Python/Java",
+      "自动化测试",
+      "性能测试"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "test_development"
+    ]
+  },
+  {
+    "id": "test_development-03",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：测试平台、CI/CD、自动化测试、性能测试、Python/Java、接口测试",
+    "skills": [
+      "测试平台",
+      "CI/CD",
+      "自动化测试",
+      "性能测试",
+      "Python/Java",
+      "接口测试"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "test_development"
+    ]
+  },
+  {
+    "id": "test_development-04",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：CI/CD、性能测试、自动化测试、Python/Java、测试平台、接口测试",
+    "skills": [
+      "CI/CD",
+      "性能测试",
+      "自动化测试",
+      "Python/Java",
+      "测试平台",
+      "接口测试"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "test_development"
+    ]
+  },
+  {
+    "id": "test_development-05",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：接口测试、测试平台、CI/CD、性能测试、Python/Java、自动化测试",
+    "skills": [
+      "接口测试",
+      "测试平台",
+      "CI/CD",
+      "性能测试",
+      "Python/Java",
+      "自动化测试"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "test_development"
+    ]
+  },
+  {
+    "id": "test_development-06",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：接口测试、CI/CD、自动化测试、测试平台、性能测试、Python/Java",
+    "skills": [
+      "接口测试",
+      "CI/CD",
+      "自动化测试",
+      "测试平台",
+      "性能测试",
+      "Python/Java"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "test_development"
+    ]
+  },
+  {
+    "id": "test_development-07",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Python/Java、自动化测试、接口测试",
+    "skills": [
+      "Python/Java",
+      "自动化测试",
+      "接口测试"
+    ],
+    "experience_years": 2,
+    "expected_job_families": [
+      "test_development"
+    ]
+  },
+  {
+    "id": "test_development-08",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：接口测试、自动化测试、Python/Java",
+    "skills": [
+      "接口测试",
+      "自动化测试",
+      "Python/Java"
+    ],
+    "experience_years": 4,
+    "expected_job_families": [
+      "test_development"
+    ]
+  },
+  {
+    "id": "test_development-09",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：自动化测试、Python/Java、接口测试",
+    "skills": [
+      "自动化测试",
+      "Python/Java",
+      "接口测试"
+    ],
+    "experience_years": 6,
+    "expected_job_families": [
+      "test_development"
+    ]
+  },
+  {
+    "id": "test_development-10",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Python/Java、自动化测试、接口测试",
+    "skills": [
+      "Python/Java",
+      "自动化测试",
+      "接口测试"
+    ],
+    "experience_years": 8,
+    "expected_job_families": [
+      "test_development"
+    ]
+  },
+  {
+    "id": "test_development-11",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Python/Java、自动化测试、性能测试",
+    "skills": [
+      "Python/Java",
+      "自动化测试",
+      "性能测试"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "test_development"
+    ]
+  },
+  {
+    "id": "test_development-12",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：自动化测试、性能测试、Python/Java",
+    "skills": [
+      "自动化测试",
+      "性能测试",
+      "Python/Java"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "test_development"
+    ]
+  },
+  {
+    "id": "test_development-13",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：性能测试、Python/Java、自动化测试",
+    "skills": [
+      "性能测试",
+      "Python/Java",
+      "自动化测试"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "test_development"
+    ]
+  },
+  {
+    "id": "test_development-14",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：性能测试、自动化测试",
+    "skills": [
+      "性能测试",
+      "自动化测试"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "test_development"
+    ]
+  },
+  {
+    "id": "test_development-15",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：CI/CD、自动化测试、接口测试、测试平台、性能测试、Python/Java",
+    "skills": [
+      "CI/CD",
+      "自动化测试",
+      "接口测试",
+      "测试平台",
+      "性能测试",
+      "Python/Java"
+    ],
+    "experience_years": null,
+    "expected_job_families": [
+      "test_development"
+    ]
+  },
+  {
+    "id": "devops_sre-01",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：CI/CD、Prometheus、Terraform、Kubernetes、容器、Linux",
+    "skills": [
+      "CI/CD",
+      "Prometheus",
+      "Terraform",
+      "Kubernetes",
+      "容器",
+      "Linux"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "devops_sre"
+    ]
+  },
+  {
+    "id": "devops_sre-02",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Linux、容器、Prometheus、Kubernetes、Terraform、CI/CD",
+    "skills": [
+      "Linux",
+      "容器",
+      "Prometheus",
+      "Kubernetes",
+      "Terraform",
+      "CI/CD"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "devops_sre"
+    ]
+  },
+  {
+    "id": "devops_sre-03",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：CI/CD、Linux、容器、Terraform、Prometheus、Kubernetes",
+    "skills": [
+      "CI/CD",
+      "Linux",
+      "容器",
+      "Terraform",
+      "Prometheus",
+      "Kubernetes"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "devops_sre"
+    ]
+  },
+  {
+    "id": "devops_sre-04",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Linux、Kubernetes、Prometheus、Terraform、CI/CD、容器",
+    "skills": [
+      "Linux",
+      "Kubernetes",
+      "Prometheus",
+      "Terraform",
+      "CI/CD",
+      "容器"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "devops_sre"
+    ]
+  },
+  {
+    "id": "devops_sre-05",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Kubernetes、CI/CD、Prometheus、Terraform、容器、Linux",
+    "skills": [
+      "Kubernetes",
+      "CI/CD",
+      "Prometheus",
+      "Terraform",
+      "容器",
+      "Linux"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "devops_sre"
+    ]
+  },
+  {
+    "id": "devops_sre-06",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Linux、容器、Terraform、Kubernetes、CI/CD、Prometheus",
+    "skills": [
+      "Linux",
+      "容器",
+      "Terraform",
+      "Kubernetes",
+      "CI/CD",
+      "Prometheus"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "devops_sre"
+    ]
+  },
+  {
+    "id": "devops_sre-07",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：容器、Linux、CI/CD",
+    "skills": [
+      "容器",
+      "Linux",
+      "CI/CD"
+    ],
+    "experience_years": 2,
+    "expected_job_families": [
+      "devops_sre"
+    ]
+  },
+  {
+    "id": "devops_sre-08",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：容器、CI/CD、Linux",
+    "skills": [
+      "容器",
+      "CI/CD",
+      "Linux"
+    ],
+    "experience_years": 4,
+    "expected_job_families": [
+      "devops_sre"
+    ]
+  },
+  {
+    "id": "devops_sre-09",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：容器、CI/CD、Linux",
+    "skills": [
+      "容器",
+      "CI/CD",
+      "Linux"
+    ],
+    "experience_years": 6,
+    "expected_job_families": [
+      "devops_sre"
+    ]
+  },
+  {
+    "id": "devops_sre-10",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Linux、CI/CD、容器",
+    "skills": [
+      "Linux",
+      "CI/CD",
+      "容器"
+    ],
+    "experience_years": 8,
+    "expected_job_families": [
+      "devops_sre"
+    ]
+  },
+  {
+    "id": "devops_sre-11",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：容器、Kubernetes、Linux",
+    "skills": [
+      "容器",
+      "Kubernetes",
+      "Linux"
+    ],
+    "experience_years": 1,
+    "expected_job_families": [
+      "devops_sre"
+    ]
+  },
+  {
+    "id": "devops_sre-12",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Linux、Kubernetes、容器",
+    "skills": [
+      "Linux",
+      "Kubernetes",
+      "容器"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "devops_sre"
+    ]
+  },
+  {
+    "id": "devops_sre-13",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：容器、Kubernetes、Linux",
+    "skills": [
+      "容器",
+      "Kubernetes",
+      "Linux"
+    ],
+    "experience_years": 5,
+    "expected_job_families": [
+      "devops_sre"
+    ]
+  },
+  {
+    "id": "devops_sre-14",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Kubernetes、Linux",
+    "skills": [
+      "Kubernetes",
+      "Linux"
+    ],
+    "experience_years": 3,
+    "expected_job_families": [
+      "devops_sre"
+    ]
+  },
+  {
+    "id": "devops_sre-15",
+    "dataset_version": "recruitmatch-v1",
+    "label_source": "synthetic_heuristic",
+    "resume_text": "候选人技能：Prometheus、Terraform、容器、Kubernetes、Linux、CI/CD",
+    "skills": [
+      "Prometheus",
+      "Terraform",
+      "容器",
+      "Kubernetes",
+      "Linux",
+      "CI/CD"
+    ],
+    "experience_years": null,
+    "expected_job_families": [
+      "devops_sre"
+    ]
+  }
+]
