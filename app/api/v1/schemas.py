@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
-from app.domain.enums import JobStatus, Role
+from app.domain.enums import JobStatus, ResumeStatus, Role
 
 
 class BootstrapRequest(BaseModel):
@@ -71,3 +71,19 @@ class JobTemplateResponse(BaseModel):
     title: str
     jd_text: str
     profile: Dict[str, Any]
+
+
+class ResumeResponse(BaseModel):
+    id: str
+    original_filename: str
+    media_type: str
+    size_bytes: int
+    status: ResumeStatus
+    profile: Dict[str, Any]
+    error_code: Optional[str]
+    error_message: Optional[str]
+
+
+class ResumeListResponse(BaseModel):
+    items: List[ResumeResponse]
+    total: int

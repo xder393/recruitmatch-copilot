@@ -5,6 +5,7 @@ import os
 import time
 import uuid
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -25,6 +26,10 @@ from app.storage.vector_store import VectorStore
 from app.database import Base, create_engine_and_session
 from app.models import Job, JobTemplate, JobVersion, Tenant, User  # noqa: F401
 from app.security.tokens import TokenSettings
+from app.resumes.artifacts import LocalArtifactStore
+from app.resumes.parser import HeuristicResumeParser
+from app.services.resume_processing import ResumeProcessingService
+from app.tasks.dispatcher import CeleryTaskDispatcher, InlineTaskDispatcher
 
 logger = get_logger(__name__)
 
@@ -84,6 +89,13 @@ def init_recruiting_state(app: FastAPI, settings: Settings) -> None:
     app.state.token_settings = TokenSettings(
         secret_key=settings.jwt_secret,
         access_token_minutes=settings.access_token_minutes,
+    )
+    artifact_store = LocalArtifactStore(Path(settings.artifact_dir))
+    processor = ResumeProcessingService(session_factory, artifact_store, HeuristicResumeParser())
+    app.state.artifact_store = artifact_store
+    app.state.resume_processor = processor
+    app.state.task_dispatcher = (
+        CeleryTaskDispatcher() if settings.task_mode == "celery" else InlineTaskDispatcher(processor)
     )
     app.state._recruiting_initialized = True
 

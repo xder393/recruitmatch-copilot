@@ -52,6 +52,9 @@ class Settings:
 
     # —— 企业业务数据库 ——
     database_url: str = "sqlite:///data/recruitmatch.db"
+    artifact_dir: str = "data/resumes"
+    task_mode: str = "inline"
+    celery_broker_url: str = "redis://localhost:6379/0"
 
     # —— 身份认证 ——
     jwt_secret: str = "dev-only-change-me-before-production"
@@ -78,6 +81,9 @@ class Settings:
             index_dir=os.getenv("INDEX_DIR", cls.index_dir).strip(),
             conversations_file=os.getenv("CONVERSATIONS_FILE", cls.conversations_file).strip(),
             database_url=os.getenv("DATABASE_URL", cls.database_url).strip(),
+            artifact_dir=os.getenv("ARTIFACT_DIR", cls.artifact_dir).strip(),
+            task_mode=os.getenv("TASK_MODE", cls.task_mode).strip(),
+            celery_broker_url=os.getenv("CELERY_BROKER_URL", cls.celery_broker_url).strip(),
             jwt_secret=os.getenv("JWT_SECRET", cls.jwt_secret).strip(),
             access_token_minutes=_get_int("ACCESS_TOKEN_MINUTES", cls.access_token_minutes),
             chunk_size=_get_int("CHUNK_SIZE", cls.chunk_size),

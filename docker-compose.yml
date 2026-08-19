@@ -13,6 +13,17 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    volumes:
+      - redis-data:/data
+
   recruitmatch-api:
     build: .
     ports:
@@ -21,8 +32,12 @@ services:
       - .env
     environment:
       DATABASE_URL: postgresql+psycopg://recruitmatch:recruitmatch@postgres:5432/recruitmatch
+      TASK_MODE: celery
+      CELERY_BROKER_URL: redis://redis:6379/0
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     command: >-
       sh -c "alembic upgrade head &&
@@ -33,6 +48,25 @@ services:
       - hf-cache:/root/.cache/huggingface   # embedding 模型缓存
     restart: unless-stopped
 
+  recruitmatch-worker:
+    build: .
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://recruitmatch:recruitmatch@postgres:5432/recruitmatch
+      ARTIFACT_DIR: /app/data/resumes
+      CELERY_BROKER_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A app.tasks.celery_app.celery_app worker --loglevel=INFO
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+
 volumes:
   postgres-data:
+  redis-data:
   hf-cache:
