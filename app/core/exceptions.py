@@ -56,6 +56,26 @@ class RetrievalError(AppError):
     status_code = 500
 
 
+class AuthenticationError(AppError):
+    code = "unauthorized"
+    status_code = 401
+
+
+class AuthorizationError(AppError):
+    code = "forbidden"
+    status_code = 403
+
+
+class ConflictError(AppError):
+    code = "conflict"
+    status_code = 409
+
+
+class ResourceNotFoundError(AppError):
+    code = "not_found"
+    status_code = 404
+
+
 class ToolExecutionError(AppError):
     code = "tool_error"
     status_code = 500
