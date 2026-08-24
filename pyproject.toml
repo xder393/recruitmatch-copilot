@@ -1,9 +1,49 @@
+[project]
+name = "recruitmatch-copilot"
+version = "0.2.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "fastapi>=0.110",
+  "uvicorn[standard]>=0.29",
+  "python-multipart>=0.0.9",
+  "pydantic>=2,<3",
+  "sqlalchemy>=2.0,<3",
+  "alembic>=1.13,<2",
+  "psycopg[binary]>=3.2,<4",
+  "pyjwt>=2.8,<3",
+  "argon2-cffi>=23.1,<26",
+  "celery[redis]>=5.4,<6",
+  "openai>=1.30",
+  "langchain>=0.3,<0.4",
+  "langchain-openai>=0.3,<0.4",
+  "numpy>=1.26",
+  "sentence-transformers>=2.5",
+  "torch>=2.5",
+  "pypdf>=4.0",
+  "python-docx>=1.1,<2",
+  "python-dotenv>=1.0",
+]
+
+[dependency-groups]
+dev = ["pytest>=8", "httpx>=0.27,<1", "ruff>=0.6,<1", "mypy>=1.11", "types-pyjwt"]
+eval = []
+load = []
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
 [tool.ruff]
 line-length = 120
-target-version = "py39"
+target-version = "py312"
 
 [tool.ruff.lint]
 # B008: FastAPI 的 Depends()/File() 写进函数默认值是官方推荐用法，予以忽略
 # E402: scripts/evaluate.py 需要先 sys.path.insert 再 import app，予以忽略
+# B905: legacy vector alignment validates dimensions before zipping，予以忽略
 select = ["E", "F", "B"]
-ignore = ["B008", "E402"]
+ignore = ["B008", "E402", "B905"]

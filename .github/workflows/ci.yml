@@ -11,20 +11,23 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-          cache: pip
-      - run: pip install -r requirements.txt
-      - run: python -m ruff check app tests scripts
-      - run: DATABASE_URL=sqlite:////tmp/recruitmatch-ci.db alembic upgrade head
-      - run: python scripts/generate_recruitment_eval.py --output /tmp/recruitmatch-eval.json
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.5"
+          enable-cache: true
+      - run: uv sync --frozen --all-groups
+      - run: uv run ruff check app tests scripts
+      - run: DATABASE_URL=sqlite:////tmp/recruitmatch-ci.db uv run alembic upgrade head
+      - run: uv run python scripts/generate_recruitment_eval.py --output /tmp/recruitmatch-eval.json
       - run: >-
-          python scripts/evaluate_recruitment.py
+          uv run python scripts/evaluate_recruitment.py
           --dataset /tmp/recruitmatch-eval.json
           --output /tmp/recruitmatch-results.json
       - run: >-
-          python scripts/evaluate_ai_pipeline.py
+          uv run python scripts/evaluate_ai_pipeline.py
           --dataset evaluation/recruitmatch-ai-v1.json
           --output /tmp/recruitmatch-ai-results.json
           --mode hybrid-v1 --fake-model
       - run: diff -u evaluation/recruitmatch-ai-v1-results.json /tmp/recruitmatch-ai-results.json
-      - run: python -m pytest -q
+      - run: uv run python -m pytest -q
