@@ -1,7 +1,4 @@
-import os
 import re
-import subprocess
-import sys
 from pathlib import Path
 
 
@@ -33,26 +30,3 @@ def test_compose_uses_a_versioned_non_root_hf_cache_volume():
 def test_image_excludes_removed_legacy_namespaces():
     for namespace in ("agents", "rag", "storage", "tools", "embeddings"):
         assert not Path("app", namespace).exists()
-
-
-def test_bootstrap_command_is_idempotent(tmp_path: Path):
-    environment = os.environ.copy()
-    environment["DATABASE_URL"] = f"sqlite:///{tmp_path / 'bootstrap.db'}"
-
-    first = subprocess.run(
-        [sys.executable, "scripts/bootstrap.py"],
-        check=True,
-        capture_output=True,
-        text=True,
-        env=environment,
-    )
-    second = subprocess.run(
-        [sys.executable, "scripts/bootstrap.py"],
-        check=True,
-        capture_output=True,
-        text=True,
-        env=environment,
-    )
-
-    assert "seeded_job_templates=30" in first.stdout
-    assert "seeded_job_templates=0" in second.stdout

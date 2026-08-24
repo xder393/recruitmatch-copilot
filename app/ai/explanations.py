@@ -100,8 +100,8 @@ class GroundedExplanationService:
             self._trace_failed(tenant_id, resume_id, source_ids, request, error, started)
             return self._fallback(rule_result, "rules_fallback")
         except Exception:
-            error = ModelGatewayError("unexpected_model_error", retryable=False)
-            self._trace_failed(tenant_id, resume_id, source_ids, request, error, started)
+            fallback_error = ModelGatewayError("unexpected_model_error", retryable=False)
+            self._trace_failed(tenant_id, resume_id, source_ids, request, fallback_error, started)
             return self._fallback(rule_result, "rules_fallback")
         explanation = self._validate(response.value, permitted)
         if not any(

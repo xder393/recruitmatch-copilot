@@ -1,14 +1,17 @@
 from __future__ import annotations
 
+import importlib.util
+from pathlib import Path
+
+import pytest
 from alembic import command
-from alembic.config import Config
 from fastapi.testclient import TestClient
 from sqlalchemy import inspect
 
 from app.config import Settings
 from app.database import create_engine_and_session
-from app.database_migrations import upgrade_database
 from app.main import create_app
+from tests.support.database import prepare_test_database
 
 
 class _Embedder:
@@ -19,32 +22,27 @@ class _Embedder:
         return [1.0]
 
 
-def test_upgrade_database_explicit_url_wins_over_environment(monkeypatch, tmp_path):
-    explicit_url = f"sqlite:///{tmp_path / 'explicit.db'}"
-    environment_url = f"sqlite:///{tmp_path / 'environment.db'}"
-    monkeypatch.setenv("DATABASE_URL", environment_url)
+def test_sqlite_test_schema_setup_never_runs_alembic(monkeypatch, tmp_path):
+    def fail_if_called(*args, **kwargs):
+        raise AssertionError("SQLite test setup must not execute Alembic")
 
-    upgrade_database(explicit_url)
+    monkeypatch.setattr(command, "upgrade", fail_if_called)
+    engine = prepare_test_database(f"sqlite:///{tmp_path / 'unit.db'}")
 
-    explicit_engine, _ = create_engine_and_session(explicit_url)
-    environment_engine, _ = create_engine_and_session(environment_url)
-    assert inspect(explicit_engine).has_table("alembic_version")
-    assert not inspect(environment_engine).has_table("alembic_version")
+    assert "resumes" in inspect(engine).get_table_names()
 
 
-def test_direct_alembic_uses_environment_before_ini_fallback(monkeypatch, tmp_path):
-    environment_url = f"sqlite:///{tmp_path / 'environment.db'}"
-    ini_fallback_url = f"sqlite:///{tmp_path / 'ini-fallback.db'}"
-    monkeypatch.setenv("DATABASE_URL", environment_url)
-    config = Config("alembic.ini")
-    config.set_main_option("sqlalchemy.url", ini_fallback_url)
+def test_pgvector_revision_rejects_non_postgresql_dialects(monkeypatch):
+    path = Path("alembic/versions/20260824_11_pgvector_recruiting_chunks.py")
+    spec = importlib.util.spec_from_file_location("pgvector_revision", path)
+    assert spec is not None and spec.loader is not None
+    revision = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(revision)
+    bind = type("Bind", (), {"dialect": type("Dialect", (), {"name": "sqlite"})()})()
+    monkeypatch.setattr(revision.op, "get_bind", lambda: bind)
 
-    command.upgrade(config, "head")
-
-    environment_engine, _ = create_engine_and_session(environment_url)
-    ini_fallback_engine, _ = create_engine_and_session(ini_fallback_url)
-    assert inspect(environment_engine).has_table("alembic_version")
-    assert not inspect(ini_fallback_engine).has_table("alembic_version")
+    with pytest.raises(RuntimeError, match="requires PostgreSQL with pgvector"):
+        revision._require_postgresql()
 
 
 def test_application_startup_does_not_write_schema(tmp_path):

@@ -39,7 +39,8 @@ def issue_access_token(principal: Principal, settings: TokenSettings) -> str:
         "iss": settings.issuer,
         "aud": settings.audience,
     }
-    return jwt.encode(claims, settings.secret_key, algorithm="HS256")
+    encoded = jwt.encode(claims, settings.secret_key, algorithm="HS256")
+    return encoded.decode("ascii") if isinstance(encoded, bytes) else encoded
 
 
 def decode_access_token(token: str, settings: TokenSettings) -> Principal:

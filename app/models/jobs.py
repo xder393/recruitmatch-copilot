@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy import DateTime, Enum, ForeignKey, Integer, JSON, String, Text, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, synonym
 
 from app.database import Base
 from app.domain.enums import JobStatus
@@ -64,8 +64,10 @@ class JobVersion(Base):
     profile: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
     created_by: Mapped[Optional[str]] = mapped_column(ForeignKey("users.id"), nullable=True)
     search_index_status: Mapped[str] = mapped_column(String(30), default="pending", nullable=False)
-    search_index_error: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    search_index_error_code: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     search_indexed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    active_index_generation: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    search_index_error = synonym("search_index_error_code")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
 
     job: Mapped[Job] = relationship(back_populates="versions")

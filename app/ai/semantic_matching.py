@@ -78,8 +78,8 @@ class SemanticMatcher:
             self._trace_failed(tenant_id, resume_id, job_version_id, request, error, started)
             return None
         except Exception:
-            error = ModelGatewayError("unexpected_model_error", retryable=False)
-            self._trace_failed(tenant_id, resume_id, job_version_id, request, error, started)
+            fallback_error = ModelGatewayError("unexpected_model_error", retryable=False)
+            self._trace_failed(tenant_id, resume_id, job_version_id, request, fallback_error, started)
             return None
         validated = validate_semantic_score(
             response.value,
