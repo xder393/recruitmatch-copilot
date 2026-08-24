@@ -15,9 +15,10 @@ from app.repositories.matching import MatchingRepository
 from app.repositories.model_traces import ModelTraceWriter
 from app.repositories.ports import RepositoryConflictError
 from app.repositories.resumes import ResumeRepository
+from app.repositories.unit_of_work import RecruitingUnitOfWork
 
 
-class SqlAlchemyUnitOfWork(AbstractContextManager["SqlAlchemyUnitOfWork"]):
+class SqlAlchemyUnitOfWork(AbstractContextManager["SqlAlchemyUnitOfWork"], RecruitingUnitOfWork):
     """Owns SQLAlchemy repository adapters for one transaction."""
 
     def __init__(self, session, *, owns_session: bool = False):
@@ -54,5 +55,5 @@ class SqlAlchemyUnitOfWorkFactory:
     def __init__(self, session_factory: Callable):
         self._session_factory = session_factory
 
-    def __call__(self) -> SqlAlchemyUnitOfWork:
+    def __call__(self) -> AbstractContextManager[RecruitingUnitOfWork]:
         return SqlAlchemyUnitOfWork(self._session_factory(), owns_session=True)

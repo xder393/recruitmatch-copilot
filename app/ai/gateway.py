@@ -30,7 +30,7 @@ class ModelGatewayError(Exception):
 
 
 class OpenAICompatibleGateway:
-    def __init__(self, settings: Settings, client: Optional[object] = None):
+    def __init__(self, settings: Settings, client: Optional[OpenAI] = None):
         self.settings = settings
         self.client = client or OpenAI(
             api_key=settings.api_key,
@@ -41,6 +41,8 @@ class OpenAICompatibleGateway:
 
     def generate(self, request: ModelRequest[T]) -> ModelResponse[T]:
         attempts = self.settings.model_max_retries + 1
+        error: ModelGatewayError
+        cause: BaseException
         for attempt in range(attempts):
             started = time.perf_counter()
             try:

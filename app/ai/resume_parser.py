@@ -110,20 +110,20 @@ class LLMResumeParser:
     def _ground(profile: ResumeProfile, source: str) -> tuple[ResumeProfile, int]:
         invalid = 0
         skills = []
-        for item in profile.skills:
-            if evidence_resolves(source, item.evidence) and not contains_sensitive_trait(item.name):
-                skills.append(item)
+        for skill in profile.skills:
+            if evidence_resolves(source, skill.evidence) and not contains_sensitive_trait(skill.name):
+                skills.append(skill)
             else:
                 invalid += 1
 
         projects = []
-        for item in profile.projects:
+        for project in profile.projects:
             if (
-                evidence_resolves(source, item.evidence)
-                and not contains_sensitive_trait(item.name)
-                and not contains_sensitive_trait(item.description)
+                evidence_resolves(source, project.evidence)
+                and not contains_sensitive_trait(project.name)
+                and not contains_sensitive_trait(project.description)
             ):
-                projects.append(item)
+                projects.append(project)
             else:
                 invalid += 1
 

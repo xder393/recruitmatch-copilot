@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from celery import Celery
+from celery import Celery  # type: ignore[import-untyped]
 
 from app.config import Settings
 from app.database import create_engine_and_session

@@ -1,3 +1,21 @@
+x-runtime-build: &runtime-build
+  context: .
+  target: runtime
+
+x-test-build: &test-build
+  context: .
+  target: test
+
+x-app-environment: &app-environment
+  DATABASE_URL: postgresql+psycopg://recruitmatch:recruitmatch@postgres:5432/recruitmatch
+  ARTIFACT_DIR: /app/data/resumes
+  KNOWLEDGE_ARTIFACT_DIR: /app/data/knowledge
+  CELERY_BROKER_URL: redis://redis:6379/0
+  AI_ENABLED: ${AI_ENABLED:-false}
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.deepseek.com}
+  OPENAI_MODEL: ${OPENAI_MODEL:-deepseek-chat}
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -24,32 +42,37 @@ services:
     volumes:
       - redis-data:/data
 
-  recruitmatch-api:
-    build: .
+  bootstrap:
+    image: recruitmatch-app
+    build: *runtime-build
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://recruitmatch:recruitmatch@postgres:5432/recruitmatch
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: python scripts/bootstrap.py
+    restart: "no"
+
+  api:
+    image: recruitmatch-app
+    build: *runtime-build
     ports:
       - "8000:8000"
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql+psycopg://recruitmatch:recruitmatch@postgres:5432/recruitmatch
+      <<: *app-environment
       TASK_MODE: celery
-      CELERY_BROKER_URL: redis://redis:6379/0
-      AI_ENABLED: ${AI_ENABLED:-false}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.deepseek.com}
-      OPENAI_MODEL: ${OPENAI_MODEL:-deepseek-chat}
     depends_on:
-      postgres:
-        condition: service_healthy
+      bootstrap:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
-    command: >-
-      sh -c "alembic upgrade head &&
-      python scripts/seed_job_templates.py &&
-      uvicorn app.main:app --host 0.0.0.0 --port 8000"
     volumes:
-      - ./data:/app/data              # RecruitMatch 数据库与上传产物
-      - hf-cache:/root/.cache/huggingface   # embedding 模型缓存
+      - app-data:/app/data
+      - hf-cache:/home/recruitmatch/.cache/huggingface
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/ready', timeout=2)"]
       interval: 15s
@@ -57,31 +80,55 @@ services:
       retries: 5
     restart: unless-stopped
 
-  recruitmatch-worker:
-    build: .
+  worker:
+    image: recruitmatch-app
+    build: *runtime-build
     env_file:
       - .env
-    environment:
-      DATABASE_URL: postgresql+psycopg://recruitmatch:recruitmatch@postgres:5432/recruitmatch
-      ARTIFACT_DIR: /app/data/resumes
-      KNOWLEDGE_ARTIFACT_DIR: /app/data/knowledge
-      CELERY_BROKER_URL: redis://redis:6379/0
-      AI_ENABLED: ${AI_ENABLED:-false}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.deepseek.com}
-      OPENAI_MODEL: ${OPENAI_MODEL:-deepseek-chat}
+    environment: *app-environment
     depends_on:
-      postgres:
-        condition: service_healthy
+      bootstrap:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
     command: celery -A app.tasks.celery_app.celery_app worker --loglevel=INFO
     volumes:
-      - ./data:/app/data
-      - hf-cache:/root/.cache/huggingface
+      - app-data:/app/data
+      - hf-cache:/home/recruitmatch/.cache/huggingface
+    healthcheck:
+      disable: true
     restart: unless-stopped
+
+  test-unit:
+    image: recruitmatch-app-test
+    build: *test-build
+    profiles: ["test"]
+    environment:
+      DATABASE_URL: sqlite:////tmp/recruitmatch-test.db
+      ARTIFACT_DIR: /tmp/recruitmatch-resumes
+      KNOWLEDGE_ARTIFACT_DIR: /tmp/recruitmatch-knowledge
+      TASK_MODE: inline
+      AI_ENABLED: "false"
+    command: pytest -q
+
+  test-integration:
+    image: recruitmatch-app-test
+    build: *test-build
+    profiles: ["test"]
+    env_file:
+      - .env
+    environment:
+      <<: *app-environment
+      TASK_MODE: celery
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    command: pytest -q
 
 volumes:
   postgres-data:
   redis-data:
+  app-data:
   hf-cache:
