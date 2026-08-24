@@ -11,6 +11,7 @@ from sqlalchemy import create_engine, inspect
 
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
+_DATABASE_URL_ATTRIBUTE = "recruitmatch_database_url"
 
 
 def upgrade_database(database_url: str) -> None:
@@ -23,7 +24,7 @@ def upgrade_database(database_url: str) -> None:
 
     config = Config(str(_PROJECT_ROOT / "alembic.ini"))
     config.set_main_option("script_location", str(_PROJECT_ROOT / "alembic"))
-    config.set_main_option("sqlalchemy.url", database_url.replace("%", "%%"))
+    config.attributes[_DATABASE_URL_ATTRIBUTE] = database_url
     if current is None and "model_traces" in tables and "audit_logs" in tables:
         command.stamp(config, "20260819_04")
     command.upgrade(config, "head")
