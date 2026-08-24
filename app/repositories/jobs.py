@@ -7,7 +7,7 @@ from typing import List, Optional
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from app.models.jobs import Job, JobTemplate
+from app.models.jobs import Job, JobTemplate, JobVersion
 
 
 class JobRepository:
@@ -32,3 +32,6 @@ class JobRepository:
 
     def add(self, job: Job) -> None:
         self.session.add(job)
+
+    def list_versions_for_tenant(self, tenant_id: str) -> List[JobVersion]:
+        return list(self.session.scalars(select(JobVersion).join(Job).where(Job.tenant_id == tenant_id)))

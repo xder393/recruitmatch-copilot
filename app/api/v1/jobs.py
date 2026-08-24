@@ -5,9 +5,7 @@ from __future__ import annotations
 from typing import List
 
 from fastapi import APIRouter, Depends, Request, status
-from sqlalchemy.orm import Session
-
-from app.api.v1.deps import get_current_principal, get_db
+from app.api.v1.deps import get_current_principal, get_job_repository, get_unit_of_work
 from app.api.v1.schemas import (
     JobCreateRequest,
     JobListResponse,
@@ -18,6 +16,8 @@ from app.api.v1.schemas import (
 )
 from app.models.jobs import Job, JobTemplate
 from app.security.tokens import Principal
+from app.repositories.unit_of_work import RecruitingUnitOfWork
+from app.repositories.ports import JobRepository
 from app.services.jobs import JobService
 
 router = APIRouter(tags=["RecruitMatch Jobs"])
@@ -57,10 +57,11 @@ def _template_response(template: JobTemplate) -> JobTemplateResponse:
 @router.get("/job-templates", response_model=List[JobTemplateResponse])
 def list_templates(
     principal: Principal = Depends(get_current_principal),
-    session: Session = Depends(get_db),
+    jobs: JobRepository = Depends(get_job_repository),
+    uow: RecruitingUnitOfWork = Depends(get_unit_of_work),
 ):
     del principal
-    return [_template_response(item) for item in JobService(session).list_templates()]
+    return [_template_response(item) for item in JobService(jobs, uow=uow).list_templates()]
 
 
 @router.post("/jobs", response_model=JobResponse, status_code=status.HTTP_201_CREATED)
@@ -68,10 +69,11 @@ def create_job(
     payload: JobCreateRequest,
     request: Request,
     principal: Principal = Depends(get_current_principal),
-    session: Session = Depends(get_db),
+    jobs: JobRepository = Depends(get_job_repository),
+    uow: RecruitingUnitOfWork = Depends(get_unit_of_work),
 ):
     return _job_response(
-        JobService(session, request.app.state.recruiting_source_index).create_job(
+        JobService(jobs, request.app.state.recruiting_source_index, uow=uow).create_job(
             principal, payload.title, payload.jd_text, payload.profile
         )
     )
@@ -80,9 +82,10 @@ def create_job(
 @router.get("/jobs", response_model=JobListResponse)
 def list_jobs(
     principal: Principal = Depends(get_current_principal),
-    session: Session = Depends(get_db),
+    jobs: JobRepository = Depends(get_job_repository),
+    uow: RecruitingUnitOfWork = Depends(get_unit_of_work),
 ):
-    items = [_job_response(item) for item in JobService(session).list_jobs(principal)]
+    items = [_job_response(item) for item in JobService(jobs, uow=uow).list_jobs(principal)]
     return JobListResponse(items=items, total=len(items))
 
 
@@ -90,9 +93,10 @@ def list_jobs(
 def get_job(
     job_id: str,
     principal: Principal = Depends(get_current_principal),
-    session: Session = Depends(get_db),
+    jobs: JobRepository = Depends(get_job_repository),
+    uow: RecruitingUnitOfWork = Depends(get_unit_of_work),
 ):
-    return _job_response(JobService(session).get_job(principal, job_id))
+    return _job_response(JobService(jobs, uow=uow).get_job(principal, job_id))
 
 
 @router.put("/jobs/{job_id}", response_model=JobResponse)
@@ -101,10 +105,11 @@ def update_job(
     payload: JobUpdateRequest,
     request: Request,
     principal: Principal = Depends(get_current_principal),
-    session: Session = Depends(get_db),
+    jobs: JobRepository = Depends(get_job_repository),
+    uow: RecruitingUnitOfWork = Depends(get_unit_of_work),
 ):
     return _job_response(
-        JobService(session, request.app.state.recruiting_source_index).update_job(
+        JobService(jobs, request.app.state.recruiting_source_index, uow=uow).update_job(
             principal,
             job_id,
             title=payload.title,
@@ -118,15 +123,17 @@ def update_job(
 def activate_job(
     job_id: str,
     principal: Principal = Depends(get_current_principal),
-    session: Session = Depends(get_db),
+    jobs: JobRepository = Depends(get_job_repository),
+    uow: RecruitingUnitOfWork = Depends(get_unit_of_work),
 ):
-    return _job_response(JobService(session).activate_job(principal, job_id))
+    return _job_response(JobService(jobs, uow=uow).activate_job(principal, job_id))
 
 
 @router.post("/jobs/{job_id}/deactivate", response_model=JobResponse)
 def deactivate_job(
     job_id: str,
     principal: Principal = Depends(get_current_principal),
-    session: Session = Depends(get_db),
+    jobs: JobRepository = Depends(get_job_repository),
+    uow: RecruitingUnitOfWork = Depends(get_unit_of_work),
 ):
-    return _job_response(JobService(session).deactivate_job(principal, job_id))
+    return _job_response(JobService(jobs, uow=uow).deactivate_job(principal, job_id))

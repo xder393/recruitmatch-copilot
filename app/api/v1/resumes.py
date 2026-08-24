@@ -3,19 +3,24 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, File, Request, Response, UploadFile, status
-from sqlalchemy.orm import Session
-
-from app.api.v1.deps import get_current_principal, get_db
+from app.api.v1.deps import get_current_principal, get_resume_repository, get_unit_of_work
 from app.api.v1.schemas import ResumeListResponse, ResumeResponse
 from app.models.resumes import Resume
 from app.security.tokens import Principal
+from app.repositories.unit_of_work import RecruitingUnitOfWork
+from app.repositories.ports import ResumeRepository
 from app.services.resumes import ResumeService
 
 router = APIRouter(prefix="/resumes", tags=["RecruitMatch Resumes"])
 
 
-def _service(request: Request, session: Session) -> ResumeService:
-    return ResumeService(session, request.app.state.artifact_store, request.app.state.task_dispatcher)
+def _service(request: Request, resumes: ResumeRepository, uow: RecruitingUnitOfWork) -> ResumeService:
+    return ResumeService(
+        resumes,
+        request.app.state.artifact_store,
+        request.app.state.task_dispatcher,
+        uow=uow,
+    )
 
 
 def _response(resume: Resume) -> ResumeResponse:
@@ -39,10 +44,11 @@ async def upload_resume(
     response: Response,
     file: UploadFile = File(...),
     principal: Principal = Depends(get_current_principal),
-    session: Session = Depends(get_db),
+    resumes: ResumeRepository = Depends(get_resume_repository),
+    uow: RecruitingUnitOfWork = Depends(get_unit_of_work),
 ):
     content = await file.read(10 * 1024 * 1024 + 1)
-    resume, created = _service(request, session).upload(
+    resume, created = _service(request, resumes, uow).upload(
         principal,
         file.filename or "resume",
         file.content_type or "application/octet-stream",
@@ -57,9 +63,10 @@ async def upload_resume(
 def list_resumes(
     request: Request,
     principal: Principal = Depends(get_current_principal),
-    session: Session = Depends(get_db),
+    resumes: ResumeRepository = Depends(get_resume_repository),
+    uow: RecruitingUnitOfWork = Depends(get_unit_of_work),
 ):
-    items = [_response(item) for item in _service(request, session).list(principal)]
+    items = [_response(item) for item in _service(request, resumes, uow).list(principal)]
     return ResumeListResponse(items=items, total=len(items))
 
 
@@ -68,9 +75,10 @@ def get_resume(
     resume_id: str,
     request: Request,
     principal: Principal = Depends(get_current_principal),
-    session: Session = Depends(get_db),
+    resumes: ResumeRepository = Depends(get_resume_repository),
+    uow: RecruitingUnitOfWork = Depends(get_unit_of_work),
 ):
-    return _response(_service(request, session).get(principal, resume_id))
+    return _response(_service(request, resumes, uow).get(principal, resume_id))
 
 
 @router.delete("/{resume_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -78,6 +86,7 @@ def delete_resume(
     resume_id: str,
     request: Request,
     principal: Principal = Depends(get_current_principal),
-    session: Session = Depends(get_db),
+    resumes: ResumeRepository = Depends(get_resume_repository),
+    uow: RecruitingUnitOfWork = Depends(get_unit_of_work),
 ):
-    _service(request, session).delete(principal, resume_id)
+    _service(request, resumes, uow).delete(principal, resume_id)

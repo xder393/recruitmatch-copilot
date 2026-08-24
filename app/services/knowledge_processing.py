@@ -5,13 +5,10 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from typing import Protocol
 
-from sqlalchemy import select
-
 from app.core.exceptions import AppError
 from app.knowledge.chunking import chunk_document
 from app.knowledge.schemas import ChunkInput
-from app.models.knowledge import KnowledgeDocument
-from app.repositories.knowledge import KnowledgeRepository
+from app.repositories.unit_of_work import UnitOfWorkFactory, unit_of_work_factory
 from app.resumes.extractors import extract_text
 
 
@@ -22,21 +19,14 @@ class KnowledgeIndexer(Protocol):
 class KnowledgeProcessingService:
     lease_seconds = 300
 
-    def __init__(self, session_factory, artifact_store, indexer: KnowledgeIndexer):
-        self.session_factory = session_factory
+    def __init__(self, uow_factory: UnitOfWorkFactory, artifact_store, indexer: KnowledgeIndexer):
+        self.uow_factory = unit_of_work_factory(uow_factory)
         self.artifact_store = artifact_store
         self.indexer = indexer
 
     def process(self, tenant_id: str, document_id: str) -> bool:
-        with self.session_factory() as session:
-            document = session.scalar(
-                select(KnowledgeDocument)
-                .where(
-                    KnowledgeDocument.id == document_id,
-                    KnowledgeDocument.tenant_id == tenant_id,
-                )
-                .with_for_update()
-            )
+        with self.uow_factory() as uow:
+            document = uow.knowledge.get_document(tenant_id, document_id, for_update=True)
             if document is None or document.status in {"ready", "inactive", "failed"}:
                 return True
             if document.status == "processing" and not self._lease_expired(document.updated_at):
@@ -51,7 +41,7 @@ class KnowledgeProcessingService:
             artifact_key = document.artifact_key
             document_type = document.document_type
             next_generation = document.active_generation + 1
-            session.commit()
+            uow.commit()
 
         try:
             content = self.artifact_store.read(artifact_key)
@@ -67,13 +57,13 @@ class KnowledgeProcessingService:
             self._mark_failed(tenant_id, document_id, "knowledge_processing_failed", "知识文档处理失败")
             return True
 
-        with self.session_factory() as session:
-            repository = KnowledgeRepository(session)
+        with self.uow_factory() as uow:
+            repository = uow.knowledge
             document = repository.get_document(tenant_id, document_id)
             if document is None or document.status == "inactive":
                 return True
             repository.replace_generation(document, next_generation, embedded)
-            session.commit()
+            uow.commit()
         return True
 
     def _lease_expired(self, updated_at: datetime) -> bool:
@@ -81,11 +71,11 @@ class KnowledgeProcessingService:
         return timestamp <= datetime.now(timezone.utc) - timedelta(seconds=self.lease_seconds)
 
     def _mark_failed(self, tenant_id: str, document_id: str, code: str, message: str) -> None:
-        with self.session_factory() as session:
-            document = KnowledgeRepository(session).get_document(tenant_id, document_id)
+        with self.uow_factory() as uow:
+            document = uow.knowledge.get_document(tenant_id, document_id)
             if document is None or document.status == "inactive":
                 return
             document.status = "failed"
             document.error_code = code[:100]
             document.error_message = message[:500]
-            session.commit()
+            uow.commit()

@@ -44,6 +44,7 @@ from app.matching.engine import MatchingEngine
 from app.matching.hybrid import HybridMatchingEngine
 from app.ai.explanations import GroundedExplanationService
 from app.services.ai_tracing import AITraceSink
+from app.repositories.sqlalchemy_unit_of_work import SqlAlchemyUnitOfWorkFactory
 
 logger = get_logger(__name__)
 
@@ -126,10 +127,11 @@ def init_recruiting_state(app: FastAPI, settings: Settings, structured_model=Non
     # Automatic resume/JD indexing belongs to the AI feature. Keeping it off in
     # rule-only mode also prevents an accidental model download in basic setups.
     source_index = knowledge_index if settings.ai_enabled or knowledge_embedder is not None else None
-    processor = ResumeProcessingService(session_factory, artifact_store, parser, source_index=source_index)
+    uow_factory = SqlAlchemyUnitOfWorkFactory(session_factory)
+    processor = ResumeProcessingService(uow_factory, artifact_store, parser, source_index=source_index)
     knowledge_artifact_store = KnowledgeArtifactStore(Path(settings.knowledge_artifact_dir))
-    knowledge_processor = KnowledgeProcessingService(session_factory, knowledge_artifact_store, knowledge_index)
-    ai_trace_sink = AITraceSink(session_factory)
+    knowledge_processor = KnowledgeProcessingService(uow_factory, knowledge_artifact_store, knowledge_index)
+    ai_trace_sink = AITraceSink(uow_factory)
     app.state.artifact_store = artifact_store
     app.state.resume_processor = processor
     app.state.knowledge_index = knowledge_index

@@ -2,19 +2,24 @@
 
 from __future__ import annotations
 
-from sqlalchemy.orm import Session
-
 from app.core.exceptions import ConflictError, ResourceNotFoundError
 from app.domain.enums import FeedbackAction
 from app.models.matching import Feedback
-from app.repositories.feedback import FeedbackRepository
+from app.repositories.ports import FeedbackRepository
+from app.repositories.unit_of_work import UnitOfWork, unit_of_work
 from app.security.tokens import Principal
 
 
 class FeedbackService:
-    def __init__(self, session: Session):
-        self.session = session
-        self.repository = FeedbackRepository(session)
+    def __init__(self, repository: FeedbackRepository, uow: UnitOfWork | None = None):
+        self.uow: UnitOfWork
+        if uow is None:
+            legacy_uow = unit_of_work(repository)
+            self.repository = legacy_uow.feedback
+            self.uow = legacy_uow
+        else:
+            self.repository = repository
+            self.uow = uow
 
     def submit(
         self,
@@ -43,7 +48,6 @@ class FeedbackService:
             corrected_job_version_id=corrected_job_version_id,
             reason=reason.strip() if reason else None,
         )
-        self.session.add(feedback)
-        self.session.commit()
-        self.session.refresh(feedback)
+        self.repository.add(feedback)
+        self.uow.commit()
         return feedback

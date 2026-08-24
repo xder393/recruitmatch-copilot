@@ -5,15 +5,11 @@ from __future__ import annotations
 from typing import Protocol
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
-
 from app.core.exceptions import AppError
 from app.domain.enums import ResumeStatus
-from app.models.resumes import Resume
 from app.resumes.extractors import extract_text
 from app.resumes.schemas import ResumeProfile
-from app.repositories.model_traces import ModelTraceWriter
+from app.repositories.unit_of_work import UnitOfWorkFactory, unit_of_work_factory
 
 
 class ArtifactReader(Protocol):
@@ -27,15 +23,17 @@ class ResumeParser(Protocol):
 class ResumeProcessingService:
     lease_seconds = 300
 
-    def __init__(self, session_factory, artifact_store: ArtifactReader, parser: ResumeParser, source_index=None):
-        self.session_factory = session_factory
+    def __init__(
+        self, uow_factory: UnitOfWorkFactory, artifact_store: ArtifactReader, parser: ResumeParser, source_index=None
+    ):
+        self.uow_factory = unit_of_work_factory(uow_factory)
         self.artifact_store = artifact_store
         self.parser = parser
         self.source_index = source_index
 
     def process(self, tenant_id: str, resume_id: str) -> bool:
-        with self.session_factory() as session:
-            resume = self._get(session, tenant_id, resume_id, for_update=True)
+        with self.uow_factory() as uow:
+            resume = uow.resumes.get(tenant_id, resume_id, include_deleted=True, for_update=True)
             if resume is None or resume.status in {ResumeStatus.DELETED, ResumeStatus.SUCCEEDED, ResumeStatus.FAILED}:
                 return True
             if resume.status is ResumeStatus.RUNNING and not self._lease_expired(resume.updated_at):
@@ -43,7 +41,10 @@ class ResumeProcessingService:
             if resume.status not in {ResumeStatus.QUEUED, ResumeStatus.RUNNING}:
                 return True
             if resume.artifact is None:
-                self._mark_failed(tenant_id, resume_id, "artifact_missing", "简历文件记录不存在")
+                resume.status = ResumeStatus.FAILED
+                resume.error_code = "artifact_missing"
+                resume.error_message = "简历文件记录不存在"
+                uow.commit()
                 return True
             resume.status = ResumeStatus.RUNNING
             resume.updated_at = datetime.now(timezone.utc)
@@ -52,7 +53,7 @@ class ResumeProcessingService:
             filename = resume.original_filename
             storage_key = resume.artifact.storage_key
             source_version = resume.sha256
-            session.commit()
+            uow.commit()
 
         try:
             content = self.artifact_store.read(storage_key)
@@ -73,8 +74,8 @@ class ResumeProcessingService:
             self._mark_failed(tenant_id, resume_id, "resume_processing_failed", "简历处理失败")
             return True
 
-        with self.session_factory() as session:
-            resume = self._get(session, tenant_id, resume_id)
+        with self.uow_factory() as uow:
+            resume = uow.resumes.get(tenant_id, resume_id, include_deleted=True)
             if resume is None or resume.status is ResumeStatus.DELETED:
                 return True
             resume.artifact.extracted_text = text
@@ -83,9 +84,8 @@ class ResumeProcessingService:
             resume.error_code = None
             resume.error_message = None
             if parse_result is not None:
-                writer = ModelTraceWriter(session)
                 if parse_result.response is not None:
-                    writer.succeeded(
+                    uow.model_traces.succeeded(
                         tenant_id,
                         "resume_extract",
                         resume_id,
@@ -94,7 +94,7 @@ class ResumeProcessingService:
                         parse_result.response,
                     )
                 elif parse_result.error is not None:
-                    writer.failed(
+                    uow.model_traces.failed(
                         tenant_id,
                         "resume_extract",
                         resume_id,
@@ -103,7 +103,7 @@ class ResumeProcessingService:
                         parse_result.error,
                         parse_result.latency_ms,
                     )
-            session.commit()
+            uow.commit()
 
         if self.source_index is not None:
             try:
@@ -128,32 +128,21 @@ class ResumeProcessingService:
         return timestamp <= datetime.now(timezone.utc) - timedelta(seconds=self.lease_seconds)
 
     def _mark_failed(self, tenant_id: str, resume_id: str, code: str, message: str) -> None:
-        with self.session_factory() as session:
-            resume = self._get(session, tenant_id, resume_id)
+        with self.uow_factory() as uow:
+            resume = uow.resumes.get(tenant_id, resume_id, include_deleted=True)
             if resume is None or resume.status is ResumeStatus.DELETED:
                 return
             resume.status = ResumeStatus.FAILED
             resume.error_code = code
             resume.error_message = message[:500]
-            session.commit()
+            uow.commit()
 
     def _mark_indexed(self, tenant_id: str, resume_id: str, status: str, error: str | None = None) -> None:
-        with self.session_factory() as session:
-            resume = self._get(session, tenant_id, resume_id)
+        with self.uow_factory() as uow:
+            resume = uow.resumes.get(tenant_id, resume_id, include_deleted=True)
             if resume is None:
                 return
             resume.search_index_status = status
             resume.search_index_error = error
             resume.search_indexed_at = datetime.now(timezone.utc) if status == "ready" else None
-            session.commit()
-
-    @staticmethod
-    def _get(session, tenant_id: str, resume_id: str, for_update: bool = False):
-        statement = (
-            select(Resume)
-            .options(selectinload(Resume.artifact))
-            .where(Resume.id == resume_id, Resume.tenant_id == tenant_id)
-        )
-        if for_update:
-            statement = statement.with_for_update()
-        return session.scalar(statement)
+            uow.commit()

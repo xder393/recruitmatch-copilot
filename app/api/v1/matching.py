@@ -3,12 +3,17 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Request, status
-from sqlalchemy.orm import Session
-
-from app.api.v1.deps import get_current_principal, get_db
+from app.api.v1.deps import (
+    get_current_principal,
+    get_feedback_repository,
+    get_matching_repository,
+    get_unit_of_work,
+)
 from app.api.v1.schemas import FeedbackRequest, FeedbackResponse, MatchResultResponse, MatchRunResponse
 from app.models.matching import MatchResult, MatchRun
 from app.security.tokens import Principal
+from app.repositories.unit_of_work import RecruitingUnitOfWork
+from app.repositories.ports import FeedbackRepository, MatchingRepository
 from app.services.feedback import FeedbackService
 from app.services.matching import MatchingService
 
@@ -57,16 +62,18 @@ def run_matches(
     request: Request,
     mode: str = "rules-v1",
     principal: Principal = Depends(get_current_principal),
-    session: Session = Depends(get_db),
+    repository: MatchingRepository = Depends(get_matching_repository),
+    uow: RecruitingUnitOfWork = Depends(get_unit_of_work),
 ):
     return _run_response(
         MatchingService(
-            session,
+            repository,
             hybrid_engine=request.app.state.hybrid_matching_engine,
             explanation_service=request.app.state.grounded_explanation_service,
             source_index=request.app.state.knowledge_index,
             retrieval_top_k=request.app.state.settings.retrieval_top_k,
             retrieval_min_score=request.app.state.settings.retrieval_min_score,
+            uow=uow,
         ).run(principal, resume_id, mode=mode)
     )
 
@@ -75,18 +82,20 @@ def run_matches(
 def latest_matches(
     resume_id: str,
     principal: Principal = Depends(get_current_principal),
-    session: Session = Depends(get_db),
+    repository: MatchingRepository = Depends(get_matching_repository),
+    uow: RecruitingUnitOfWork = Depends(get_unit_of_work),
 ):
-    return _run_response(MatchingService(session).latest_for_resume(principal, resume_id))
+    return _run_response(MatchingService(repository, uow=uow).latest_for_resume(principal, resume_id))
 
 
 @router.get("/match-runs/{run_id}", response_model=MatchRunResponse)
 def get_match_run(
     run_id: str,
     principal: Principal = Depends(get_current_principal),
-    session: Session = Depends(get_db),
+    repository: MatchingRepository = Depends(get_matching_repository),
+    uow: RecruitingUnitOfWork = Depends(get_unit_of_work),
 ):
-    return _run_response(MatchingService(session).get_run(principal, run_id))
+    return _run_response(MatchingService(repository, uow=uow).get_run(principal, run_id))
 
 
 @router.post(
@@ -98,9 +107,10 @@ def submit_feedback(
     result_id: str,
     payload: FeedbackRequest,
     principal: Principal = Depends(get_current_principal),
-    session: Session = Depends(get_db),
+    repository: FeedbackRepository = Depends(get_feedback_repository),
+    uow: RecruitingUnitOfWork = Depends(get_unit_of_work),
 ):
-    feedback = FeedbackService(session).submit(
+    feedback = FeedbackService(repository, uow).submit(
         principal,
         result_id,
         payload.action,

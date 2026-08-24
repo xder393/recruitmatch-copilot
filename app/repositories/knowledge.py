@@ -13,13 +13,20 @@ class KnowledgeRepository:
     def __init__(self, session: Session):
         self.session = session
 
-    def get_document(self, tenant_id: str, document_id: str) -> KnowledgeDocument | None:
-        return self.session.scalar(
-            select(KnowledgeDocument).where(
-                KnowledgeDocument.id == document_id,
-                KnowledgeDocument.tenant_id == tenant_id,
-            )
+    def get_document(
+        self,
+        tenant_id: str,
+        document_id: str,
+        *,
+        for_update: bool = False,
+    ) -> KnowledgeDocument | None:
+        statement = select(KnowledgeDocument).where(
+            KnowledgeDocument.id == document_id,
+            KnowledgeDocument.tenant_id == tenant_id,
         )
+        if for_update:
+            statement = statement.with_for_update()
+        return self.session.scalar(statement)
 
     def by_checksum(self, tenant_id: str, checksum: str, document_type: str) -> KnowledgeDocument | None:
         return self.session.scalar(
@@ -96,3 +103,10 @@ class KnowledgeRepository:
             )
             .values(is_active=False)
         )
+
+    def add(self, document: KnowledgeDocument) -> None:
+        self.session.add(document)
+
+    def reload_document(self, tenant_id: str, document_id: str) -> KnowledgeDocument | None:
+        self.session.expire_all()
+        return self.get_document(tenant_id, document_id)

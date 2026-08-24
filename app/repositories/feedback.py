@@ -29,3 +29,6 @@ class FeedbackRepository:
             .join(Job, JobVersion.job_id == Job.id)
             .where(JobVersion.id == version_id, Job.tenant_id == tenant_id)
         )
+
+    def add(self, feedback) -> None:
+        self.session.add(feedback)

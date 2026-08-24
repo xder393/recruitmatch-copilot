@@ -4,32 +4,41 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
-
 from app.core.exceptions import AuthorizationError
-from app.domain.enums import ResumeStatus, Role
+from app.domain.enums import Role
 from app.knowledge.chunking import chunk_document
-from app.models.jobs import Job, JobVersion
-from app.models.resumes import Resume
+from app.repositories.ports import JobRepository, ResumeRepository
+from app.repositories.unit_of_work import UnitOfWork, unit_of_work
 
 
 class SourceIndexBackfillService:
-    def __init__(self, session, source_index):
-        self.session = session
+    def __init__(
+        self,
+        resumes: ResumeRepository,
+        source_index,
+        jobs: JobRepository | None = None,
+        *,
+        uow: UnitOfWork | None = None,
+    ):
+        self.uow: UnitOfWork
+        if uow is None:
+            legacy_uow = unit_of_work(resumes)
+            self.resumes = legacy_uow.resumes
+            self.jobs = legacy_uow.jobs
+            self.uow = legacy_uow
+        else:
+            if jobs is None:
+                raise TypeError("jobs repository is required")
+            self.resumes = resumes
+            self.jobs = jobs
+            self.uow = uow
         self.source_index = source_index
 
     def rebuild(self, principal):
         if principal.role not in {Role.ADMIN, Role.RECRUITER}:
             raise AuthorizationError("无权重建检索索引")
-        resumes = list(
-            self.session.scalars(
-                select(Resume)
-                .options(selectinload(Resume.artifact))
-                .where(Resume.tenant_id == principal.tenant_id, Resume.status == ResumeStatus.SUCCEEDED)
-            )
-        )
-        versions = list(self.session.scalars(select(JobVersion).join(Job).where(Job.tenant_id == principal.tenant_id)))
+        resumes = self.resumes.list_succeeded(principal.tenant_id)
+        versions = self.jobs.list_versions_for_tenant(principal.tenant_id)
         result = {"resumes_indexed": 0, "job_versions_indexed": 0, "failed": 0}
         for resume in resumes:
             text = resume.artifact.extracted_text if resume.artifact else None
@@ -46,7 +55,7 @@ class SourceIndexBackfillService:
                 result["job_versions_indexed"] += 1
             else:
                 result["failed"] += 1
-        self.session.commit()
+        self.uow.commit()
         return result
 
     def _index(self, record, tenant_id, source_type, source_id, source_version, text):

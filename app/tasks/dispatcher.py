@@ -1,4 +1,4 @@
-"""Replaceable resume task dispatchers."""
+"""Infrastructure-independent recruiting task dispatchers."""
 
 from __future__ import annotations
 
@@ -6,17 +6,27 @@ from typing import Protocol
 
 
 class TaskDispatcher(Protocol):
-    def dispatch_resume(self, tenant_id: str, resume_id: str) -> None: ...
+    def dispatch_resume(self, tenant_id: str, resume_id: str) -> None:
+        raise NotImplementedError
+
+    def dispatch_knowledge(self, tenant_id: str, document_id: str) -> None:
+        raise NotImplementedError
 
 
 class InlineTaskDispatcher:
     """Deterministic local/test dispatcher."""
 
-    def __init__(self, processor):
-        self.processor = processor
+    def __init__(self, resume_processor, knowledge_processor=None):
+        self.resume_processor = resume_processor
+        self.knowledge_processor = knowledge_processor
 
     def dispatch_resume(self, tenant_id: str, resume_id: str) -> None:
-        self.processor.process(tenant_id, resume_id)
+        self.resume_processor.process(tenant_id, resume_id)
+
+    def dispatch_knowledge(self, tenant_id: str, document_id: str) -> None:
+        if self.knowledge_processor is None:
+            raise RuntimeError("knowledge processor is not configured")
+        self.knowledge_processor.process(tenant_id, document_id)
 
 
 class CeleryTaskDispatcher:
@@ -24,3 +34,8 @@ class CeleryTaskDispatcher:
         from app.tasks.celery_app import process_resume_task
 
         process_resume_task.delay(tenant_id, resume_id)
+
+    def dispatch_knowledge(self, tenant_id: str, document_id: str) -> None:
+        from app.tasks.celery_app import process_knowledge_task
+
+        process_knowledge_task.delay(tenant_id, document_id)

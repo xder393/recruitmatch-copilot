@@ -6,11 +6,17 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile, status
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
-
-from app.api.v1.deps import get_current_principal, get_db
+from app.api.v1.deps import (
+    get_current_principal,
+    get_job_repository,
+    get_knowledge_repository,
+    get_resume_repository,
+    get_unit_of_work,
+)
 from app.models.knowledge import KnowledgeDocument
 from app.security.tokens import Principal
+from app.repositories.unit_of_work import RecruitingUnitOfWork
+from app.repositories.ports import JobRepository, KnowledgeRepository, ResumeRepository
 from app.services.knowledge_documents import KnowledgeDocumentService
 from app.services.source_index_backfill import SourceIndexBackfillService
 
@@ -54,11 +60,16 @@ def _response(document: KnowledgeDocument) -> KnowledgeDocumentResponse:
     )
 
 
-def _service(request: Request, session: Session) -> KnowledgeDocumentService:
+def _service(
+    request: Request,
+    repository: KnowledgeRepository,
+    uow: RecruitingUnitOfWork,
+) -> KnowledgeDocumentService:
     return KnowledgeDocumentService(
-        session,
+        repository,
         request.app.state.knowledge_artifact_store,
         request.app.state.knowledge_dispatcher,
+        uow=uow,
     )
 
 
@@ -68,10 +79,11 @@ async def upload_document(
     document_type: str = Form(...),
     file: UploadFile = File(...),
     principal: Principal = Depends(get_current_principal),
-    session: Session = Depends(get_db),
+    repository: KnowledgeRepository = Depends(get_knowledge_repository),
+    uow: RecruitingUnitOfWork = Depends(get_unit_of_work),
 ):
     content = await file.read(10 * 1024 * 1024 + 1)
-    document, _ = _service(request, session).upload(
+    document, _ = _service(request, repository, uow).upload(
         principal,
         document_type,
         file.filename or "document",
@@ -85,9 +97,10 @@ async def upload_document(
 def list_documents(
     request: Request,
     principal: Principal = Depends(get_current_principal),
-    session: Session = Depends(get_db),
+    repository: KnowledgeRepository = Depends(get_knowledge_repository),
+    uow: RecruitingUnitOfWork = Depends(get_unit_of_work),
 ):
-    items = [_response(item) for item in _service(request, session).list(principal)]
+    items = [_response(item) for item in _service(request, repository, uow).list(principal)]
     return KnowledgeDocumentListResponse(items=items, total=len(items))
 
 
@@ -95,9 +108,16 @@ def list_documents(
 def rebuild_sources(
     request: Request,
     principal: Principal = Depends(get_current_principal),
-    session: Session = Depends(get_db),
+    resumes: ResumeRepository = Depends(get_resume_repository),
+    jobs: JobRepository = Depends(get_job_repository),
+    uow: RecruitingUnitOfWork = Depends(get_unit_of_work),
 ):
-    return SourceIndexBackfillService(session, request.app.state.knowledge_index).rebuild(principal)
+    return SourceIndexBackfillService(
+        resumes,
+        request.app.state.knowledge_index,
+        jobs,
+        uow=uow,
+    ).rebuild(principal)
 
 
 @router.get("/{document_id}", response_model=KnowledgeDocumentResponse)
@@ -105,9 +125,10 @@ def get_document(
     document_id: str,
     request: Request,
     principal: Principal = Depends(get_current_principal),
-    session: Session = Depends(get_db),
+    repository: KnowledgeRepository = Depends(get_knowledge_repository),
+    uow: RecruitingUnitOfWork = Depends(get_unit_of_work),
 ):
-    return _response(_service(request, session).get(principal, document_id))
+    return _response(_service(request, repository, uow).get(principal, document_id))
 
 
 @router.post("/{document_id}/reindex", response_model=KnowledgeDocumentResponse)
@@ -115,9 +136,10 @@ def reindex_document(
     document_id: str,
     request: Request,
     principal: Principal = Depends(get_current_principal),
-    session: Session = Depends(get_db),
+    repository: KnowledgeRepository = Depends(get_knowledge_repository),
+    uow: RecruitingUnitOfWork = Depends(get_unit_of_work),
 ):
-    return _response(_service(request, session).reindex(principal, document_id))
+    return _response(_service(request, repository, uow).reindex(principal, document_id))
 
 
 @router.post("/{document_id}/deactivate", response_model=KnowledgeDocumentResponse)
@@ -125,6 +147,7 @@ def deactivate_document(
     document_id: str,
     request: Request,
     principal: Principal = Depends(get_current_principal),
-    session: Session = Depends(get_db),
+    repository: KnowledgeRepository = Depends(get_knowledge_repository),
+    uow: RecruitingUnitOfWork = Depends(get_unit_of_work),
 ):
-    return _response(_service(request, session).deactivate(principal, document_id))
+    return _response(_service(request, repository, uow).deactivate(principal, document_id))

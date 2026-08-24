@@ -5,26 +5,39 @@ from __future__ import annotations
 import hashlib
 import uuid
 
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
-
 from app.core.exceptions import AuthorizationError, ResourceNotFoundError, UnsupportedFileError
 from app.domain.enums import Role
 from app.models.knowledge import KnowledgeDocument
-from app.repositories.knowledge import KnowledgeRepository
+from app.repositories.ports import KnowledgeRepository, RepositoryConflictError
+from app.repositories.unit_of_work import UnitOfWork, unit_of_work
 from app.resumes.extractors import FilePolicy
 from app.security.tokens import Principal
+from app.tasks.dispatcher import TaskDispatcher
 
 _DOCUMENT_TYPES = {"policy", "interview_guide", "competency", "assessment_rubric"}
 
 
 class KnowledgeDocumentService:
-    def __init__(self, session: Session, artifact_store, dispatcher, file_policy: FilePolicy | None = None):
-        self.session = session
+    def __init__(
+        self,
+        repository: KnowledgeRepository,
+        artifact_store,
+        dispatcher: TaskDispatcher,
+        file_policy: FilePolicy | None = None,
+        *,
+        uow: UnitOfWork | None = None,
+    ):
+        self.uow: UnitOfWork
+        if uow is None:
+            legacy_uow = unit_of_work(repository)
+            self.repository = legacy_uow.knowledge
+            self.uow = legacy_uow
+        else:
+            self.repository = repository
+            self.uow = uow
         self.artifact_store = artifact_store
         self.dispatcher = dispatcher
         self.file_policy = file_policy or FilePolicy()
-        self.repository = KnowledgeRepository(session)
 
     def upload(
         self,
@@ -45,10 +58,9 @@ class KnowledgeDocumentService:
                 existing.status = "uploaded"
                 existing.error_code = None
                 existing.error_message = None
-                self.session.commit()
+                self.uow.commit()
                 self._dispatch(principal.tenant_id, existing)
-                self.session.expire_all()
-                return self.get(principal, existing.id), False
+                return self._reload(principal, existing.id), False
             return existing, False
 
         document_id = str(uuid.uuid4())
@@ -64,11 +76,11 @@ class KnowledgeDocumentService:
             artifact_key=stored.key,
             status="uploaded",
         )
-        self.session.add(document)
+        self.repository.add(document)
         try:
-            self.session.commit()
-        except IntegrityError:
-            self.session.rollback()
+            self.uow.commit()
+        except RepositoryConflictError:
+            self.uow.rollback()
             self.artifact_store.delete(stored.key)
             concurrent = self.repository.by_checksum(principal.tenant_id, checksum, document_type)
             if concurrent is None:
@@ -77,8 +89,7 @@ class KnowledgeDocumentService:
         self._dispatch(principal.tenant_id, document)
         # Inline dispatch uses its own session, so discard this request session's
         # cached ``uploaded`` instance before returning the processing result.
-        self.session.expire_all()
-        return self.get(principal, document.id), True
+        return self._reload(principal, document.id), True
 
     def get(self, principal: Principal, document_id: str) -> KnowledgeDocument:
         document = self.repository.get_document(principal.tenant_id, document_id)
@@ -95,16 +106,15 @@ class KnowledgeDocumentService:
         if document.status == "inactive":
             raise UnsupportedFileError("已停用文档不能重新索引")
         document.status = "uploaded"
-        self.session.commit()
+        self.uow.commit()
         self._dispatch(principal.tenant_id, document)
-        self.session.expire_all()
-        return self.get(principal, document.id)
+        return self._reload(principal, document.id)
 
     def deactivate(self, principal: Principal, document_id: str) -> KnowledgeDocument:
         self._require_mutation(principal)
         document = self.get(principal, document_id)
         self.repository.deactivate(document)
-        self.session.commit()
+        self.uow.commit()
         return self.get(principal, document.id)
 
     @staticmethod
@@ -119,4 +129,10 @@ class KnowledgeDocumentService:
             document.status = "failed"
             document.error_code = "task_dispatch_failed"
             document.error_message = "知识处理任务投递失败，重试上传或重建可重新投递"
-            self.session.commit()
+            self.uow.commit()
+
+    def _reload(self, principal: Principal, document_id: str) -> KnowledgeDocument:
+        document = self.repository.reload_document(principal.tenant_id, document_id)
+        if document is None:
+            raise ResourceNotFoundError("招聘知识文档不存在")
+        return document

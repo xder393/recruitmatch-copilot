@@ -4,15 +4,14 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from sqlalchemy.orm import Session
-
 from app.core.exceptions import ConflictError, ResourceNotFoundError
 from app.domain.enums import MatchStatus
 from app.matching.engine import MatchingEngine
 from app.matching.hybrid import HybridMatchingEngine, HybridTenantContext
 from app.matching.schemas import CandidateJob
 from app.models.matching import MatchResult, MatchRun
-from app.repositories.matching import MatchingRepository
+from app.repositories.ports import MatchingRepository
+from app.repositories.unit_of_work import UnitOfWork, unit_of_work
 from app.resumes.schemas import ResumeProfile
 from app.security.tokens import Principal
 
@@ -20,22 +19,30 @@ from app.security.tokens import Principal
 class MatchingService:
     def __init__(
         self,
-        session: Session,
+        repository: MatchingRepository,
         engine: MatchingEngine | None = None,
         hybrid_engine: HybridMatchingEngine | None = None,
         explanation_service=None,
         source_index=None,
         retrieval_top_k: int = 6,
         retrieval_min_score: float = 0.35,
+        *,
+        uow: UnitOfWork | None = None,
     ):
-        self.session = session
+        self.uow: UnitOfWork
+        if uow is None:
+            legacy_uow = unit_of_work(repository)
+            self.repository = legacy_uow.matching
+            self.uow = legacy_uow
+        else:
+            self.repository = repository
+            self.uow = uow
         self.engine = engine or MatchingEngine()
         self.hybrid_engine = hybrid_engine
         self.explanation_service = explanation_service
         self.source_index = source_index
         self.retrieval_top_k = retrieval_top_k
         self.retrieval_min_score = retrieval_min_score
-        self.repository = MatchingRepository(session)
 
     def run(self, principal: Principal, resume_id: str, mode: str = "rules-v1") -> MatchRun:
         if mode not in {"rules-v1", "hybrid-v1"}:
@@ -118,7 +125,7 @@ class MatchingService:
             )
         run.status = MatchStatus.SUCCEEDED
         run.completed_at = datetime.now(timezone.utc)
-        self.session.commit()
+        self.uow.commit()
         loaded = self.repository.get_run(principal.tenant_id, run.id)
         if loaded is None:
             raise RuntimeError("match run disappeared after commit")

@@ -3,21 +3,28 @@
 from __future__ import annotations
 
 import os
+from typing import Protocol
 
 from app.config import Settings
 from app.core.exceptions import DocumentNotFoundError, UnsupportedFileError
 from app.core.logging import get_logger
 from app.rag.loader import load_file
 from app.rag.splitter import TextSplitter
-from app.storage.vector_store import VectorStore
 
 logger = get_logger(__name__)
 
 _ALLOWED_EXT = (".txt", ".pdf")
 
 
+class DocumentIndex(Protocol):
+    def delete_by_source(self, source: str) -> None: ...
+    def add(self, chunks) -> None: ...
+    def clear(self) -> None: ...
+    def save(self, directory: str) -> None: ...
+
+
 class IngestionService:
-    def __init__(self, store: VectorStore, settings: Settings):
+    def __init__(self, store: DocumentIndex, settings: Settings):
         self.store = store
         self.settings = settings
         self.splitter = TextSplitter(settings.chunk_size, settings.chunk_overlap)

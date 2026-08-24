@@ -18,6 +18,7 @@ from app.knowledge.artifacts import KnowledgeArtifactStore
 from app.knowledge.embeddings import BGEEmbedder
 from app.knowledge.index import RecruitingVectorIndex
 from app.services.knowledge_processing import KnowledgeProcessingService
+from app.repositories.sqlalchemy_unit_of_work import SqlAlchemyUnitOfWorkFactory
 
 celery_app = Celery("recruitmatch", broker=os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0"))
 celery_app.conf.update(
@@ -43,8 +44,9 @@ def process_resume_task(self, tenant_id: str, resume_id: str) -> None:
         else fallback_parser
     )
     source_index = RecruitingVectorIndex(session_factory, BGEEmbedder(settings.embedding_model))
+    uow_factory = SqlAlchemyUnitOfWorkFactory(session_factory)
     processor = ResumeProcessingService(
-        session_factory,
+        uow_factory,
         LocalArtifactStore(Path(settings.artifact_dir)),
         parser,
         source_index=source_index,
@@ -58,8 +60,9 @@ def process_knowledge_task(self, tenant_id: str, document_id: str) -> None:
     settings = Settings.load()
     _, session_factory = create_engine_and_session(settings.database_url)
     index = RecruitingVectorIndex(session_factory, BGEEmbedder(settings.embedding_model))
+    uow_factory = SqlAlchemyUnitOfWorkFactory(session_factory)
     processor = KnowledgeProcessingService(
-        session_factory,
+        uow_factory,
         KnowledgeArtifactStore(Path(settings.knowledge_artifact_dir)),
         index,
     )

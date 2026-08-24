@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from app.repositories.model_traces import ModelTraceWriter
+from app.repositories.unit_of_work import UnitOfWorkFactory, unit_of_work_factory
 
 
 class AITraceSink:
-    def __init__(self, session_factory):
-        self.session_factory = session_factory
+    def __init__(self, uow_factory: UnitOfWorkFactory):
+        self.uow_factory = unit_of_work_factory(uow_factory)
 
     def succeeded(
         self,
@@ -19,8 +19,8 @@ class AITraceSink:
         response,
         fallback_reason=None,
     ):
-        with self.session_factory() as session:
-            trace = ModelTraceWriter(session).succeeded(
+        with self.uow_factory() as uow:
+            trace = uow.model_traces.succeeded(
                 tenant_id,
                 business_type,
                 business_id,
@@ -29,12 +29,12 @@ class AITraceSink:
                 response,
                 fallback_reason=fallback_reason,
             )
-            session.commit()
+            uow.commit()
             return trace.id
 
     def failed(self, tenant_id, business_type, business_id, source_ids, request, error, latency_ms):
-        with self.session_factory() as session:
-            trace = ModelTraceWriter(session).failed(
+        with self.uow_factory() as uow:
+            trace = uow.model_traces.failed(
                 tenant_id,
                 business_type,
                 business_id,
@@ -43,5 +43,5 @@ class AITraceSink:
                 error,
                 latency_ms,
             )
-            session.commit()
+            uow.commit()
             return trace.id
