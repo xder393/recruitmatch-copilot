@@ -1139,7 +1139,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.110" },
     { name = "langchain", specifier = ">=0.3,<0.4" },
     { name = "langchain-openai", specifier = ">=0.3,<0.4" },
-    { name = "numpy", specifier = ">=1.26" },
+    { name = "numpy", specifier = ">=1.26,<3" },
     { name = "openai", specifier = ">=1.30" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2,<4" },
     { name = "pydantic", specifier = ">=2,<3" },
