@@ -72,7 +72,7 @@ services:
         condition: service_healthy
     volumes:
       - app-data:/app/data
-      - hf-cache:/home/recruitmatch/.cache/huggingface
+      - hf-cache-v2:/home/recruitmatch/.cache/huggingface
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/ready', timeout=2)"]
       interval: 15s
@@ -94,7 +94,7 @@ services:
     command: celery -A app.tasks.celery_app.celery_app worker --loglevel=INFO
     volumes:
       - app-data:/app/data
-      - hf-cache:/home/recruitmatch/.cache/huggingface
+      - hf-cache-v2:/home/recruitmatch/.cache/huggingface
     healthcheck:
       disable: true
     restart: unless-stopped
@@ -131,4 +131,4 @@ volumes:
   postgres-data:
   redis-data:
   app-data:
-  hf-cache:
+  hf-cache-v2:

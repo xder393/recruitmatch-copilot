@@ -17,6 +17,14 @@ def test_worker_disables_the_api_healthcheck():
     assert "healthcheck:\n      disable: true" in worker_service
 
 
+def test_compose_uses_a_versioned_non_root_hf_cache_volume():
+    compose = Path("docker-compose.yml").read_text()
+    mount = "- hf-cache-v2:/home/recruitmatch/.cache/huggingface"
+    assert compose.count(mount) == 2
+    assert "\n  hf-cache-v2:\n" in compose
+    assert "- hf-cache:/home/recruitmatch/.cache/huggingface" not in compose
+
+
 def test_image_excludes_removed_legacy_namespaces():
     for namespace in ("agents", "rag", "storage", "tools", "embeddings"):
         assert not Path("app", namespace).exists()
