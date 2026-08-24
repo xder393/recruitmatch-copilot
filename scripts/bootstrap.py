@@ -1,13 +1,18 @@
 """Apply database migrations and seed idempotent reference data."""
 
-from alembic import command
-from alembic.config import Config
+import os
+import sys
+from pathlib import Path
 
-from seed_job_templates import main as seed_job_templates
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from app.database_migrations import upgrade_database  # noqa: E402
+from seed_job_templates import main as seed_job_templates  # noqa: E402
 
 
 def main() -> None:
-    command.upgrade(Config("alembic.ini"), "head")
+    database_url = os.getenv("DATABASE_URL", "sqlite:///data/recruitmatch.db").strip()
+    upgrade_database(database_url)
     seed_job_templates()
 
 

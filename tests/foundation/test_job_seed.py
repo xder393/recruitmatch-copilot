@@ -26,8 +26,12 @@ def test_template_seed_expands_ten_families_to_three_levels_idempotently(tmp_pat
 def test_template_seed_cli_runs_from_repository_root(tmp_path):
     """Catches direct script execution losing the repository root from sys.path."""
     project_root = Path(__file__).resolve().parents[2]
+    database_url = f"sqlite:///{tmp_path / 'seed-cli.db'}"
+    from tests.support.database import prepare_test_database
+
+    prepare_test_database(database_url)
     env = os.environ.copy()
-    env["DATABASE_URL"] = f"sqlite:///{tmp_path / 'seed-cli.db'}"
+    env["DATABASE_URL"] = database_url
     result = subprocess.run(
         [sys.executable, "scripts/seed_job_templates.py"],
         cwd=project_root,

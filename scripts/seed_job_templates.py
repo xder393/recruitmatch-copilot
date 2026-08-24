@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.database import Base, create_engine_and_session
+from app.database import create_engine_and_session
 from app.models import JobTemplate
 
 _SOURCE = Path(__file__).resolve().parents[1] / "app" / "seeds" / "job_templates.json"
@@ -63,8 +63,7 @@ def seed_templates(session: Session, source_path: Optional[Path] = None) -> int:
 
 def main() -> None:
     database_url = os.getenv("DATABASE_URL", "sqlite:///data/recruitmatch.db")
-    engine, session_factory = create_engine_and_session(database_url)
-    Base.metadata.create_all(engine)
+    _, session_factory = create_engine_and_session(database_url)
     with session_factory() as session:
         created = seed_templates(session)
     print(f"seeded_job_templates={created}")

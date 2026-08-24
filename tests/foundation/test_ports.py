@@ -3,6 +3,8 @@ import subprocess
 import sys
 from types import SimpleNamespace
 
+import pytest
+
 from app.artifacts.ports import ArtifactLocation
 from app.observability.events import DomainEvent
 from app.services.knowledge_processing import KnowledgeProcessingService
@@ -26,8 +28,14 @@ def test_artifact_location_is_structured_and_immutable():
 
 
 def test_domain_event_has_bounded_attributes():
-    event = DomainEvent("matching.completed", {"outcome": "success"})
+    attributes = {"outcome": "success"}
+    event = DomainEvent("matching.completed", attributes)
+    attributes["outcome"] = "failed"
+
     assert event.name == "matching.completed"
+    assert event.attributes == {"outcome": "success"}
+    with pytest.raises(TypeError):
+        event.attributes["outcome"] = "failed"  # type: ignore[index]
 
 
 def test_application_services_do_not_import_sqlalchemy():

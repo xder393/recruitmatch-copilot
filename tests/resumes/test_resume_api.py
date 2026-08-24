@@ -10,6 +10,7 @@ from app.main import create_app
 from app.models.knowledge import KnowledgeChunk
 from app.models.matching import MatchResult, MatchRun
 from app.models.resumes import Resume
+from tests.support.database import prepare_test_database
 
 
 @pytest.fixture
@@ -20,6 +21,7 @@ def resume_client(tmp_path):
         artifact_dir=str(tmp_path / "artifacts"),
         jwt_secret="a-test-secret-that-is-at-least-32-bytes",
     )
+    prepare_test_database(settings.database_url)
     app = create_app(settings)
     with TestClient(app) as client:
         _switch_tenant(client, "Acme", "admin@acme.test", "correct horse battery staple")

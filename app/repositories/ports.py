@@ -9,6 +9,8 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, List, Protocol
 
+from app.ai.contracts import ModelRequest, ModelResponse
+
 
 class RepositoryConflictError(Exception):
     """A persistence uniqueness conflict safe for application handling."""
@@ -72,5 +74,24 @@ class ResumeRepository(Protocol):
 
 
 class ModelTraceRepository(Protocol):
-    def succeeded(self, *args: Any, **kwargs: Any) -> Any: ...
-    def failed(self, *args: Any, **kwargs: Any) -> Any: ...
+    def succeeded(
+        self,
+        tenant_id: str,
+        business_type: str,
+        business_id: str,
+        source_ids: list[str],
+        request: ModelRequest,
+        response: ModelResponse,
+        fallback_reason: str | None = None,
+    ) -> Any: ...
+
+    def failed(
+        self,
+        tenant_id: str,
+        business_type: str,
+        business_id: str,
+        source_ids: list[str],
+        request: ModelRequest,
+        error: Any,
+        latency_ms: float,
+    ) -> Any: ...

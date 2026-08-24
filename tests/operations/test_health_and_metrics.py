@@ -9,6 +9,7 @@ from app.ai.gateway import ModelGatewayError
 from app.ai.contracts import ModelRequest, ModelResponse
 from pydantic import BaseModel
 from app.services.ai_tracing import AITraceSink
+from tests.support.database import prepare_test_database
 
 
 class _Answer(BaseModel):
@@ -23,14 +24,14 @@ def _trace_sink(session_factory):
 
 @pytest.fixture
 def operations_client(tmp_path):
-    app = create_app(
-        Settings(
-            api_key="test-key",
-            database_url=f"sqlite:///{tmp_path / 'operations.db'}",
-            artifact_dir=str(tmp_path / "artifacts"),
-            jwt_secret="a-test-secret-that-is-at-least-32-bytes",
-        )
+    settings = Settings(
+        api_key="test-key",
+        database_url=f"sqlite:///{tmp_path / 'operations.db'}",
+        artifact_dir=str(tmp_path / "artifacts"),
+        jwt_secret="a-test-secret-that-is-at-least-32-bytes",
     )
+    prepare_test_database(settings.database_url)
+    app = create_app(settings)
     with TestClient(app) as client:
         yield client
 
@@ -83,6 +84,7 @@ def test_ai_status_uses_recent_trace_health(tmp_path):
         def embed_query(self, text):
             return [1.0]
 
+    prepare_test_database(settings.database_url)
     app = create_app(settings, structured_model=NoCallModel(), knowledge_embedder=Embedder())
     with TestClient(app) as client:
         _login(client, "Acme", "admin@acme.test", "correct horse battery staple")
@@ -141,6 +143,7 @@ def test_ai_status_ignores_other_tenant_model_failures(tmp_path):
         estimated_cost=0,
         latency_ms=1,
     )
+    prepare_test_database(settings.database_url)
     with TestClient(app) as client:
         _login(client, "Acme", "admin@acme.test", "correct horse battery staple")
         acme_id = client.get("/api/v1/auth/me").json()["tenant_id"]

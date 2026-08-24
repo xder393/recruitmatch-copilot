@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -11,10 +12,14 @@ def test_runtime_image_declares_non_root_user():
     assert "requirements.txt" not in dockerfile
 
 
-def test_worker_disables_the_api_healthcheck():
+def test_non_api_compose_targets_disable_the_api_healthcheck():
     compose = Path("docker-compose.yml").read_text()
-    worker_service = compose.split("\n  worker:\n", maxsplit=1)[1].split("\n  test-unit:\n", maxsplit=1)[0]
-    assert "healthcheck:\n      disable: true" in worker_service
+    service_names = ("bootstrap", "worker", "test-unit", "test-integration")
+
+    for service_name in service_names:
+        service = re.search(rf"(?ms)^  {service_name}:\n(?P<body>.*?)(?=^  \S|\Z)", compose)
+        assert service is not None
+        assert "healthcheck:\n      disable: true" in service.group("body")
 
 
 def test_compose_uses_a_versioned_non_root_hf_cache_volume():

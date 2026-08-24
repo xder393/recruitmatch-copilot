@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 
 from app.config import Settings
 from app.main import create_app
+from tests.support.database import prepare_test_database
 
 
 @pytest.fixture
@@ -14,6 +15,7 @@ def v1_client(tmp_path):
         database_url=f"sqlite:///{tmp_path / 'api.db'}",
         jwt_secret="a-test-secret-that-is-at-least-32-bytes",
     )
+    prepare_test_database(settings.database_url)
     app = create_app(settings)
     with TestClient(app) as client:
         yield client

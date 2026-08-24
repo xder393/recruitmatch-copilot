@@ -53,6 +53,8 @@ services:
       postgres:
         condition: service_healthy
     command: python scripts/bootstrap.py
+    healthcheck:
+      disable: true
     restart: "no"
 
   api:
@@ -110,6 +112,8 @@ services:
       TASK_MODE: inline
       AI_ENABLED: "false"
     command: pytest -q
+    healthcheck:
+      disable: true
 
   test-integration:
     image: recruitmatch-app-test
@@ -126,6 +130,8 @@ services:
       redis:
         condition: service_healthy
     command: pytest -q
+    healthcheck:
+      disable: true
 
 volumes:
   postgres-data:

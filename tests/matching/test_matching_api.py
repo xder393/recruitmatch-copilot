@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 
 from app.config import Settings
 from app.main import create_app
+from tests.support.database import prepare_test_database
 
 
 def _login(client, tenant, email, password):
@@ -19,14 +20,14 @@ def _login(client, tenant, email, password):
 
 @pytest.fixture
 def matching_client(tmp_path):
-    app = create_app(
-        Settings(
-            api_key="test-key",
-            database_url=f"sqlite:///{tmp_path / 'matching-api.db'}",
-            artifact_dir=str(tmp_path / "artifacts"),
-            jwt_secret="a-test-secret-that-is-at-least-32-bytes",
-        )
+    settings = Settings(
+        api_key="test-key",
+        database_url=f"sqlite:///{tmp_path / 'matching-api.db'}",
+        artifact_dir=str(tmp_path / "artifacts"),
+        jwt_secret="a-test-secret-that-is-at-least-32-bytes",
     )
+    prepare_test_database(settings.database_url)
+    app = create_app(settings)
     with TestClient(app) as client:
         _login(client, "Acme", "admin@acme.test", "correct horse battery staple")
         for title, required, preferred in [

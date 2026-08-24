@@ -7,6 +7,7 @@ from app.config import Settings
 from app.main import create_app
 from app.models.operations import ModelTrace
 from tests.ai.fakes import FakeStructuredModel
+from tests.support.database import prepare_test_database
 
 
 def _settings(tmp_path, **overrides):
@@ -37,7 +38,9 @@ def _authenticated(client):
 
 
 def test_ai_status_is_disabled_without_disabling_core(tmp_path):
-    with TestClient(create_app(_settings(tmp_path))) as client:
+    settings = _settings(tmp_path)
+    prepare_test_database(settings.database_url)
+    with TestClient(create_app(settings)) as client:
         _authenticated(client)
         body = client.get("/api/v1/ai/status").json()
         assert body == {
@@ -63,6 +66,7 @@ def test_enabled_ai_parser_persists_grounded_profile_and_safe_trace(tmp_path):
         {"resume_extract": {"skills": [{"name": "Python", "evidence": {"start": 0, "end": 6, "text": "Python"}}]}}
     )
     settings = _settings(tmp_path, api_key="test", ai_enabled=True)
+    prepare_test_database(settings.database_url)
     app = create_app(settings, structured_model=model)
     with TestClient(app) as client:
         _authenticated(client)

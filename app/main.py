@@ -21,7 +21,6 @@ from app.config import Settings
 from app.core.exceptions import AppError
 from app.core.logging import get_logger, request_id_var, setup_logging
 from app.database import create_engine_and_session
-from app.database_migrations import upgrade_database
 from app.knowledge.artifacts import KnowledgeArtifactStore
 from app.knowledge.embeddings import BGEEmbedder
 from app.knowledge.index import RecruitingVectorIndex
@@ -47,7 +46,6 @@ def init_recruiting_state(app: FastAPI, settings: Settings, structured_model=Non
     """Initialize recruiting persistence once per application instance."""
     if getattr(app.state, "_recruiting_initialized", False):
         return
-    upgrade_database(settings.database_url)
     engine, session_factory = create_engine_and_session(settings.database_url)
     app.state.database_engine = engine
     app.state.session_factory = session_factory

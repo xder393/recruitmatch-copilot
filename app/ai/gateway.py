@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import time
-from typing import Optional
+from typing import Any, Protocol, cast
 
 from openai import (
     APIConnectionError,
@@ -21,6 +21,29 @@ from app.ai.contracts import ModelRequest, ModelResponse, T
 from app.config import Settings
 
 
+class StructuredCompletionsClient(Protocol):
+    def parse(
+        self,
+        *,
+        model: str,
+        messages: list[dict[str, str]],
+        temperature: float,
+        response_format: type[T],
+    ) -> Any: ...
+
+
+class ChatClient(Protocol):
+    completions: StructuredCompletionsClient
+
+
+class BetaClient(Protocol):
+    chat: ChatClient
+
+
+class OpenAIClient(Protocol):
+    beta: BetaClient
+
+
 class ModelGatewayError(Exception):
     def __init__(self, code: str, retryable: bool, attempts: int = 1):
         super().__init__(code)
@@ -30,13 +53,16 @@ class ModelGatewayError(Exception):
 
 
 class OpenAICompatibleGateway:
-    def __init__(self, settings: Settings, client: Optional[OpenAI] = None):
+    def __init__(self, settings: Settings, client: OpenAIClient | None = None):
         self.settings = settings
-        self.client = client or OpenAI(
-            api_key=settings.api_key,
-            base_url=settings.base_url,
-            timeout=settings.model_timeout_seconds,
-            max_retries=0,
+        self.client = client or cast(
+            OpenAIClient,
+            OpenAI(
+                api_key=settings.api_key,
+                base_url=settings.base_url,
+                timeout=settings.model_timeout_seconds,
+                max_retries=0,
+            ),
         )
 
     def generate(self, request: ModelRequest[T]) -> ModelResponse[T]:

@@ -3,10 +3,10 @@ from __future__ import annotations
 from alembic import command
 from alembic.config import Config
 from fastapi.testclient import TestClient
-from sqlalchemy import inspect, text
+from sqlalchemy import inspect
 
 from app.config import Settings
-from app.database import Base, create_engine_and_session
+from app.database import create_engine_and_session
 from app.database_migrations import upgrade_database
 from app.main import create_app
 
@@ -47,18 +47,8 @@ def test_direct_alembic_uses_environment_before_ini_fallback(monkeypatch, tmp_pa
     assert not inspect(ini_fallback_engine).has_table("alembic_version")
 
 
-def test_startup_repairs_unversioned_create_all_schema(monkeypatch, tmp_path):
-    monkeypatch.delenv("DATABASE_URL", raising=False)
-    database_url = f"sqlite:///{tmp_path / 'legacy.db'}"
-    config = Config("alembic.ini")
-    config.set_main_option("sqlalchemy.url", database_url)
-    command.upgrade(config, "20260819_04")
-
-    engine, _ = create_engine_and_session(database_url)
-    Base.metadata.create_all(engine)
-    with engine.begin() as connection:
-        connection.execute(text("DELETE FROM alembic_version"))
-
+def test_application_startup_does_not_write_schema(tmp_path):
+    database_url = f"sqlite:///{tmp_path / 'empty.db'}"
     settings = Settings(
         database_url=database_url,
         artifact_dir=str(tmp_path / "resumes"),
@@ -68,7 +58,5 @@ def test_startup_repairs_unversioned_create_all_schema(monkeypatch, tmp_path):
     with TestClient(create_app(settings, knowledge_embedder=_Embedder())):
         pass
 
-    columns = {item["name"] for item in inspect(engine).get_columns("model_traces")}
-    assert {"operation", "request_fingerprint", "fallback_reason", "attempt_count"} <= columns
-    with engine.connect() as connection:
-        assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "20260819_10"
+    engine, _ = create_engine_and_session(database_url)
+    assert inspect(engine).get_table_names() == []

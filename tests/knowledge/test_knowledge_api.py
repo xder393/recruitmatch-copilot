@@ -12,6 +12,7 @@ from app.models.jobs import JobVersion
 from app.models.resumes import Resume
 from app.domain.enums import Role
 from app.security.tokens import Principal, issue_access_token
+from tests.support.database import prepare_test_database
 
 
 class HashEmbedder:
@@ -38,6 +39,7 @@ def knowledge_app(tmp_path):
         knowledge_artifact_dir=str(tmp_path / "knowledge"),
         jwt_secret="a-test-secret-that-is-at-least-32-bytes",
     )
+    prepare_test_database(settings.database_url)
     return create_app(settings, knowledge_embedder=HashEmbedder())
 
 
