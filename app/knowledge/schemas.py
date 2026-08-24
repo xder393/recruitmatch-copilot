@@ -1,4 +1,5 @@
 """Knowledge chunk contracts shared by ingestion and retrieval."""
+
 from __future__ import annotations
 
 from typing import List, Optional

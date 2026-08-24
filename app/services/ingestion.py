@@ -1,4 +1,5 @@
 """文档入库编排：上传 → 解析 → 切块 → 向量化 → 入库；启动重建索引。"""
+
 from __future__ import annotations
 
 import os

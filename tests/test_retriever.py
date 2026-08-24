@@ -1,4 +1,5 @@
 """检索层：top_k、空库、上下文拼接。"""
+
 from __future__ import annotations
 
 from app.rag.retriever import Retriever, format_context

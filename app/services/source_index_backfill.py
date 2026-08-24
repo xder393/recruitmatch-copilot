@@ -1,4 +1,5 @@
 """Tenant-scoped idempotent repair of resume and job search sources."""
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -28,11 +29,7 @@ class SourceIndexBackfillService:
                 .where(Resume.tenant_id == principal.tenant_id, Resume.status == ResumeStatus.SUCCEEDED)
             )
         )
-        versions = list(
-            self.session.scalars(
-                select(JobVersion).join(Job).where(Job.tenant_id == principal.tenant_id)
-            )
-        )
+        versions = list(self.session.scalars(select(JobVersion).join(Job).where(Job.tenant_id == principal.tenant_id)))
         result = {"resumes_indexed": 0, "job_versions_indexed": 0, "failed": 0}
         for resume in resumes:
             text = resume.artifact.extracted_text if resume.artifact else None

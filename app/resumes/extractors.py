@@ -1,4 +1,5 @@
 """Validated PDF, DOCX, and TXT text extraction."""
+
 from __future__ import annotations
 
 from io import BytesIO

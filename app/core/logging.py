@@ -1,4 +1,5 @@
 """统一日志：注入 request_id，格式统一，便于排查。"""
+
 from __future__ import annotations
 
 import contextvars

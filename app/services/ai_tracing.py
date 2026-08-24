@@ -1,4 +1,5 @@
 """Commit privacy-safe model operation traces outside business transactions."""
+
 from __future__ import annotations
 
 from app.repositories.model_traces import ModelTraceWriter

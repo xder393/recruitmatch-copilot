@@ -1,4 +1,5 @@
 """Recruiting knowledge documents and generation-versioned chunks."""
+
 from __future__ import annotations
 
 import uuid
@@ -42,9 +43,7 @@ class KnowledgeDocument(Base):
         DateTime(timezone=True), default=_utcnow, onupdate=_utcnow, nullable=False
     )
 
-    chunks: Mapped[List["KnowledgeChunk"]] = relationship(
-        back_populates="document", cascade="all, delete-orphan"
-    )
+    chunks: Mapped[List["KnowledgeChunk"]] = relationship(back_populates="document", cascade="all, delete-orphan")
 
 
 class KnowledgeChunk(Base):

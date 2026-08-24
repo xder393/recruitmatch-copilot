@@ -1,4 +1,5 @@
 """Replaceable resume task dispatchers."""
+
 from __future__ import annotations
 
 from typing import Protocol

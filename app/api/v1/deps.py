@@ -1,4 +1,5 @@
 """Database, authentication, and authorization dependencies."""
+
 from __future__ import annotations
 
 from typing import Generator, Optional

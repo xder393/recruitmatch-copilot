@@ -1,4 +1,5 @@
 """切块：大小约束、元数据传递。"""
+
 from __future__ import annotations
 
 from app.rag.loader import Segment

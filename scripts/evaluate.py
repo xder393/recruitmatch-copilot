@@ -13,6 +13,7 @@
     - 只评估「检索」环节（不调 LLM），指标全部来自真实检索结果，不编造。
     - relevant_sources 表示该问题答案所在的文档，命中即算相关。
 """
+
 from __future__ import annotations
 
 import argparse

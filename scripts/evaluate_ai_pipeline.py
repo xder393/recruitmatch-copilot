@@ -1,4 +1,5 @@
 """Execute deterministic fake-model variants of the real RecruitMatch AI pipeline."""
+
 from __future__ import annotations
 
 import argparse
@@ -81,9 +82,7 @@ class DeterministicFakeModel:
                 if item.strip()
             }
             job_skills = {
-                item.strip()
-                for item in re.split(r"[、,，]", job_line.split("；技能：", 1)[-1])
-                if item.strip()
+                item.strip() for item in re.split(r"[、,，]", job_line.split("；技能：", 1)[-1]) if item.strip()
             }
             overlap = len(resume_skills & job_skills) / max(1, len(job_skills))
             score = round(0.1 + 0.9 * overlap, 4) if resume_ids and job_ids else 0.0
@@ -149,8 +148,7 @@ class EvaluationIndex:
         del tenant_id
         candidates = [self._hit("resume:" + self.case_id, "resume", self.case_id, self.resume_text)]
         candidates.extend(
-            self._hit(f"job:{source_id}", "job", source_id, job.jd_text)
-            for source_id, job in self.jobs.items()
+            self._hit(f"job:{source_id}", "job", source_id, job.jd_text) for source_id, job in self.jobs.items()
         )
         candidates.append(self._hit("policy:structured-interview", "policy", "policy-1", "面试结论必须引用候选人证据"))
         return [item for item in candidates if item.citation_id in citation_ids]
@@ -228,9 +226,7 @@ def evaluate(dataset: list[dict], mode: str) -> dict:
             semantic_ranking_changed_cases += int([item.job_id for item in ranked] != rule_order)
         else:
             ranked = rules.rank(profile, jobs, top_k=3)
-        semantic_fallbacks += sum(
-            1 for item in ranked if getattr(item, "semantic_score", 1) is None
-        )
+        semantic_fallbacks += sum(1 for item in ranked if getattr(item, "semantic_score", 1) is None)
 
         explanation_claims = []
         authorized_ids = []
@@ -297,9 +293,9 @@ def evaluate(dataset: list[dict], mode: str) -> dict:
         "dataset_version": "recruitmatch-ai-v1",
         "algorithm_version": mode,
         "model_version": "fake-structured-v1" if mode != "rules-v1" else "none",
-        "prompt_version": "semantic-project-v1" if mode == "hybrid-v1" else (
-            "resume-extract-v1" if mode == "llm-rules-v1" else "none"
-        ),
+        "prompt_version": "semantic-project-v1"
+        if mode == "hybrid-v1"
+        else ("resume-extract-v1" if mode == "llm-rules-v1" else "none"),
         "embedding_version": "fake-index-v1" if mode == "hybrid-v1" else "none",
         "label_source": "synthetic_ai",
         "pipeline_calls": dict(sorted(model.calls.items())),

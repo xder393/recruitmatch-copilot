@@ -1,4 +1,5 @@
 """Citation-grounded recruiting guidance with deterministic degradation."""
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional

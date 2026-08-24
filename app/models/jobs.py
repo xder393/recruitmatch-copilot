@@ -1,4 +1,5 @@
 """System job templates and tenant-owned immutable job versions."""
+
 from __future__ import annotations
 
 import uuid

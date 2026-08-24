@@ -1,4 +1,5 @@
 """Artifact store interface and safe local implementation."""
+
 from __future__ import annotations
 
 import hashlib

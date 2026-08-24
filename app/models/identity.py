@@ -1,4 +1,5 @@
 """Tenant and user persistence models."""
+
 from __future__ import annotations
 
 import uuid

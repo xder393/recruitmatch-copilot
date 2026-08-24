@@ -60,13 +60,7 @@ def test_ai_status_is_disabled_without_disabling_core(tmp_path):
 
 def test_enabled_ai_parser_persists_grounded_profile_and_safe_trace(tmp_path):
     model = FakeStructuredModel(
-        {
-            "resume_extract": {
-                "skills": [
-                    {"name": "Python", "evidence": {"start": 0, "end": 6, "text": "Python"}}
-                ]
-            }
-        }
+        {"resume_extract": {"skills": [{"name": "Python", "evidence": {"start": 0, "end": 6, "text": "Python"}}]}}
     )
     settings = _settings(tmp_path, api_key="test", ai_enabled=True)
     app = create_app(settings, structured_model=model)

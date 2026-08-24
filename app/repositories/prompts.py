@@ -1,4 +1,5 @@
 """Tenant-scoped prompt metadata lookup."""
+
 from __future__ import annotations
 
 from sqlalchemy import select

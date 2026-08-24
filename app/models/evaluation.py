@@ -1,4 +1,5 @@
 """Privacy-safe metadata for reproducible AI evaluation runs."""
+
 from __future__ import annotations
 
 import uuid

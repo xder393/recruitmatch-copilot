@@ -1,4 +1,5 @@
 """Privacy-safe audit and model-call operational records."""
+
 from __future__ import annotations
 
 import uuid

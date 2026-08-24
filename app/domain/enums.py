@@ -1,4 +1,5 @@
 """Shared recruiting lifecycle enums."""
+
 from enum import Enum
 
 

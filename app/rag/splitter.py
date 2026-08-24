@@ -1,4 +1,5 @@
 """文本切块：递归分隔符切分，保留来源元数据，生成 Chunk。"""
+
 from __future__ import annotations
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter

@@ -1,4 +1,5 @@
 """Tenant-owned resume metadata and extracted artifacts."""
+
 from __future__ import annotations
 
 import uuid

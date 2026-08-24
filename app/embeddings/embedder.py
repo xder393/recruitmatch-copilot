@@ -1,4 +1,5 @@
 """文本向量化：本地 sentence-transformers 模型，懒加载 + numpy 归一化。"""
+
 from __future__ import annotations
 
 import numpy as np
@@ -32,9 +33,7 @@ class Embedder:
         if not texts:
             return np.zeros((0, 1), dtype="float32")
         try:
-            vectors = self.model.encode(
-                texts, normalize_embeddings=True, show_progress_bar=False
-            )
+            vectors = self.model.encode(texts, normalize_embeddings=True, show_progress_bar=False)
         except Exception as exc:
             raise EmbeddingError(f"向量化失败: {exc}") from exc
         return np.asarray(vectors, dtype="float32")

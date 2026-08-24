@@ -3,6 +3,7 @@
 说明：当前规模用 JSON 足够；若未来需要多用户 / 并发写入，
 可平滑替换为 SQLite / PostgreSQL，接口不变。
 """
+
 from __future__ import annotations
 
 import json
@@ -31,10 +32,7 @@ class ConversationStore:
     def list(self) -> list[dict]:
         with self._lock:
             convs = self._read()
-        return [
-            {"id": c["id"], "title": c["title"], "created_at": c["created_at"]}
-            for c in convs
-        ]
+        return [{"id": c["id"], "title": c["title"], "created_at": c["created_at"]} for c in convs]
 
     def create(self) -> dict:
         conv = {

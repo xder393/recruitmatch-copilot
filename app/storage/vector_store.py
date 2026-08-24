@@ -3,6 +3,7 @@
 设计取舍：不引入重型向量数据库，用 numpy 做归一化点积（=余弦）批量检索，
 既能在面试里讲清「向量检索原理」，又支持持久化与按字段过滤。
 """
+
 from __future__ import annotations
 
 import hashlib

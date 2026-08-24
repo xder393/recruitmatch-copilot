@@ -55,9 +55,7 @@ def _setup(tmp_path):
             )
             session.add(job)
         foreign = Job(tenant=globex, title="Foreign perfect", status=JobStatus.ACTIVE, current_version=1)
-        foreign.versions.append(
-            JobVersion(version=1, jd_text="Python RAG", profile={"required_skills": ["Python"]})
-        )
+        foreign.versions.append(JobVersion(version=1, jd_text="Python RAG", profile={"required_skills": ["Python"]}))
         session.add_all([resume, foreign])
         session.commit()
         principal = Principal(user_id=admin.id, tenant_id=acme.id, role=Role.ADMIN)

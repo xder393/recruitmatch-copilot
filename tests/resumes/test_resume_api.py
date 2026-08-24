@@ -179,12 +179,15 @@ def test_list_and_soft_delete_hide_resume(resume_client):
         stored = session.get(Resume, resume_id)
         assert stored.profile == {}
         assert stored.artifact.extracted_text is None
-        assert session.scalar(
-            select(KnowledgeChunk).where(
-                KnowledgeChunk.source_type == "resume",
-                KnowledgeChunk.source_id == resume_id,
+        assert (
+            session.scalar(
+                select(KnowledgeChunk).where(
+                    KnowledgeChunk.source_type == "resume",
+                    KnowledgeChunk.source_id == resume_id,
+                )
             )
-        ) is None
+            is None
+        )
         run = session.scalar(select(MatchRun).where(MatchRun.resume_id == resume_id))
         result = session.scalar(select(MatchResult).where(MatchResult.run_id == run.id))
         assert result.evidence == []

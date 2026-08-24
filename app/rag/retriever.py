@@ -1,4 +1,5 @@
 """检索层：封装 VectorStore，统一 top_k / 阈值，提供上下文拼接。"""
+
 from __future__ import annotations
 
 from app.config import Settings

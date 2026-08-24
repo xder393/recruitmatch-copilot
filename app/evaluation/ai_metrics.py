@@ -1,4 +1,5 @@
 """Deterministic extraction, ranking, grounding, latency, and cost metrics."""
+
 from __future__ import annotations
 
 from typing import Any, Dict, List

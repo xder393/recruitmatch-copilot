@@ -11,6 +11,7 @@
 
 运行：python scripts/benchmark_chunking.py
 """
+
 from __future__ import annotations
 
 import os
@@ -169,8 +170,12 @@ def main() -> None:
 
     old = evaluate(build_index("old", embedder), top_k)
     new = evaluate(build_index("new", embedder), top_k)
-    print(f"{'旧：100字符硬切':<28}{old['chunks']:<8}{old['hit_at_k']:<10.4f}{old['mrr_at_k']:<10.4f}{old['answer_coverage']:<10.4f}")
-    print(f"{'新：500字符递归切':<28}{new['chunks']:<8}{new['hit_at_k']:<10.4f}{new['mrr_at_k']:<10.4f}{new['answer_coverage']:<10.4f}")
+    print(
+        f"{'旧：100字符硬切':<28}{old['chunks']:<8}{old['hit_at_k']:<10.4f}{old['mrr_at_k']:<10.4f}{old['answer_coverage']:<10.4f}"
+    )
+    print(
+        f"{'新：500字符递归切':<28}{new['chunks']:<8}{new['hit_at_k']:<10.4f}{new['mrr_at_k']:<10.4f}{new['answer_coverage']:<10.4f}"
+    )
 
 
 if __name__ == "__main__":

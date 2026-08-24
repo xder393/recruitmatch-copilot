@@ -1,4 +1,5 @@
 """Tenant-isolated resume upload and lifecycle endpoints."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, File, Request, Response, UploadFile, status

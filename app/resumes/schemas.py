@@ -1,4 +1,5 @@
 """Structured resume profile and evidence contracts."""
+
 from __future__ import annotations
 
 from typing import List, Optional

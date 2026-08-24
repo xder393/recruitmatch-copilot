@@ -1,4 +1,5 @@
 """OpenAI-compatible structured output gateway."""
+
 from __future__ import annotations
 
 import time

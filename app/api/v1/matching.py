@@ -1,4 +1,5 @@
 """Explainable recommendation and recruiter feedback endpoints."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Request, status
@@ -66,9 +67,7 @@ def run_matches(
             source_index=request.app.state.knowledge_index,
             retrieval_top_k=request.app.state.settings.retrieval_top_k,
             retrieval_min_score=request.app.state.settings.retrieval_min_score,
-        ).run(
-            principal, resume_id, mode=mode
-        )
+        ).run(principal, resume_id, mode=mode)
     )
 
 

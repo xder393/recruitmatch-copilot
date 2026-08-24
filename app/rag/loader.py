@@ -1,4 +1,5 @@
 """文档解析：txt / pdf → 带来源信息的片段（Segment）。"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

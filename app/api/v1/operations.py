@@ -1,4 +1,5 @@
 """Model-independent health and tenant-scoped operations summaries."""
+
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
@@ -34,10 +35,7 @@ def ai_status(
     settings = request.app.state.settings
     tenant_id = principal.tenant_id
     latest = session.scalar(
-        select(ModelTrace)
-        .where(ModelTrace.tenant_id == tenant_id)
-        .order_by(ModelTrace.created_at.desc())
-        .limit(1)
+        select(ModelTrace).where(ModelTrace.tenant_id == tenant_id).order_by(ModelTrace.created_at.desc()).limit(1)
     )
     failed_indexes = (
         session.scalar(
@@ -98,10 +96,6 @@ def analytics_summary(
         )
         or 0
     )
-    match_runs = (
-        session.scalar(select(func.count()).select_from(MatchRun).where(MatchRun.tenant_id == tenant_id)) or 0
-    )
-    feedback = (
-        session.scalar(select(func.count()).select_from(Feedback).where(Feedback.tenant_id == tenant_id)) or 0
-    )
+    match_runs = session.scalar(select(func.count()).select_from(MatchRun).where(MatchRun.tenant_id == tenant_id)) or 0
+    feedback = session.scalar(select(func.count()).select_from(Feedback).where(Feedback.tenant_id == tenant_id)) or 0
     return {"jobs": jobs, "resumes": resumes, "match_runs": match_runs, "feedback": feedback}

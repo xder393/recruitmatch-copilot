@@ -11,6 +11,7 @@
 用法：
   python scripts/eval_chunk_ab.py --doc data/数据结构.txt --questions scripts/questions_数据结构.json
 """
+
 from __future__ import annotations
 
 import argparse

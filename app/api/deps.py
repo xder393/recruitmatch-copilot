@@ -1,4 +1,5 @@
 """FastAPI 依赖：从 app.state 取出共享单例（存储 / Agent / 服务）。"""
+
 from __future__ import annotations
 
 from fastapi import Request

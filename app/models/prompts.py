@@ -1,4 +1,5 @@
 """Versioned, tenant-scoped prompt metadata without prompt bodies."""
+
 from __future__ import annotations
 
 import uuid

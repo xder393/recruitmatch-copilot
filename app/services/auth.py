@@ -1,4 +1,5 @@
 """Tenant bootstrap and login business rules."""
+
 from __future__ import annotations
 
 from sqlalchemy.exc import IntegrityError

@@ -1,4 +1,5 @@
 """Recruiting knowledge upload, idempotency, and lifecycle rules."""
+
 from __future__ import annotations
 
 import hashlib

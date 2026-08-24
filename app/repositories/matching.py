@@ -1,4 +1,5 @@
 """Tenant-scoped recommendation persistence queries."""
+
 from __future__ import annotations
 
 from typing import List, Optional
@@ -51,11 +52,7 @@ class MatchingRepository:
     def latest_for_resume(self, tenant_id: str, resume_id: str) -> Optional[MatchRun]:
         return self.session.scalar(
             select(MatchRun)
-            .options(
-                selectinload(MatchRun.results)
-                .selectinload(MatchResult.job_version)
-                .selectinload(JobVersion.job)
-            )
+            .options(selectinload(MatchRun.results).selectinload(MatchResult.job_version).selectinload(JobVersion.job))
             .where(MatchRun.tenant_id == tenant_id, MatchRun.resume_id == resume_id)
             .order_by(MatchRun.created_at.desc())
             .limit(1)

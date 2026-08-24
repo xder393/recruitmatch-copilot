@@ -1,4 +1,5 @@
 """Tenant-scoped recruiting knowledge endpoints."""
+
 from __future__ import annotations
 
 from typing import List, Optional

@@ -1,4 +1,5 @@
 """计算器工具：基于 AST 白名单的安全表达式求值。"""
+
 from __future__ import annotations
 
 import ast
@@ -37,12 +38,7 @@ def _eval(node: ast.AST):
         return _BINARY_OPS[type(node.op)](_eval(node.left), _eval(node.right))
     if isinstance(node, ast.UnaryOp) and type(node.op) in _UNARY_OPS:
         return _UNARY_OPS[type(node.op)](_eval(node.operand))
-    if (
-        isinstance(node, ast.Call)
-        and isinstance(node.func, ast.Name)
-        and node.func.id in _FUNCS
-        and not node.keywords
-    ):
+    if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id in _FUNCS and not node.keywords:
         return _FUNCS[node.func.id](*[_eval(a) for a in node.args])
     raise ToolExecutionError("表达式包含不允许的语法")
 

@@ -1,4 +1,5 @@
 """配置管理：从环境变量 / .env 读取，带类型转换与校验。"""
+
 from __future__ import annotations
 
 import os
@@ -125,16 +126,12 @@ class Settings:
             model_provider=os.getenv("MODEL_PROVIDER", cls.model_provider).strip(),
             model_timeout_seconds=_get_float("MODEL_TIMEOUT_SECONDS", cls.model_timeout_seconds),
             model_max_retries=_get_int("MODEL_MAX_RETRIES", cls.model_max_retries),
-            model_input_cost_per_million=_get_float(
-                "MODEL_INPUT_COST_PER_MILLION", cls.model_input_cost_per_million
-            ),
+            model_input_cost_per_million=_get_float("MODEL_INPUT_COST_PER_MILLION", cls.model_input_cost_per_million),
             model_output_cost_per_million=_get_float(
                 "MODEL_OUTPUT_COST_PER_MILLION", cls.model_output_cost_per_million
             ),
             resume_prompt_version=os.getenv("RESUME_PROMPT_VERSION", cls.resume_prompt_version).strip(),
-            explanation_prompt_version=os.getenv(
-                "EXPLANATION_PROMPT_VERSION", cls.explanation_prompt_version
-            ).strip(),
+            explanation_prompt_version=os.getenv("EXPLANATION_PROMPT_VERSION", cls.explanation_prompt_version).strip(),
             retrieval_top_k=_get_int("RETRIEVAL_TOP_K", cls.retrieval_top_k),
             retrieval_min_score=_get_float("RETRIEVAL_MIN_SCORE", cls.retrieval_min_score),
             max_evidence_characters=_get_int("MAX_EVIDENCE_CHARACTERS", cls.max_evidence_characters),

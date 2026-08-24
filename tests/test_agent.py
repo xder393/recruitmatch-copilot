@@ -1,4 +1,5 @@
 """Agent：工具装配、结果解析（tool_calls / sources / 去重）、历史转换。"""
+
 from __future__ import annotations
 
 from langchain_core.agents import AgentAction
@@ -17,9 +18,7 @@ class _FakeExecutor:
 
 
 def test_to_lc_messages():
-    msgs = _to_lc_messages(
-        [{"role": "user", "content": "hi"}, {"role": "assistant", "content": "hello"}]
-    )
+    msgs = _to_lc_messages([{"role": "user", "content": "hi"}, {"role": "assistant", "content": "hello"}])
     assert msgs[0].type == "human" and msgs[0].content == "hi"
     assert msgs[1].type == "ai" and msgs[1].content == "hello"
 

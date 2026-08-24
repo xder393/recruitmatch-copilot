@@ -1,4 +1,5 @@
 """Replaceable knowledge processing dispatchers."""
+
 from __future__ import annotations
 
 

@@ -1,4 +1,5 @@
 """Build bounded model evidence and reject citations outside the retrieved set."""
+
 from __future__ import annotations
 
 from typing import Iterable

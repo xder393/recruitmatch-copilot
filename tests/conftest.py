@@ -1,4 +1,5 @@
 """共享 fixtures：确定性假向量化器 + 示例向量库。"""
+
 from __future__ import annotations
 
 import numpy as np

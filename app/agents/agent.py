@@ -6,6 +6,7 @@
     ├─ 计算问题   → 调用 calculator 工具 → 拿到结果
     └─ 普通聊天   → 直接回答（不调工具）
 """
+
 from __future__ import annotations
 
 import time
@@ -109,9 +110,7 @@ class RagAgent:
         executor = self._build_executor(retrieval_log)
         start = time.perf_counter()
         try:
-            output = executor.invoke(
-                {"input": question, "chat_history": _to_lc_messages(chat_history or [])}
-            )
+            output = executor.invoke({"input": question, "chat_history": _to_lc_messages(chat_history or [])})
         except Exception as exc:
             logger.exception("Agent 执行失败: %s", exc)
             raise LLMError(f"Agent 执行失败: {exc}") from exc
@@ -127,6 +126,9 @@ class RagAgent:
         result.dedup_sources()
         logger.info(
             "question=%r tools=%s sources=%d latency=%.1fms",
-            question, tool_calls, len(result.sources), latency_ms,
+            question,
+            tool_calls,
+            len(result.sources),
+            latency_ms,
         )
         return result

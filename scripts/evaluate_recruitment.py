@@ -1,4 +1,5 @@
 """Run rules-v1 against the committed synthetic benchmark."""
+
 from __future__ import annotations
 
 import argparse

@@ -1,4 +1,5 @@
 """Generate the versioned RecruitMatch v1 synthetic benchmark."""
+
 from __future__ import annotations
 
 import argparse

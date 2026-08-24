@@ -1,4 +1,5 @@
 """统一异常体系：每种失败场景一个明确类型，避免裸 except 吞错。"""
+
 from __future__ import annotations
 
 

@@ -1,4 +1,5 @@
 """API：健康检查、参数校验、上传、问答（注入假 Agent）。"""
+
 from __future__ import annotations
 
 import pytest

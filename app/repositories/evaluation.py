@@ -1,4 +1,5 @@
 """Persistence helpers for safe AI benchmark aggregates and failure labels."""
+
 from __future__ import annotations
 
 from sqlalchemy import select

@@ -1,4 +1,5 @@
 """Pydantic 请求 / 响应模型。"""
+
 from __future__ import annotations
 
 from typing import Optional

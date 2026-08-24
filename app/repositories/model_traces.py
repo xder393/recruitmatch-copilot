@@ -1,4 +1,5 @@
 """Write-only privacy-safe model trace repository."""
+
 from __future__ import annotations
 
 import hashlib

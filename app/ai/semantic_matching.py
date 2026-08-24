@@ -1,4 +1,5 @@
 """Bounded semantic project-fit scoring that requires two-sided citations."""
+
 from __future__ import annotations
 
 from typing import Dict, List, Optional

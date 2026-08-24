@@ -1,4 +1,5 @@
 """Persistent tenant-first recruiting vector retrieval."""
+
 from __future__ import annotations
 
 import hashlib

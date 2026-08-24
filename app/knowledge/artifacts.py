@@ -1,4 +1,5 @@
 """Safe local artifact namespace for recruiting knowledge."""
+
 from __future__ import annotations
 
 import hashlib

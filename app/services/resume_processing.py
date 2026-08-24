@@ -1,4 +1,5 @@
 """Resume extraction and profiling lifecycle orchestration."""
+
 from __future__ import annotations
 
 from typing import Protocol

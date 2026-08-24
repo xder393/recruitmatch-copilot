@@ -1,4 +1,5 @@
 """Tenant-scoped recruiting knowledge persistence."""
+
 from __future__ import annotations
 
 from sqlalchemy import select, update

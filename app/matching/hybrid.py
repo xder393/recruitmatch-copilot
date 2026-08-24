@@ -1,4 +1,5 @@
 """Fixed-weight hybrid ranking over stable rules-v1 recommendations."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

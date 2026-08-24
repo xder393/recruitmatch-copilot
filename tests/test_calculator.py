@@ -1,4 +1,5 @@
 """计算器工具：正确性 + 安全性。"""
+
 from __future__ import annotations
 
 import pytest

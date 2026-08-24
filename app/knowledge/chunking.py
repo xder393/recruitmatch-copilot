@@ -1,4 +1,5 @@
 """Deterministic exact-offset knowledge chunking."""
+
 from __future__ import annotations
 
 from app.knowledge.schemas import ChunkInput

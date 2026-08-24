@@ -1,4 +1,5 @@
 """Exact source-evidence validation and sensitive-trait filtering."""
+
 from __future__ import annotations
 
 from app.resumes.schemas import Evidence

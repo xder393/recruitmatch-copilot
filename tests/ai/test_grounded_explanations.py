@@ -51,9 +51,7 @@ def test_unknown_and_empty_citations_remove_unsupported_claims():
             interview_questions=[],
         )
     )
-    result = GroundedExplanationService(model).generate(
-        "tenant-1", "resume-1", "job-1", _rules(), [_hit()]
-    )
+    result = GroundedExplanationService(model).generate("tenant-1", "resume-1", "job-1", _rules(), [_hit()])
 
     assert result.strengths == []
     assert [item.text for item in result.gaps] == ["缺少 RAG"]
@@ -63,9 +61,7 @@ def test_unknown_and_empty_citations_remove_unsupported_claims():
 
 def test_no_hits_skips_model_and_returns_rules_fallback():
     model = FakeModel()
-    result = GroundedExplanationService(model).generate(
-        "tenant-1", "resume-1", "job-1", _rules(), []
-    )
+    result = GroundedExplanationService(model).generate("tenant-1", "resume-1", "job-1", _rules(), [])
 
     assert result.grounding_status == "insufficient_evidence"
     assert model.calls == []

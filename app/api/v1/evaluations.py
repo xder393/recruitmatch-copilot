@@ -1,4 +1,5 @@
 """Tenant-scoped privacy-safe evaluation summaries."""
+
 from __future__ import annotations
 
 from typing import Any

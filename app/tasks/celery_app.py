@@ -1,4 +1,5 @@
 """Celery worker entry point for resume processing."""
+
 from __future__ import annotations
 
 import os

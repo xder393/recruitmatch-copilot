@@ -1,4 +1,5 @@
 """API 路由：文档管理 / 问答 / 会话 / 健康检查。"""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, File, UploadFile
@@ -123,10 +124,7 @@ async def ask_in_conversation(
         return JSONResponse({"ok": False, "error": {"code": "not_found", "message": "对话不存在"}}, status_code=404)
 
     # 历史（不含当前问题）注入 Agent，实现多轮上下文
-    history = [
-        {"role": m["role"], "content": m["content"]}
-        for m in conv["messages"]
-    ]
+    history = [{"role": m["role"], "content": m["content"]} for m in conv["messages"]]
     convs.append_message(conv_id, "user", request.question)
 
     result = agent.run(request.question, chat_history=history)
@@ -154,10 +152,7 @@ async def delete_conversation(conv_id: str, convs: ConversationStore = Depends(g
 def _to_detail(conv: dict) -> ConversationDetail:
     messages = []
     for m in conv.get("messages", []):
-        sources = [
-            Source(**s) if isinstance(s, dict) else s
-            for s in m.get("sources", [])
-        ]
+        sources = [Source(**s) if isinstance(s, dict) else s for s in m.get("sources", [])]
         messages.append({"role": m["role"], "content": m["content"], "sources": sources})
     return ConversationDetail(
         id=conv["id"],

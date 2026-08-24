@@ -1,4 +1,5 @@
 """Argon2 password hashing isolated behind a small interface."""
+
 from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError
 

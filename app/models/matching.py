@@ -1,4 +1,5 @@
 """Versioned recommendation runs, results, and recruiter feedback."""
+
 from __future__ import annotations
 
 import uuid

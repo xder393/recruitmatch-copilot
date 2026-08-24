@@ -137,13 +137,7 @@ def test_traceable_parser_result_is_written_in_same_success_flow(tmp_path):
     factory, tenant_id, resume_id = _resume_database(tmp_path)
     parser = LLMResumeParser(
         FakeStructuredModel(
-            {
-                "resume_extract": {
-                    "skills": [
-                        {"name": "Python", "evidence": {"start": 0, "end": 6, "text": "Python"}}
-                    ]
-                }
-            }
+            {"resume_extract": {"skills": [{"name": "Python", "evidence": {"start": 0, "end": 6, "text": "Python"}}]}}
         ),
         HeuristicResumeParser(),
     )

@@ -1,4 +1,5 @@
 """Seed 30 idempotent technical job templates from ten job families."""
+
 from __future__ import annotations
 
 import json

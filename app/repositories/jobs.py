@@ -1,4 +1,5 @@
 """Tenant-scoped job catalog persistence."""
+
 from __future__ import annotations
 
 from typing import List, Optional
@@ -17,11 +18,7 @@ class JobRepository:
         return list(self.session.scalars(select(JobTemplate).order_by(JobTemplate.title)))
 
     def get(self, tenant_id: str, job_id: str) -> Optional[Job]:
-        statement = (
-            select(Job)
-            .options(selectinload(Job.versions))
-            .where(Job.id == job_id, Job.tenant_id == tenant_id)
-        )
+        statement = select(Job).options(selectinload(Job.versions)).where(Job.id == job_id, Job.tenant_id == tenant_id)
         return self.session.scalar(statement)
 
     def list(self, tenant_id: str) -> List[Job]:

@@ -1,4 +1,5 @@
 """Tenant bootstrap, login, and current-user endpoints."""
+
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 

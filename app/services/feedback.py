@@ -1,4 +1,5 @@
 """Recruiter feedback validation and append-only persistence."""
+
 from __future__ import annotations
 
 from sqlalchemy.orm import Session

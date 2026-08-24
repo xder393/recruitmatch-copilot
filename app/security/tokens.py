@@ -1,4 +1,5 @@
 """JWT access-token contracts."""
+
 from __future__ import annotations
 
 import uuid

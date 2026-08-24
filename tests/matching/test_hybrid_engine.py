@@ -16,9 +16,7 @@ class FakeSemanticMatcher:
 
 
 def _profile():
-    return ResumeProfile(
-        skills=[SkillEvidence(name="Python", evidence=Evidence(start=0, end=6, text="Python"))]
-    )
+    return ResumeProfile(skills=[SkillEvidence(name="Python", evidence=Evidence(start=0, end=6, text="Python"))])
 
 
 def _job(identifier, required):

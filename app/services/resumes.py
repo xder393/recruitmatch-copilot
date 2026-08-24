@@ -1,4 +1,5 @@
 """Resume upload, idempotency, retrieval, and deletion rules."""
+
 from __future__ import annotations
 
 import hashlib

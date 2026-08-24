@@ -1,4 +1,5 @@
 """RecruitMatch v1 request and response schemas."""
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
