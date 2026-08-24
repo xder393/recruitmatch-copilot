@@ -11,7 +11,7 @@ from app.matching.hybrid import HybridMatchingEngine, HybridTenantContext
 from app.matching.schemas import CandidateJob
 from app.models.matching import MatchResult, MatchRun
 from app.repositories.ports import MatchingRepository
-from app.repositories.unit_of_work import UnitOfWork, unit_of_work
+from app.repositories.unit_of_work import UnitOfWork
 from app.resumes.schemas import ResumeProfile
 from app.security.tokens import Principal
 
@@ -27,16 +27,10 @@ class MatchingService:
         retrieval_top_k: int = 6,
         retrieval_min_score: float = 0.35,
         *,
-        uow: UnitOfWork | None = None,
+        uow: UnitOfWork,
     ):
-        self.uow: UnitOfWork
-        if uow is None:
-            legacy_uow = unit_of_work(repository)
-            self.repository = legacy_uow.matching
-            self.uow = legacy_uow
-        else:
-            self.repository = repository
-            self.uow = uow
+        self.repository = repository
+        self.uow = uow
         self.engine = engine or MatchingEngine()
         self.hybrid_engine = hybrid_engine
         self.explanation_service = explanation_service

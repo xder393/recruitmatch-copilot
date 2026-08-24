@@ -15,6 +15,12 @@ class _Answer(BaseModel):
     value: str
 
 
+def _trace_sink(session_factory):
+    from app.repositories.sqlalchemy_unit_of_work import SqlAlchemyUnitOfWorkFactory
+
+    return AITraceSink(SqlAlchemyUnitOfWorkFactory(session_factory))
+
+
 @pytest.fixture
 def operations_client(tmp_path):
     app = create_app(
@@ -92,7 +98,7 @@ def test_ai_status_uses_recent_trace_health(tmp_path):
             user="private",
             schema=_Answer,
         )
-        AITraceSink(app.state.session_factory).failed(
+        _trace_sink(app.state.session_factory).failed(
             tenant_id,
             "semantic_match",
             "resume-id",
@@ -142,12 +148,12 @@ def test_ai_status_ignores_other_tenant_model_failures(tmp_path):
     with TestClient(app) as client:
         _login(client, "Acme", "admin@acme.test", "correct horse battery staple")
         acme_id = client.get("/api/v1/auth/me").json()["tenant_id"]
-        AITraceSink(app.state.session_factory).succeeded(
+        _trace_sink(app.state.session_factory).succeeded(
             acme_id, "semantic_match", "resume", ["resume", "job"], request, response
         )
         _login(client, "Globex", "admin@globex.test", "another correct horse password")
         globex_id = client.get("/api/v1/auth/me").json()["tenant_id"]
-        AITraceSink(app.state.session_factory).failed(
+        _trace_sink(app.state.session_factory).failed(
             globex_id,
             "semantic_match",
             "resume",
@@ -162,7 +168,7 @@ def test_ai_status_ignores_other_tenant_model_failures(tmp_path):
         assert body["degraded"] is False
         assert body["latest_status"] == "succeeded"
 
-        AITraceSink(app.state.session_factory).succeeded(
+        _trace_sink(app.state.session_factory).succeeded(
             acme_id,
             "semantic_match",
             "resume",

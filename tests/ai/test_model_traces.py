@@ -22,6 +22,12 @@ def _database(tmp_path):
     return session_factory
 
 
+def _trace_sink(session_factory):
+    from app.repositories.sqlalchemy_unit_of_work import SqlAlchemyUnitOfWorkFactory
+
+    return AITraceSink(SqlAlchemyUnitOfWorkFactory(session_factory))
+
+
 def _request():
     return ModelRequest(
         operation="resume_extract",
@@ -86,7 +92,7 @@ def test_trace_sink_persists_rejected_semantic_operation(tmp_path):
         session.commit()
         tenant_id = tenant.id
     response = ModelResponse(Answer(value="ok"), "fake", "fake-model", 12, 8, 0, 5, attempts=2)
-    AITraceSink(session_factory).succeeded(
+    _trace_sink(session_factory).succeeded(
         tenant_id,
         "semantic_match",
         "resume-id",

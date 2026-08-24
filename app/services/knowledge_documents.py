@@ -9,7 +9,7 @@ from app.core.exceptions import AuthorizationError, ResourceNotFoundError, Unsup
 from app.domain.enums import Role
 from app.models.knowledge import KnowledgeDocument
 from app.repositories.ports import KnowledgeRepository, RepositoryConflictError
-from app.repositories.unit_of_work import UnitOfWork, unit_of_work
+from app.repositories.unit_of_work import UnitOfWork
 from app.resumes.extractors import FilePolicy
 from app.security.tokens import Principal
 from app.tasks.dispatcher import TaskDispatcher
@@ -25,16 +25,10 @@ class KnowledgeDocumentService:
         dispatcher: TaskDispatcher,
         file_policy: FilePolicy | None = None,
         *,
-        uow: UnitOfWork | None = None,
+        uow: UnitOfWork,
     ):
-        self.uow: UnitOfWork
-        if uow is None:
-            legacy_uow = unit_of_work(repository)
-            self.repository = legacy_uow.knowledge
-            self.uow = legacy_uow
-        else:
-            self.repository = repository
-            self.uow = uow
+        self.repository = repository
+        self.uow = uow
         self.artifact_store = artifact_store
         self.dispatcher = dispatcher
         self.file_policy = file_policy or FilePolicy()

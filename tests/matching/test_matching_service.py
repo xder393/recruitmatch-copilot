@@ -67,10 +67,12 @@ def test_run_persists_top_three_from_active_same_tenant_jobs(tmp_path):
     """Catches inactive or foreign jobs entering candidate recommendations."""
     from app.domain.enums import MatchStatus
     from app.services.matching import MatchingService
+    from app.repositories.sqlalchemy_unit_of_work import SqlAlchemyUnitOfWork
 
     factory, principal, _, resume_id = _setup(tmp_path)
     with factory() as session:
-        run = MatchingService(session).run(principal, resume_id)
+        uow = SqlAlchemyUnitOfWork(session)
+        run = MatchingService(uow.matching, uow=uow).run(principal, resume_id)
         assert run.status is MatchStatus.SUCCEEDED
         assert run.algorithm_version == "rules-v1"
         assert [result.rank for result in run.results] == [1, 2, 3]
@@ -84,8 +86,10 @@ def test_run_hides_resume_from_another_tenant(tmp_path):
     """Catches caller-controlled resume IDs bypassing tenant predicates."""
     from app.core.exceptions import ResourceNotFoundError
     from app.services.matching import MatchingService
+    from app.repositories.sqlalchemy_unit_of_work import SqlAlchemyUnitOfWork
 
     factory, _, foreign_principal, resume_id = _setup(tmp_path)
     with factory() as session:
         with pytest.raises(ResourceNotFoundError):
-            MatchingService(session).run(foreign_principal, resume_id)
+            uow = SqlAlchemyUnitOfWork(session)
+            MatchingService(uow.matching, uow=uow).run(foreign_principal, resume_id)

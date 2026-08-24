@@ -31,8 +31,7 @@ from app.security.tokens import TokenSettings
 from app.resumes.artifacts import LocalArtifactStore
 from app.resumes.parser import HeuristicResumeParser
 from app.services.resume_processing import ResumeProcessingService
-from app.tasks.dispatcher import CeleryTaskDispatcher, InlineTaskDispatcher
-from app.tasks.knowledge_tasks import CeleryKnowledgeDispatcher, InlineKnowledgeDispatcher
+from app.tasks.dispatcher import configure_task_dispatcher
 from app.ai.gateway import OpenAICompatibleGateway
 from app.ai.resume_parser import LLMResumeParser
 from app.knowledge.artifacts import KnowledgeArtifactStore
@@ -156,14 +155,7 @@ def init_recruiting_state(app: FastAPI, settings: Settings, structured_model=Non
         citation_resolver=knowledge_index.resolve_citations,
         trace_sink=ai_trace_sink,
     )
-    app.state.task_dispatcher = (
-        CeleryTaskDispatcher() if settings.task_mode == "celery" else InlineTaskDispatcher(processor)
-    )
-    app.state.knowledge_dispatcher = (
-        CeleryKnowledgeDispatcher()
-        if settings.task_mode == "celery"
-        else InlineKnowledgeDispatcher(knowledge_processor)
-    )
+    configure_task_dispatcher(app, settings.task_mode, processor, knowledge_processor)
     app.state._recruiting_initialized = True
 
 

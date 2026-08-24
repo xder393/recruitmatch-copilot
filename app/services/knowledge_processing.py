@@ -8,7 +8,7 @@ from typing import Protocol
 from app.core.exceptions import AppError
 from app.knowledge.chunking import chunk_document
 from app.knowledge.schemas import ChunkInput
-from app.repositories.unit_of_work import UnitOfWorkFactory, unit_of_work_factory
+from app.repositories.unit_of_work import UnitOfWorkFactory
 from app.resumes.extractors import extract_text
 
 
@@ -20,7 +20,7 @@ class KnowledgeProcessingService:
     lease_seconds = 300
 
     def __init__(self, uow_factory: UnitOfWorkFactory, artifact_store, indexer: KnowledgeIndexer):
-        self.uow_factory = unit_of_work_factory(uow_factory)
+        self.uow_factory = uow_factory
         self.artifact_store = artifact_store
         self.indexer = indexer
 

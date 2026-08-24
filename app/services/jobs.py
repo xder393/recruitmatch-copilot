@@ -9,7 +9,7 @@ from app.core.exceptions import AuthorizationError, ConflictError, ResourceNotFo
 from app.domain.enums import JobStatus, Role
 from app.models.jobs import Job, JobTemplate, JobVersion
 from app.repositories.ports import JobRepository
-from app.repositories.unit_of_work import UnitOfWork, unit_of_work
+from app.repositories.unit_of_work import UnitOfWork
 from app.security.tokens import Principal
 
 _MUTATING_ROLES = {Role.ADMIN, Role.RECRUITER}
@@ -17,15 +17,9 @@ _REQUIRED_PROFILE_KEYS = {"job_family", "level", "required_skills", "preferred_s
 
 
 class JobService:
-    def __init__(self, jobs: JobRepository, source_index=None, *, uow: UnitOfWork | None = None):
-        self.uow: UnitOfWork
-        if uow is None:
-            legacy_uow = unit_of_work(jobs)
-            self.jobs = legacy_uow.jobs
-            self.uow = legacy_uow
-        else:
-            self.jobs = jobs
-            self.uow = uow
+    def __init__(self, jobs: JobRepository, source_index=None, *, uow: UnitOfWork):
+        self.jobs = jobs
+        self.uow = uow
         self.source_index = source_index
 
     def list_templates(self) -> List[JobTemplate]:

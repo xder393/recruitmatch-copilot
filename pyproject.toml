@@ -47,3 +47,6 @@ target-version = "py312"
 # B905: legacy vector alignment validates dimensions before zipping，予以忽略
 select = ["E", "F", "B"]
 ignore = ["B008", "E402", "B905"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]

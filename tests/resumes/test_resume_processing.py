@@ -12,6 +12,12 @@ class _MemoryStore:
         return self.content or b""
 
 
+def _uow_factory(session_factory):
+    from app.repositories.sqlalchemy_unit_of_work import SqlAlchemyUnitOfWorkFactory
+
+    return SqlAlchemyUnitOfWorkFactory(session_factory)
+
+
 def _resume_database(tmp_path):
     from app.database import Base, create_engine_and_session
     from app.domain.enums import ResumeStatus
@@ -46,7 +52,7 @@ def test_processing_persists_text_profile_and_success_status(tmp_path):
 
     factory, tenant_id, resume_id = _resume_database(tmp_path)
     service = ResumeProcessingService(
-        factory,
+        _uow_factory(factory),
         _MemoryStore("使用 Python 和 FastAPI 开发 5 年".encode()),
         HeuristicResumeParser(),
     )
@@ -68,9 +74,9 @@ def test_processing_failure_records_stable_error_without_raising(tmp_path):
     from app.services.resume_processing import ResumeProcessingService
 
     factory, tenant_id, resume_id = _resume_database(tmp_path)
-    ResumeProcessingService(factory, _MemoryStore(error=OSError("disk secret")), HeuristicResumeParser()).process(
-        tenant_id, resume_id
-    )
+    ResumeProcessingService(
+        _uow_factory(factory), _MemoryStore(error=OSError("disk secret")), HeuristicResumeParser()
+    ).process(tenant_id, resume_id)
 
     with factory() as session:
         resume = session.get(Resume, resume_id)
@@ -87,12 +93,12 @@ def test_duplicate_worker_delivery_does_not_reprocess_succeeded_resume(tmp_path)
 
     factory, tenant_id, resume_id = _resume_database(tmp_path)
     ResumeProcessingService(
-        factory,
+        _uow_factory(factory),
         _MemoryStore(b"Python developer"),
         HeuristicResumeParser(),
     ).process(tenant_id, resume_id)
     ResumeProcessingService(
-        factory,
+        _uow_factory(factory),
         _MemoryStore(error=OSError("must not read twice")),
         HeuristicResumeParser(),
     ).process(tenant_id, resume_id)
@@ -115,7 +121,7 @@ def test_running_worker_lease_is_retried_then_stale_work_is_recovered(tmp_path):
         resume.status = ResumeStatus.RUNNING
         resume.updated_at = datetime.now(timezone.utc)
         session.commit()
-    service = ResumeProcessingService(factory, _MemoryStore(b"Python developer"), HeuristicResumeParser())
+    service = ResumeProcessingService(_uow_factory(factory), _MemoryStore(b"Python developer"), HeuristicResumeParser())
     assert service.process(tenant_id, resume_id) is False
 
     with factory() as session:
@@ -141,7 +147,9 @@ def test_traceable_parser_result_is_written_in_same_success_flow(tmp_path):
         ),
         HeuristicResumeParser(),
     )
-    ResumeProcessingService(factory, _MemoryStore(b"Python developer"), parser).process(tenant_id, resume_id)
+    ResumeProcessingService(_uow_factory(factory), _MemoryStore(b"Python developer"), parser).process(
+        tenant_id, resume_id
+    )
 
     with factory() as session:
         traces = session.query(ModelTrace).all()

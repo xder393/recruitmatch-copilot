@@ -29,6 +29,12 @@ def _database(tmp_path):
     return factory
 
 
+def _uow_factory(session_factory):
+    from app.repositories.sqlalchemy_unit_of_work import SqlAlchemyUnitOfWorkFactory
+
+    return SqlAlchemyUnitOfWorkFactory(session_factory)
+
+
 def _stored_document(tmp_path, factory, content=b"policy text"):
     store = KnowledgeArtifactStore(tmp_path / "artifacts")
     with factory() as session:
@@ -72,7 +78,7 @@ def test_artifact_key_hides_original_filename_and_rejects_escape(tmp_path):
 def test_processing_activates_embedded_generation(tmp_path):
     factory = _database(tmp_path)
     store, tenant_id, document_id = _stored_document(tmp_path, factory, b"Python interview policy")
-    KnowledgeProcessingService(factory, store, FakeIndexer()).process(tenant_id, document_id)
+    KnowledgeProcessingService(_uow_factory(factory), store, FakeIndexer()).process(tenant_id, document_id)
     with factory() as session:
         document = KnowledgeRepository(session).get_document(tenant_id, document_id)
         assert document.status == "ready"
@@ -85,8 +91,8 @@ def test_processing_activates_embedded_generation(tmp_path):
 def test_duplicate_worker_delivery_does_not_reprocess_ready_document(tmp_path):
     factory = _database(tmp_path)
     store, tenant_id, document_id = _stored_document(tmp_path, factory, b"stable policy")
-    KnowledgeProcessingService(factory, store, FakeIndexer()).process(tenant_id, document_id)
-    KnowledgeProcessingService(factory, store, FakeIndexer(RuntimeError("must not embed twice"))).process(
+    KnowledgeProcessingService(_uow_factory(factory), store, FakeIndexer()).process(tenant_id, document_id)
+    KnowledgeProcessingService(_uow_factory(factory), store, FakeIndexer(RuntimeError("must not embed twice"))).process(
         tenant_id, document_id
     )
     with factory() as session:
@@ -105,7 +111,7 @@ def test_processing_lease_is_retried_then_stale_work_is_recovered(tmp_path):
         document.status = "processing"
         document.updated_at = datetime.now(timezone.utc)
         session.commit()
-    service = KnowledgeProcessingService(factory, store, FakeIndexer())
+    service = KnowledgeProcessingService(_uow_factory(factory), store, FakeIndexer())
     assert service.process(tenant_id, document_id) is False
 
     with factory() as session:
@@ -131,7 +137,7 @@ def test_failed_reindex_keeps_previous_generation_active(tmp_path):
         )
         document.status = "uploaded"
         session.commit()
-    KnowledgeProcessingService(factory, store, FakeIndexer(RuntimeError("embedding secret"))).process(
+    KnowledgeProcessingService(_uow_factory(factory), store, FakeIndexer(RuntimeError("embedding secret"))).process(
         tenant_id, document_id
     )
     with factory() as session:

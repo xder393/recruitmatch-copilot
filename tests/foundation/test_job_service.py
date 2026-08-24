@@ -38,10 +38,12 @@ def job_context(tmp_path):
 def test_updating_job_appends_immutable_version(job_context):
     """Catches overwriting the JD used by historical match results."""
     from app.services.jobs import JobService
+    from app.repositories.sqlalchemy_unit_of_work import SqlAlchemyUnitOfWork
 
     session_factory, principal = job_context
     with session_factory() as session:
-        service = JobService(session)
+        uow = SqlAlchemyUnitOfWork(session)
+        service = JobService(uow.jobs, uow=uow)
         job = service.create_job(principal, "AI Engineer", "Python", VALID_PROFILE)
         updated = service.update_job(principal, job.id, jd_text="Python and RAG")
 
@@ -57,10 +59,12 @@ def test_activation_rejects_incomplete_profile_and_lead_cannot_mutate(job_contex
     from app.domain.enums import Role
     from app.security.tokens import Principal
     from app.services.jobs import JobService
+    from app.repositories.sqlalchemy_unit_of_work import SqlAlchemyUnitOfWork
 
     session_factory, admin = job_context
     with session_factory() as session:
-        service = JobService(session)
+        uow = SqlAlchemyUnitOfWork(session)
+        service = JobService(uow.jobs, uow=uow)
         incomplete = service.create_job(admin, "Draft", "Some JD", {})
         with pytest.raises(ConflictError, match="岗位画像不完整"):
             service.activate_job(admin, incomplete.id)

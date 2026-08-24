@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 
+@runtime_checkable
 class TaskDispatcher(Protocol):
     def dispatch_resume(self, tenant_id: str, resume_id: str) -> None:
         raise NotImplementedError
@@ -39,3 +40,16 @@ class CeleryTaskDispatcher:
         from app.tasks.celery_app import process_knowledge_task
 
         process_knowledge_task.delay(tenant_id, document_id)
+
+
+def build_task_dispatcher(task_mode: str, resume_processor, knowledge_processor) -> TaskDispatcher:
+    if task_mode == "celery":
+        return CeleryTaskDispatcher()
+    return InlineTaskDispatcher(resume_processor, knowledge_processor)
+
+
+def configure_task_dispatcher(app, task_mode: str, resume_processor, knowledge_processor) -> TaskDispatcher:
+    dispatcher = build_task_dispatcher(task_mode, resume_processor, knowledge_processor)
+    app.state.task_dispatcher = dispatcher
+    app.state.knowledge_dispatcher = dispatcher
+    return dispatcher

@@ -6,20 +6,14 @@ from app.core.exceptions import ConflictError, ResourceNotFoundError
 from app.domain.enums import FeedbackAction
 from app.models.matching import Feedback
 from app.repositories.ports import FeedbackRepository
-from app.repositories.unit_of_work import UnitOfWork, unit_of_work
+from app.repositories.unit_of_work import UnitOfWork
 from app.security.tokens import Principal
 
 
 class FeedbackService:
-    def __init__(self, repository: FeedbackRepository, uow: UnitOfWork | None = None):
-        self.uow: UnitOfWork
-        if uow is None:
-            legacy_uow = unit_of_work(repository)
-            self.repository = legacy_uow.feedback
-            self.uow = legacy_uow
-        else:
-            self.repository = repository
-            self.uow = uow
+    def __init__(self, repository: FeedbackRepository, uow: UnitOfWork):
+        self.repository = repository
+        self.uow = uow
 
     def submit(
         self,

@@ -9,7 +9,7 @@ from app.core.exceptions import AppError
 from app.domain.enums import ResumeStatus
 from app.resumes.extractors import extract_text
 from app.resumes.schemas import ResumeProfile
-from app.repositories.unit_of_work import UnitOfWorkFactory, unit_of_work_factory
+from app.repositories.unit_of_work import UnitOfWorkFactory
 
 
 class ArtifactReader(Protocol):
@@ -26,7 +26,7 @@ class ResumeProcessingService:
     def __init__(
         self, uow_factory: UnitOfWorkFactory, artifact_store: ArtifactReader, parser: ResumeParser, source_index=None
     ):
-        self.uow_factory = unit_of_work_factory(uow_factory)
+        self.uow_factory = uow_factory
         self.artifact_store = artifact_store
         self.parser = parser
         self.source_index = source_index

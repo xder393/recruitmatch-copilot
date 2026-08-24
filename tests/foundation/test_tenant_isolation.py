@@ -11,6 +11,7 @@ def test_other_tenant_cannot_discover_job_by_identifier(tmp_path):
     from app.models import Job, JobTemplate, JobVersion, Tenant, User  # noqa: F401
     from app.security.tokens import Principal
     from app.services.jobs import JobService
+    from app.repositories.sqlalchemy_unit_of_work import SqlAlchemyUnitOfWork
 
     engine, session_factory = create_engine_and_session(f"sqlite:///{tmp_path / 'isolation.db'}")
     Base.metadata.create_all(engine)
@@ -22,7 +23,8 @@ def test_other_tenant_cannot_discover_job_by_identifier(tmp_path):
         acme_principal = Principal(user_id="acme-admin", tenant_id=acme.id, role=Role.ADMIN)
         globex_principal = Principal(user_id="globex-admin", tenant_id=globex.id, role=Role.ADMIN)
 
-        service = JobService(session)
+        uow = SqlAlchemyUnitOfWork(session)
+        service = JobService(uow.jobs, uow=uow)
         private_job = service.create_job(acme_principal, "Private role", "secret requirements", {})
 
         with pytest.raises(ResourceNotFoundError):

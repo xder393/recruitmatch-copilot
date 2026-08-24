@@ -8,7 +8,7 @@ from app.core.exceptions import AuthorizationError
 from app.domain.enums import Role
 from app.knowledge.chunking import chunk_document
 from app.repositories.ports import JobRepository, ResumeRepository
-from app.repositories.unit_of_work import UnitOfWork, unit_of_work
+from app.repositories.unit_of_work import UnitOfWork
 
 
 class SourceIndexBackfillService:
@@ -16,22 +16,13 @@ class SourceIndexBackfillService:
         self,
         resumes: ResumeRepository,
         source_index,
-        jobs: JobRepository | None = None,
+        jobs: JobRepository,
         *,
-        uow: UnitOfWork | None = None,
+        uow: UnitOfWork,
     ):
-        self.uow: UnitOfWork
-        if uow is None:
-            legacy_uow = unit_of_work(resumes)
-            self.resumes = legacy_uow.resumes
-            self.jobs = legacy_uow.jobs
-            self.uow = legacy_uow
-        else:
-            if jobs is None:
-                raise TypeError("jobs repository is required")
-            self.resumes = resumes
-            self.jobs = jobs
-            self.uow = uow
+        self.resumes = resumes
+        self.jobs = jobs
+        self.uow = uow
         self.source_index = source_index
 
     def rebuild(self, principal):

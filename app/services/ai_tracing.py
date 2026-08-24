@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from app.repositories.unit_of_work import UnitOfWorkFactory, unit_of_work_factory
+from app.repositories.unit_of_work import UnitOfWorkFactory
 
 
 class AITraceSink:
     def __init__(self, uow_factory: UnitOfWorkFactory):
-        self.uow_factory = unit_of_work_factory(uow_factory)
+        self.uow_factory = uow_factory
 
     def succeeded(
         self,

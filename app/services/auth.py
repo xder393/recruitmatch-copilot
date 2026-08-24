@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-from typing import cast
-
 from app.core.exceptions import AuthenticationError, ConflictError
 from app.domain.enums import Role
 from app.models.identity import User
 from app.repositories.ports import IdentityRepository, RepositoryConflictError
-from app.repositories.unit_of_work import UnitOfWork, unit_of_work
+from app.repositories.unit_of_work import UnitOfWork
 from app.security.passwords import hash_password, verify_password
 from app.security.tokens import Principal, TokenSettings, issue_access_token
 
@@ -17,19 +15,12 @@ class AuthService:
     def __init__(
         self,
         identities: IdentityRepository,
-        uow: UnitOfWork | TokenSettings,
-        token_settings: TokenSettings | None = None,
+        uow: UnitOfWork,
+        token_settings: TokenSettings,
     ):
-        self.uow: UnitOfWork
-        if token_settings is None:
-            legacy_uow = unit_of_work(identities)
-            self.identities = legacy_uow.identities
-            self.uow = legacy_uow
-            self.token_settings = cast(TokenSettings, uow)
-        else:
-            self.identities = identities
-            self.uow = uow
-            self.token_settings = token_settings
+        self.identities = identities
+        self.uow = uow
+        self.token_settings = token_settings
 
     def bootstrap(self, tenant_name: str, email: str, password: str) -> User:
         normalized_email = email.strip().lower()
