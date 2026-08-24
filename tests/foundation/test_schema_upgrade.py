@@ -40,9 +40,18 @@ def test_pgvector_revision_rejects_non_postgresql_dialects(monkeypatch):
     spec.loader.exec_module(revision)
     bind = type("Bind", (), {"dialect": type("Dialect", (), {"name": "sqlite"})()})()
     monkeypatch.setattr(revision.op, "get_bind", lambda: bind)
+    ddl_calls = []
+
+    def fail_if_ddl_runs(*args, **kwargs):
+        ddl_calls.append((args, kwargs))
+        raise AssertionError("non-PostgreSQL revision must fail before issuing DDL")
+
+    for operation in ("execute", "alter_column", "add_column", "create_table", "create_index"):
+        monkeypatch.setattr(revision.op, operation, fail_if_ddl_runs)
 
     with pytest.raises(RuntimeError, match="requires PostgreSQL with pgvector"):
-        revision._require_postgresql()
+        revision.upgrade()
+    assert ddl_calls == []
 
 
 def test_application_startup_does_not_write_schema(tmp_path):

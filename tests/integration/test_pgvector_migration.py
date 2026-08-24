@@ -51,6 +51,22 @@ def _indexes(engine: Engine) -> Mapping[str, str]:
     return {row.indexname: row.indexdef for row in rows}
 
 
+def _constraints(engine: Engine) -> Mapping[str, str]:
+    with engine.connect() as connection:
+        rows = connection.execute(
+            text(
+                """
+                SELECT catalog_constraint.conname,
+                       pg_get_constraintdef(catalog_constraint.oid, true) AS definition
+                FROM pg_constraint AS catalog_constraint
+                WHERE catalog_constraint.conrelid = 'recruiting_chunks'::regclass
+                  AND catalog_constraint.contype IN ('u', 'c')
+                """
+            )
+        )
+    return {row.conname: " ".join(row.definition.split()) for row in rows}
+
+
 def test_bootstrap_is_idempotent_on_one_pgvector_alembic_head(postgres_engine: Engine) -> None:
     subprocess.run([sys.executable, "scripts/bootstrap.py"], check=True)
     subprocess.run([sys.executable, "scripts/bootstrap.py"], check=True)
@@ -127,24 +143,17 @@ def test_all_sources_own_consistent_index_state(postgres_engine: Engine) -> None
 
 
 def test_recruiting_chunk_constraints_and_indexes(postgres_engine: Engine) -> None:
-    with postgres_engine.connect() as connection:
-        constraints = set(
-            connection.execute(
-                text(
-                    """
-                    SELECT constraint_name
-                    FROM information_schema.table_constraints
-                    WHERE table_schema = 'public'
-                      AND table_name = 'recruiting_chunks'
-                      AND constraint_type = 'UNIQUE'
-                    """
-                )
-            ).scalars()
-        )
-
-    assert constraints == {
-        "uq_recruiting_chunk_tenant_citation",
-        "uq_recruiting_chunk_source_generation_offsets",
+    assert _constraints(postgres_engine) == {
+        "uq_recruiting_chunk_tenant_citation": "UNIQUE (tenant_id, citation_id)",
+        "uq_recruiting_chunk_source_generation_offsets": (
+            "UNIQUE (tenant_id, source_type, source_id, source_version, generation, start_offset, end_offset)"
+        ),
+        "ck_recruiting_chunk_source_type": (
+            "CHECK (source_type::text = ANY (ARRAY['resume'::character varying, "
+            "'job_version'::character varying, 'knowledge_document'::character varying]::text[]))"
+        ),
+        "ck_recruiting_chunk_generation_positive": "CHECK (generation > 0)",
+        "ck_recruiting_chunk_offsets": "CHECK (start_offset >= 0 AND end_offset > start_offset)",
     }
 
     indexes = _indexes(postgres_engine)
