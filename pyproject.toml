@@ -14,9 +14,6 @@ dependencies = [
   "argon2-cffi>=23.1,<26",
   "celery[redis]>=5.4,<6",
   "openai>=1.30",
-  "langchain>=0.3,<0.4",
-  "langchain-openai>=0.3,<0.4",
-  "numpy>=1.26,<3",
   "sentence-transformers>=2.5",
   "torch>=2.5",
   "pypdf>=4.0",
@@ -43,10 +40,9 @@ target-version = "py312"
 
 [tool.ruff.lint]
 # B008: FastAPI 的 Depends()/File() 写进函数默认值是官方推荐用法，予以忽略
-# E402: scripts/evaluate.py 需要先 sys.path.insert 再 import app，予以忽略
-# B905: legacy vector alignment validates dimensions before zipping，予以忽略
+# E402: evaluation scripts 需要先 sys.path.insert 再 import app，予以忽略
 select = ["E", "F", "B"]
-ignore = ["B008", "E402", "B905"]
+ignore = ["B008", "E402"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

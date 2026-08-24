@@ -1,1 +1,1 @@
-"""知识库智能问答系统（RAG + Agent）核心包。"""
+"""RecruitMatch Copilot application package."""

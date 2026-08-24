@@ -24,13 +24,9 @@ def matching_client(tmp_path):
             api_key="test-key",
             database_url=f"sqlite:///{tmp_path / 'matching-api.db'}",
             artifact_dir=str(tmp_path / "artifacts"),
-            data_dir=str(tmp_path / "data"),
-            index_dir=str(tmp_path / "data" / "index"),
-            conversations_file=str(tmp_path / "data" / "conversations.json"),
             jwt_secret="a-test-secret-that-is-at-least-32-bytes",
         )
     )
-    app.state._initialized = True
     with TestClient(app) as client:
         _login(client, "Acme", "admin@acme.test", "correct horse battery staple")
         for title, required, preferred in [

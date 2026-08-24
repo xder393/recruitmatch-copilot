@@ -18,13 +18,9 @@ def resume_client(tmp_path):
         api_key="test-key",
         database_url=f"sqlite:///{tmp_path / 'resume-api.db'}",
         artifact_dir=str(tmp_path / "artifacts"),
-        data_dir=str(tmp_path / "data"),
-        index_dir=str(tmp_path / "data" / "index"),
-        conversations_file=str(tmp_path / "data" / "conversations.json"),
         jwt_secret="a-test-secret-that-is-at-least-32-bytes",
     )
     app = create_app(settings)
-    app.state._initialized = True
     with TestClient(app) as client:
         _switch_tenant(client, "Acme", "admin@acme.test", "correct horse battery staple")
         yield client

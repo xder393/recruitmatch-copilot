@@ -16,7 +16,6 @@ def test_root_serves_recruiter_workflow_and_human_decision_notice(tmp_path):
             jwt_secret="a-test-secret-that-is-at-least-32-bytes",
         )
     )
-    app.state._initialized = True
     with TestClient(app) as client:
         response = client.get("/")
 

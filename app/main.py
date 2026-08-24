@@ -11,85 +11,36 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse
-from langchain_openai import ChatOpenAI
 
-from app.agents.agent import RagAgent
-from app.api.routes import router
+from app.ai.explanations import GroundedExplanationService
+from app.ai.gateway import OpenAICompatibleGateway
+from app.ai.resume_parser import LLMResumeParser
+from app.ai.semantic_matching import SemanticMatcher
 from app.api.v1.router import router as v1_router
 from app.config import Settings
 from app.core.exceptions import AppError
 from app.core.logging import get_logger, request_id_var, setup_logging
-from app.embeddings.embedder import Embedder
-from app.rag.retriever import Retriever
-from app.services.ingestion import IngestionService
-from app.storage.conversations import ConversationStore
-from app.storage.vector_store import VectorStore
 from app.database import create_engine_and_session
 from app.database_migrations import upgrade_database
-from app.models import AuditLog, Job, JobTemplate, JobVersion, ModelTrace, Tenant, User  # noqa: F401
-from app.security.tokens import TokenSettings
-from app.resumes.artifacts import LocalArtifactStore
-from app.resumes.parser import HeuristicResumeParser
-from app.services.resume_processing import ResumeProcessingService
-from app.tasks.dispatcher import configure_task_dispatcher
-from app.ai.gateway import OpenAICompatibleGateway
-from app.ai.resume_parser import LLMResumeParser
 from app.knowledge.artifacts import KnowledgeArtifactStore
 from app.knowledge.embeddings import BGEEmbedder
 from app.knowledge.index import RecruitingVectorIndex
-from app.services.knowledge_processing import KnowledgeProcessingService
-from app.ai.semantic_matching import SemanticMatcher
 from app.matching.engine import MatchingEngine
 from app.matching.hybrid import HybridMatchingEngine
-from app.ai.explanations import GroundedExplanationService
-from app.services.ai_tracing import AITraceSink
+from app.models import AuditLog, Job, JobTemplate, JobVersion, ModelTrace, Tenant, User  # noqa: F401
 from app.repositories.sqlalchemy_unit_of_work import SqlAlchemyUnitOfWorkFactory
+from app.resumes.artifacts import LocalArtifactStore
+from app.resumes.parser import HeuristicResumeParser
+from app.security.tokens import TokenSettings
+from app.services.ai_tracing import AITraceSink
+from app.services.knowledge_processing import KnowledgeProcessingService
+from app.services.resume_processing import ResumeProcessingService
+from app.tasks.dispatcher import configure_task_dispatcher
 
 logger = get_logger(__name__)
 
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _INDEX_HTML = os.path.join(_PROJECT_ROOT, "web", "index.html")
-
-
-def init_state(app: FastAPI, settings: Settings) -> None:
-    """初始化共享单例（幂等：测试注入时跳过）。"""
-    if getattr(app.state, "_initialized", False):
-        return
-
-    embedder = Embedder(settings.embedding_model)
-    store = VectorStore(embedder)
-
-    if not store.load(settings.index_dir):
-        # 索引不存在则从 data/ 重建并落盘
-        ingestion = IngestionService(store, settings)
-        ingestion.rebuild_index()
-
-    retriever = Retriever(store, settings)
-    ingestion = IngestionService(store, settings)
-    conversations = ConversationStore(settings.conversations_file)
-
-    llm = ChatOpenAI(
-        model=settings.chat_model,
-        api_key=settings.api_key,
-        base_url=settings.base_url,
-        temperature=settings.llm_temperature,
-        timeout=60,
-    )
-    agent = RagAgent(
-        llm,
-        retriever,
-        top_k=settings.top_k,
-        max_iterations=settings.max_agent_iterations,
-    )
-
-    app.state.embedder = embedder
-    app.state.store = store
-    app.state.retriever = retriever
-    app.state.ingestion = ingestion
-    app.state.conversations = conversations
-    app.state.agent = agent
-    app.state._initialized = True
-    logger.info("应用初始化完成，知识库共 %d 块", len(store))
 
 
 def init_recruiting_state(app: FastAPI, settings: Settings, structured_model=None, knowledge_embedder=None) -> None:
@@ -166,13 +117,11 @@ def create_app(settings: Settings | None = None, structured_model=None, knowledg
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         init_recruiting_state(app, settings, structured_model, knowledge_embedder)
-        if settings.legacy_rag_enabled:
-            init_state(app, settings)
         yield
 
     app = FastAPI(
-        title="知识库智能问答系统（RAG + Agent）",
-        description="上传资料 → 建立知识库 → Agent 意图路由（知识库检索 / 计算 / 闲聊）→ 带来源的回答",
+        title="RecruitMatch Copilot",
+        description="面向招聘团队的岗位、简历、知识与可解释匹配工作台",
         version="2.0.0",
         lifespan=lifespan,
     )
@@ -237,7 +186,6 @@ def create_app(settings: Settings | None = None, structured_model=None, knowledg
             status_code=500,
         )
 
-    app.include_router(router)
     app.include_router(v1_router)
 
     # ---- 前端页面 ----

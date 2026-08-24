@@ -28,13 +28,9 @@ def operations_client(tmp_path):
             api_key="test-key",
             database_url=f"sqlite:///{tmp_path / 'operations.db'}",
             artifact_dir=str(tmp_path / "artifacts"),
-            data_dir=str(tmp_path / "data"),
-            index_dir=str(tmp_path / "data" / "index"),
-            conversations_file=str(tmp_path / "data" / "conversations.json"),
             jwt_secret="a-test-secret-that-is-at-least-32-bytes",
         )
     )
-    app.state._initialized = True
     with TestClient(app) as client:
         yield client
 
@@ -201,23 +197,3 @@ def test_analytics_are_tenant_scoped_and_never_return_resume_text(operations_cli
     globex = operations_client.get("/api/v1/analytics/summary")
     assert globex.status_code == 200
     assert globex.json()["resumes"] == 0
-
-
-def test_default_recruitmatch_startup_skips_legacy_rag(monkeypatch, tmp_path):
-    """Catches startup downloading embeddings for a retired, unrelated chat feature."""
-    import app.main as main_module
-
-    def fail_if_called(*args, **kwargs):
-        raise AssertionError("legacy RAG initialization must be opt-in")
-
-    monkeypatch.setattr(main_module, "init_state", fail_if_called)
-    settings = Settings(
-        api_key="",
-        database_url=f"sqlite:///{tmp_path / 'startup.db'}",
-        artifact_dir=str(tmp_path / "artifacts"),
-        jwt_secret="a-test-secret-that-is-at-least-32-bytes",
-        legacy_rag_enabled=False,
-    )
-    settings.validate()
-    with TestClient(create_app(settings)) as client:
-        assert client.get("/api/v1/health/live").status_code == 200

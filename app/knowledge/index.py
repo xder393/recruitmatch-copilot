@@ -59,7 +59,7 @@ class RecruitingVectorIndex:
         dimensions = {len(vector) for vector in vectors}
         if len(dimensions) != 1 or 0 in dimensions:
             raise ValueError("embedding dimension mismatch")
-        return [item.model_copy(update={"vector": vector}) for item, vector in zip(chunks, vectors)]
+        return [item.model_copy(update={"vector": vector}) for item, vector in zip(chunks, vectors, strict=True)]
 
     def index_source(
         self,
