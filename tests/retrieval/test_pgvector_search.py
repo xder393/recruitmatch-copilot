@@ -93,6 +93,31 @@ def _chunk(
     )
 
 
+def _source_chunk(
+    chunk_id: str,
+    *,
+    source_type: str,
+    source_id: str,
+    source_version: str,
+    offset: int,
+) -> RecruitingChunk:
+    return RecruitingChunk(
+        id=chunk_id,
+        tenant_id=TENANT,
+        source_type=source_type,
+        source_id=source_id,
+        source_version=source_version,
+        generation=1,
+        citation_id=chunk_id,
+        start_offset=offset,
+        end_offset=offset + 1,
+        content=f"evidence:{chunk_id}",
+        embedding=unit_vector(),
+        embedding_model=MODEL,
+        is_active=True,
+    )
+
+
 @pytest.fixture
 def pg_index(postgres_engine):
     factory = sessionmaker(bind=postgres_engine, expire_on_commit=False)
@@ -123,30 +148,56 @@ def pg_index(postgres_engine):
                 _resume("resume-1-other", "tenant-b", "resume-v1", active_generation=2),
             ]
         )
-        job = Job(id="job-1", tenant_id=TENANT, title="AI Engineer", status=JobStatus.ACTIVE, current_version=1)
-        job_version = JobVersion(
-            id="job-version-authority",
-            job=job,
-            version=1,
-            jd_text="Build recruiting AI",
-            profile={},
-            active_index_generation=1,
-            search_index_status="ready",
-        )
-        knowledge = KnowledgeDocument(
-            id="knowledge-1",
-            tenant_id=TENANT,
-            document_type="policy",
-            original_filename="policy.txt",
-            media_type="text/plain",
-            size_bytes=20,
-            checksum="knowledge-v1",
-            artifact_key="knowledge/1",
-            status="ready",
-            active_index_generation=1,
-            search_index_status="ready",
-        )
-        session.add_all([job, job_version, knowledge])
+        jobs_and_versions: list[Job | JobVersion] = []
+        for suffix, search_index_status in (
+            ("authority", "ready"),
+            ("pending", "pending"),
+            ("failed", "failed"),
+            ("deleted", "deleted"),
+        ):
+            job = Job(
+                id=f"job-{suffix}",
+                tenant_id=TENANT,
+                title=f"AI Engineer {suffix}",
+                status=JobStatus.ACTIVE,
+                current_version=1,
+            )
+            jobs_and_versions.extend(
+                [
+                    job,
+                    JobVersion(
+                        id=f"job-version-{suffix}",
+                        job=job,
+                        version=1,
+                        jd_text="Build recruiting AI",
+                        profile={},
+                        active_index_generation=1,
+                        search_index_status=search_index_status,
+                    ),
+                ]
+            )
+        knowledge_documents = [
+            KnowledgeDocument(
+                id=f"knowledge-{suffix}",
+                tenant_id=TENANT,
+                document_type="policy",
+                original_filename=f"policy-{suffix}.txt",
+                media_type="text/plain",
+                size_bytes=20,
+                checksum=f"knowledge-{suffix}-v1",
+                artifact_key=f"knowledge/{suffix}",
+                status="ready",
+                active_index_generation=1,
+                search_index_status=search_index_status,
+            )
+            for suffix, search_index_status in (
+                ("authority", "ready"),
+                ("pending", "pending"),
+                ("failed", "failed"),
+                ("deleted", "deleted"),
+            )
+        ]
+        session.add_all([*jobs_and_versions, *knowledge_documents])
         session.add_all(
             [
                 _chunk("chunk-b", "citation-b", offset=0),
@@ -177,36 +228,26 @@ def pg_index(postgres_engine):
                     offset=9,
                 ),
                 _chunk("empty-content", "empty-content", content="", offset=10),
-                RecruitingChunk(
-                    id="job-authority",
-                    tenant_id=TENANT,
-                    source_type="job_version",
-                    source_id="job-version-authority",
-                    source_version="1",
-                    generation=1,
-                    citation_id="job-authority",
-                    start_offset=0,
-                    end_offset=1,
-                    content="job evidence",
-                    embedding=unit_vector(),
-                    embedding_model=MODEL,
-                    is_active=True,
-                ),
-                RecruitingChunk(
-                    id="knowledge-authority",
-                    tenant_id=TENANT,
-                    source_type="knowledge_document",
-                    source_id="knowledge-1",
-                    source_version="knowledge-v1",
-                    generation=1,
-                    citation_id="knowledge-authority",
-                    start_offset=0,
-                    end_offset=1,
-                    content="knowledge evidence",
-                    embedding=unit_vector(),
-                    embedding_model=MODEL,
-                    is_active=True,
-                ),
+                *[
+                    _source_chunk(
+                        f"job-{suffix}",
+                        source_type="job_version",
+                        source_id=f"job-version-{suffix}",
+                        source_version="1",
+                        offset=20 + index,
+                    )
+                    for index, suffix in enumerate(("authority", "pending", "failed", "deleted"))
+                ],
+                *[
+                    _source_chunk(
+                        f"knowledge-{suffix}",
+                        source_type="knowledge_document",
+                        source_id=f"knowledge-{suffix}",
+                        source_version=f"knowledge-{suffix}-v1",
+                        offset=24 + index,
+                    )
+                    for index, suffix in enumerate(("authority", "pending", "failed", "deleted"))
+                ],
                 _chunk("next-generation", "next-generation", generation=3, offset=11),
                 _chunk(
                     "privacy-deleted",
@@ -276,6 +317,66 @@ def test_exact_threshold_boundary_and_hnsw_explain_are_reproducible(pg_index) ->
     assert [hit.id for hit in hits] == ["chunk-a", "chunk-b"]
 
 
+def test_same_top_k_is_valid_across_exact_and_hnsw_threshold(pg_index) -> None:
+    exact_index = PgVectorRecruitingIndex(
+        pg_index.session_factory,
+        exact_search_max_candidates=2,
+        ann_candidate_budget_max=1,
+    )
+    hnsw_index = PgVectorRecruitingIndex(
+        pg_index.session_factory,
+        exact_search_max_candidates=1,
+        ann_candidate_budget_max=1,
+    )
+
+    exact_hits = exact_index.search(authorized_scope(), unit_vector(), MODEL, top_k=10, min_score=0.0)
+    hnsw_hits = hnsw_index.search(authorized_scope(), unit_vector(), MODEL, top_k=10, min_score=0.0)
+    hnsw_plan = hnsw_index.explain_search(authorized_scope(), unit_vector(), MODEL, top_k=10, min_score=0.0)
+
+    assert [hit.id for hit in exact_hits] == ["chunk-a", "chunk-b"]
+    assert len(hnsw_hits) <= 10
+    assert {hit.id for hit in hnsw_hits} <= {"chunk-a", "chunk-b"}
+    assert hnsw_plan.strategy == "hnsw"
+    assert hnsw_plan.ann_candidate_budget == 2
+
+
+@pytest.mark.parametrize(
+    "insertion_order",
+    [
+        ("00-tie-f", "00-tie-e", "00-tie-d", "00-tie-c", "00-tie-b", "00-tie-a"),
+        ("00-tie-a", "00-tie-b", "00-tie-c", "00-tie-d", "00-tie-e", "00-tie-f"),
+    ],
+)
+def test_hnsw_expands_boundary_ties_before_global_id_ordering(pg_index, insertion_order) -> None:
+    with pg_index.session_factory() as session:
+        session.add_all(
+            [_chunk(chunk_id, chunk_id, offset=40 + index) for index, chunk_id in enumerate(insertion_order)]
+        )
+        session.commit()
+    hnsw_index = PgVectorRecruitingIndex(
+        pg_index.session_factory,
+        exact_search_max_candidates=0,
+        ann_candidate_multiplier=1,
+        ann_candidate_budget_max=2,
+    )
+
+    repeated_ids = [
+        [
+            hit.id
+            for hit in hnsw_index.search(
+                authorized_scope(),
+                unit_vector(),
+                MODEL,
+                top_k=3,
+                min_score=0.0,
+            )
+        ]
+        for _ in range(3)
+    ]
+
+    assert repeated_ids == [["00-tie-a", "00-tie-b", "00-tie-c"]] * 3
+
+
 def test_exact_search_does_not_override_real_planner_settings(pg_index, postgres_engine) -> None:
     statements: list[str] = []
 
@@ -313,21 +414,66 @@ def test_search_uses_one_repeatable_read_snapshot_for_count_and_results(pg_index
     assert [hit.id for hit in hits] == ["chunk-a", "chunk-b"]
 
 
-def test_job_version_and_knowledge_document_authority_are_real_sql_boundaries(pg_index) -> None:
+def test_job_version_and_knowledge_document_readiness_are_real_sql_boundaries(pg_index) -> None:
     scope = SearchScope(
         TENANT,
         frozenset({"job_version", "knowledge_document"}),
         frozenset(
             {
                 ("job_version", "job-version-authority", "1"),
-                ("knowledge_document", "knowledge-1", "knowledge-v1"),
+                ("job_version", "job-version-pending", "1"),
+                ("job_version", "job-version-failed", "1"),
+                ("job_version", "job-version-deleted", "1"),
+                ("knowledge_document", "knowledge-authority", "knowledge-authority-v1"),
+                ("knowledge_document", "knowledge-pending", "knowledge-pending-v1"),
+                ("knowledge_document", "knowledge-failed", "knowledge-failed-v1"),
+                ("knowledge_document", "knowledge-deleted", "knowledge-deleted-v1"),
             }
         ),
     )
 
     hits = pg_index.search(scope, unit_vector(), MODEL, top_k=10, min_score=0.0)
+    active = pg_index.resolve_active_citations(
+        scope,
+        frozenset(
+            {
+                "job-authority",
+                "job-pending",
+                "job-failed",
+                "job-deleted",
+                "knowledge-authority",
+                "knowledge-pending",
+                "knowledge-failed",
+                "knowledge-deleted",
+            }
+        ),
+    )
+    historical = pg_index.resolve_historical_citations(
+        TENANT,
+        frozenset(
+            {
+                "job-authority",
+                "job-pending",
+                "job-failed",
+                "job-deleted",
+                "knowledge-authority",
+                "knowledge-pending",
+                "knowledge-failed",
+                "knowledge-deleted",
+            }
+        ),
+    )
 
     assert [hit.id for hit in hits] == ["job-authority", "knowledge-authority"]
+    assert [hit.id for hit in active] == ["job-authority", "knowledge-authority"]
+    assert [hit.id for hit in historical] == [
+        "job-authority",
+        "job-failed",
+        "job-pending",
+        "knowledge-authority",
+        "knowledge-failed",
+        "knowledge-pending",
+    ]
 
 
 def test_postgresql_search_statement_contains_security_and_distance_predicates(pg_index) -> None:

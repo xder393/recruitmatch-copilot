@@ -186,20 +186,37 @@ class PgVectorRecruitingIndex:
                 .limit(top_k)
             )
         else:
-            if top_k > self.ann_candidate_budget_max:
-                raise ValueError("top_k exceeds the configured ANN candidate budget")
             candidate_budget = min(
                 candidate_count,
-                min(self.ann_candidate_budget_max, top_k * self.ann_candidate_multiplier),
+                max(
+                    top_k,
+                    min(self.ann_candidate_budget_max, top_k * self.ann_candidate_multiplier),
+                ),
             )
-            # ANN defines a bounded, approximate candidate set. The outer query
-            # recomputes exact distance, applies min_score, and breaks ties by ID
-            # only within that set; this is not a global Recall/tie guarantee.
-            ann_candidates = (
+            # ANN defines a bounded, approximate seed. Expand every authorized
+            # row tied at its exact boundary distance so the outer exact rerank
+            # has a global ID tie-break at that boundary. Rows at distances the
+            # approximate seed missed still have no Recall guarantee.
+            ann_seed = (
                 select(RecruitingChunk.id.label("chunk_id"), distance.label("distance"))
                 .where(*base_predicates)
                 .order_by(distance)
                 .limit(candidate_budget)
+                .cte("ann_seed")
+                .prefix_with("MATERIALIZED")
+            )
+            boundary_distance = select(func.max(ann_seed.c.distance)).scalar_subquery()
+            boundary_ties = select(
+                RecruitingChunk.id.label("chunk_id"),
+                distance.label("distance"),
+            ).where(
+                *base_predicates,
+                distance == boundary_distance,
+                RecruitingChunk.id.not_in(select(ann_seed.c.chunk_id)),
+            )
+            ann_candidates = (
+                select(ann_seed.c.chunk_id, ann_seed.c.distance)
+                .union_all(boundary_ties)
                 .cte("ann_candidates")
                 .prefix_with("MATERIALIZED")
             )
