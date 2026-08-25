@@ -213,7 +213,7 @@ def source_state(session: Session, reference: SourceRef):
     )
 
 
-def source_chunks(session: Session, reference: SourceRef) -> list[RecruitingChunk]:
+def persisted_chunks(session: Session, reference: SourceRef) -> list[RecruitingChunk]:
     return list(
         session.scalars(
             select(RecruitingChunk)
@@ -251,7 +251,7 @@ def test_first_and_refresh_activation_leave_exactly_one_authoritative_generation
         == 2
     )
     with session_factory() as session:
-        staged = [chunk for chunk in source_chunks(session, reference) if chunk.generation == next_generation]
+        staged = [chunk for chunk in persisted_chunks(session, reference) if chunk.generation == next_generation]
         state = source_state(session, reference)
         assert state.active_index_generation == active_generation
         assert state.search_index_status == ("ready" if active_generation else "pending")
@@ -261,7 +261,7 @@ def test_first_and_refresh_activation_leave_exactly_one_authoritative_generation
 
     with session_factory() as session:
         state = source_state(session, reference)
-        chunks = source_chunks(session, reference)
+        chunks = persisted_chunks(session, reference)
         assert state.active_index_generation == next_generation
         assert state.search_index_status == "ready"
         assert state.search_index_error_code is None
@@ -291,7 +291,7 @@ def test_stage_rejects_incomplete_mixed_or_invalid_chunks_without_partial_writes
         GenerationWriter(session_factory).stage(reference, 1, chunks)
 
     with session_factory() as session:
-        assert source_chunks(session, reference) == []
+        assert persisted_chunks(session, reference) == []
 
 
 def test_stage_rejects_wrong_tenant_version_stale_generation_and_privacy_deleted_source(session_factory) -> None:
@@ -322,7 +322,7 @@ def test_stage_rejects_wrong_tenant_version_stale_generation_and_privacy_deleted
             writer.stage(reference, invalid_generation, [staged_chunk("invalid-generation")])  # type: ignore[arg-type]
 
     with session_factory() as session:
-        assert [chunk.generation for chunk in source_chunks(session, reference)] == [1]
+        assert [chunk.generation for chunk in persisted_chunks(session, reference)] == [1]
 
 
 @pytest.mark.parametrize(
@@ -362,7 +362,7 @@ def test_stage_normalizes_only_source_owned_document_cleanup_keys(
     )
 
     with session_factory() as session:
-        chunks = source_chunks(session, reference)
+        chunks = persisted_chunks(session, reference)
         assert len(chunks) == 1
         assert chunks[0].document_id == expected_document_id
 
@@ -409,7 +409,7 @@ def test_stage_rejects_document_cleanup_keys_not_owned_by_the_locked_source(
         )
 
     with session_factory() as session:
-        assert source_chunks(session, reference) == []
+        assert persisted_chunks(session, reference) == []
 
 
 def test_activate_rejects_zero_incomplete_mixed_identity_and_noninactive_staging(session_factory) -> None:
@@ -454,7 +454,7 @@ def test_failure_after_old_deactivation_rolls_back_chunks_and_source_authority(s
 
     with session_factory() as session:
         state = source_state(session, reference)
-        chunks = source_chunks(session, reference)
+        chunks = persisted_chunks(session, reference)
         assert state.active_index_generation == 1
         assert state.search_index_status == "ready"
         assert [(chunk.generation, chunk.is_active) for chunk in chunks] == [(1, True), (2, False)]
@@ -480,7 +480,7 @@ def test_privacy_deleted_source_cannot_activate_previously_staged_rows(session_f
         writer.activate(reference, 1, expected_count=1, embedding_model=MODEL)
 
     with session_factory() as session:
-        assert [(chunk.generation, chunk.is_active) for chunk in source_chunks(session, reference)] == [(1, False)]
+        assert [(chunk.generation, chunk.is_active) for chunk in persisted_chunks(session, reference)] == [(1, False)]
 
 
 def test_concurrent_activation_has_one_winner_and_consistent_final_authority(session_factory) -> None:
@@ -503,7 +503,7 @@ def test_concurrent_activation_has_one_winner_and_consistent_final_authority(ses
     assert sorted(outcomes) == ["stale", "winner"]
     with session_factory() as session:
         state = source_state(session, reference)
-        chunks = source_chunks(session, reference)
+        chunks = persisted_chunks(session, reference)
         assert state.active_index_generation == 1
         assert state.search_index_status == "ready"
         assert [(chunk.generation, chunk.is_active) for chunk in chunks] == [(1, True)]
@@ -631,7 +631,7 @@ def test_job_activation_locks_tenant_authority_until_commit_or_rollback(
     with session_factory() as session:
         job_tenant = session.scalar(select(Job.tenant_id).where(Job.id == "job-generation"))
         state = source_state(session, reference)
-        chunks = source_chunks(session, reference)
+        chunks = persisted_chunks(session, reference)
         assert job_tenant == TENANT
         assert state.active_index_generation == (0 if activation_fails else 1)
         assert state.search_index_status == ("pending" if activation_fails else "ready")
@@ -664,7 +664,7 @@ def test_fail_records_stable_code_and_preserves_generation_and_searchability(
 
     with session_factory() as session:
         state = source_state(session, reference)
-        chunks = source_chunks(session, reference)
+        chunks = persisted_chunks(session, reference)
         assert state.active_index_generation == active_generation
         assert state.search_index_status == expected_status
         assert state.search_index_error_code == "embedding_failed"
@@ -702,7 +702,7 @@ def test_non_null_fencing_token_fails_closed_without_mutation(session_factory, o
         assert state.active_index_generation == 0
         assert state.search_index_status == "pending"
         assert state.search_index_error_code is None
-        assert source_chunks(session, reference) == []
+        assert persisted_chunks(session, reference) == []
 
 
 def test_wrong_tenant_or_version_activation_cannot_mutate_the_real_source(session_factory) -> None:
@@ -721,7 +721,7 @@ def test_wrong_tenant_or_version_activation_cannot_mutate_the_real_source(sessio
     with session_factory() as session:
         state = source_state(session, reference)
         assert state.active_index_generation == 1
-        assert [(chunk.generation, chunk.is_active) for chunk in source_chunks(session, reference)] == [
+        assert [(chunk.generation, chunk.is_active) for chunk in persisted_chunks(session, reference)] == [
             (1, True),
             (2, False),
         ]

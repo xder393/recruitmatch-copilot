@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from app.database import Base, create_engine_and_session
-from app.knowledge.schemas import ChunkInput
 from app.models.identity import Tenant
 from app.models.knowledge import KnowledgeDocument
+from app.models.retrieval import RecruitingChunk
 from app.repositories.knowledge import KnowledgeRepository
 
 
@@ -39,7 +39,7 @@ def test_cross_tenant_document_lookup_returns_none(tmp_path):
         assert KnowledgeRepository(session).get_document(globex.id, document.id) is None
 
 
-def test_new_generation_atomically_replaces_old_chunks(tmp_path):
+def test_deactivate_removes_recruiting_chunks_from_current_search(tmp_path):
     session_factory = _database(tmp_path)
     with session_factory() as session:
         tenant = Tenant(name="Acme")
@@ -48,21 +48,30 @@ def test_new_generation_atomically_replaces_old_chunks(tmp_path):
         document = _document(tenant.id)
         session.add(document)
         session.flush()
+        session.add(
+            RecruitingChunk(
+                tenant_id=tenant.id,
+                document_id=document.id,
+                source_type="knowledge_document",
+                source_id=document.id,
+                source_version=document.checksum,
+                generation=1,
+                citation_id="citation-1",
+                start_offset=0,
+                end_offset=3,
+                content="new",
+                embedding=[1.0] + [0.0] * 511,
+                embedding_model="fake-512-v1",
+                is_active=True,
+            )
+        )
         repository = KnowledgeRepository(session)
-        repository.replace_generation(
-            document,
-            1,
-            [ChunkInput(source_type="policy", content="old", start=0, end=3, page=1, vector=[1.0, 0.0])],
-        )
-        repository.replace_generation(
-            document,
-            2,
-            [ChunkInput(source_type="policy", content="new", start=0, end=3, page=1, vector=[0.0, 1.0])],
-        )
+        repository.deactivate(document)
         session.commit()
-        active = repository.active_chunks(tenant.id, document.id)
-        assert [(item.content, item.generation) for item in active] == [("new", 2)]
-        assert document.active_generation == 2
+        chunk = session.query(RecruitingChunk).one()
+        assert chunk.is_active is False
+        assert document.status == "inactive"
+        assert document.search_index_status == "inactive"
 
 
 def test_duplicate_checksum_lookup_is_tenant_and_type_scoped(tmp_path):

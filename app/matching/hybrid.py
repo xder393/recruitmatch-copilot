@@ -7,6 +7,7 @@ from typing import List, Optional
 
 from app.matching.schemas import CandidateJob, HybridMatchRecommendation
 from app.resumes.schemas import ResumeProfile
+from app.retrieval.ports import SearchScope
 
 
 def combine_scores(rule_score: float, semantic_score: Optional[float]) -> float:
@@ -17,8 +18,8 @@ def combine_scores(rule_score: float, semantic_score: Optional[float]) -> float:
 
 @dataclass(frozen=True)
 class HybridTenantContext:
-    tenant_id: str
     resume_id: str
+    search_scope: SearchScope
 
 
 class HybridMatchingEngine:
@@ -39,7 +40,7 @@ class HybridMatchingEngine:
         recommendations = []
         for rule in rule_results:
             semantic = self.semantic_matcher.score(
-                tenant_context.tenant_id,
+                tenant_context.search_scope,
                 tenant_context.resume_id,
                 rule.job_version_id,
             )

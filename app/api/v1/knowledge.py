@@ -114,7 +114,7 @@ def rebuild_sources(
 ):
     return SourceIndexBackfillService(
         resumes,
-        request.app.state.knowledge_index,
+        request.app.state.source_indexer,
         jobs,
         uow=uow,
     ).rebuild(principal)

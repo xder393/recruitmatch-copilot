@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
-from datetime import datetime, timezone
 
 from app.core.exceptions import AuthorizationError, ConflictError, ResourceNotFoundError
 from app.domain.enums import JobStatus, Role
@@ -11,16 +10,19 @@ from app.models.jobs import Job, JobTemplate, JobVersion
 from app.repositories.ports import JobRepository
 from app.repositories.unit_of_work import UnitOfWork
 from app.security.tokens import Principal
+from app.knowledge.chunking import chunk_document
+from app.retrieval.generations import IndexFailureCode, SourceRef
+from app.retrieval.indexing import SourceIndexer
 
 _MUTATING_ROLES = {Role.ADMIN, Role.RECRUITER}
 _REQUIRED_PROFILE_KEYS = {"job_family", "level", "required_skills", "preferred_skills", "weights"}
 
 
 class JobService:
-    def __init__(self, jobs: JobRepository, source_index=None, *, uow: UnitOfWork):
+    def __init__(self, jobs: JobRepository, source_indexer: SourceIndexer | None = None, *, uow: UnitOfWork):
         self.jobs = jobs
         self.uow = uow
-        self.source_index = source_index
+        self.source_indexer = source_indexer
 
     def list_templates(self) -> List[JobTemplate]:
         return self.jobs.list_templates()
@@ -51,7 +53,8 @@ class JobService:
         self.uow.commit()
         stored = self.get_job(principal, job.id)
         self._index_version(principal.tenant_id, stored.versions[-1])
-        return stored
+        refreshed = self.jobs.reload(principal.tenant_id, job.id)
+        return refreshed if refreshed is not None else stored
 
     def update_job(
         self,
@@ -79,7 +82,8 @@ class JobService:
         self.uow.commit()
         stored = self.get_job(principal, job.id)
         self._index_version(principal.tenant_id, stored.versions[-1])
-        return stored
+        refreshed = self.jobs.reload(principal.tenant_id, job.id)
+        return refreshed if refreshed is not None else stored
 
     def activate_job(self, principal: Principal, job_id: str) -> Job:
         self._require_mutation(principal)
@@ -116,23 +120,17 @@ class JobService:
             raise AuthorizationError("无权修改岗位")
 
     def _index_version(self, tenant_id: str, version: JobVersion) -> None:
-        if self.source_index is None:
+        if self.source_indexer is None:
             return
+        source = SourceRef(tenant_id, "job_version", version.id, str(version.version))
         try:
-            from app.knowledge.chunking import chunk_document
-
-            self.source_index.index_source(
-                tenant_id,
-                "job",
-                version.id,
-                str(version.version),
-                chunk_document(version.jd_text, "job"),
+            self.source_indexer.index(
+                source,
+                version.active_index_generation + 1,
+                chunk_document(version.jd_text, "job_version"),
             )
-            version.search_index_status = "ready"
-            version.search_index_error = None
-            version.search_indexed_at = datetime.now(timezone.utc)
         except Exception:
-            version.search_index_status = "failed"
-            version.search_index_error = "indexing_failed"
-            version.search_indexed_at = None
-        self.uow.commit()
+            try:
+                self.source_indexer.fail(source, IndexFailureCode.EMBEDDING_FAILED)
+            except Exception:
+                pass

@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.config import Settings
-from app.main import create_app
+from tests.support.application import create_sqlite_test_app
 from tests.support.database import prepare_test_database
 
 
@@ -16,7 +16,7 @@ def v1_client(tmp_path):
         jwt_secret="a-test-secret-that-is-at-least-32-bytes",
     )
     prepare_test_database(settings.database_url)
-    app = create_app(settings)
+    app = create_sqlite_test_app(settings)
     with TestClient(app) as client:
         yield client
 

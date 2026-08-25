@@ -11,9 +11,11 @@ from app.matching.hybrid import HybridMatchingEngine, HybridTenantContext
 from app.matching.schemas import CandidateJob
 from app.models.matching import MatchResult, MatchRun
 from app.repositories.ports import MatchingRepository
-from app.repositories.unit_of_work import UnitOfWork
+from app.repositories.unit_of_work import RecruitingUnitOfWork
 from app.resumes.schemas import ResumeProfile
 from app.security.tokens import Principal
+from app.retrieval.indexing import EmbeddingAdapter
+from app.retrieval.ports import RecruitingVectorIndex, SearchScope
 
 
 class MatchingService:
@@ -23,11 +25,12 @@ class MatchingService:
         engine: MatchingEngine | None = None,
         hybrid_engine: HybridMatchingEngine | None = None,
         explanation_service=None,
-        source_index=None,
+        source_index: RecruitingVectorIndex | None = None,
+        embedder: EmbeddingAdapter | None = None,
         retrieval_top_k: int = 6,
         retrieval_min_score: float = 0.35,
         *,
-        uow: UnitOfWork,
+        uow: RecruitingUnitOfWork,
     ):
         self.repository = repository
         self.uow = uow
@@ -35,6 +38,7 @@ class MatchingService:
         self.hybrid_engine = hybrid_engine
         self.explanation_service = explanation_service
         self.source_index = source_index
+        self.embedder = embedder
         self.retrieval_top_k = retrieval_top_k
         self.retrieval_min_score = retrieval_min_score
 
@@ -51,10 +55,12 @@ class MatchingService:
             raise ConflictError("没有已发布岗位可供匹配")
 
         candidates = []
+        source_versions: dict[str, str] = {}
         for job in jobs:
             version = next((item for item in job.versions if item.version == job.current_version), None)
             if version is None:
                 continue
+            source_versions[version.id] = str(version.version)
             candidates.append(
                 CandidateJob(
                     job_id=job.id,
@@ -78,14 +84,15 @@ class MatchingService:
         self.repository.add_run(run)
         profile = ResumeProfile.model_validate(resume.profile)
         if mode == "hybrid-v1":
+            search_scope = self._search_scope(principal.tenant_id, resume, candidates, source_versions)
             recommendations = self.hybrid_engine.rank(  # type: ignore[union-attr]
                 profile,
                 candidates,
-                HybridTenantContext(principal.tenant_id, resume.id),
+                HybridTenantContext(resume.id, search_scope),
                 top_k=3,
             )
             recommendations = self._add_grounded_guidance(
-                principal.tenant_id,
+                search_scope,
                 resume.id,
                 candidates,
                 recommendations,
@@ -140,26 +147,51 @@ class MatchingService:
             raise ResourceNotFoundError("匹配任务不存在")
         return run
 
-    def _add_grounded_guidance(self, tenant_id, resume_id, candidates, recommendations):
-        if self.explanation_service is None or self.source_index is None:
+    def _search_scope(self, tenant_id, resume, candidates, source_versions: dict[str, str]) -> SearchScope:
+        authorized = {("resume", resume.id, resume.sha256)}
+        authorized.update(
+            ("job_version", item.job_version_id, source_versions[item.job_version_id]) for item in candidates
+        )
+        try:
+            documents = self.uow.knowledge.list_documents(tenant_id)
+        except Exception:
+            documents = []
+        authorized.update(
+            ("knowledge_document", item.id, item.checksum)
+            for item in documents
+            if item.status == "ready" and item.search_index_status == "ready"
+        )
+        return SearchScope(tenant_id, frozenset(item[0] for item in authorized), frozenset(authorized))
+
+    def _add_grounded_guidance(self, search_scope, resume_id, candidates, recommendations):
+        if self.explanation_service is None or self.source_index is None or self.embedder is None:
             return recommendations
         by_version = {item.job_version_id: item for item in candidates}
         enriched = []
-        knowledge_types = {"policy", "interview_guide", "competency", "assessment_rubric"}
         for item in recommendations:
             job = by_version[item.job_version_id]
             try:
-                hits = self.source_index.source_chunks(tenant_id, "resume", resume_id)
-                hits += self.source_index.source_chunks(tenant_id, "job", item.job_version_id)
-                hits += self.source_index.search(
-                    tenant_id,
-                    job.jd_text,
-                    knowledge_types,
+                selected = frozenset(
+                    source
+                    for source in search_scope.authorized_sources
+                    if source[0] == "knowledge_document"
+                    or (source[0] == "resume" and source[1] == resume_id)
+                    or (source[0] == "job_version" and source[1] == item.job_version_id)
+                )
+                scope = SearchScope(
+                    search_scope.tenant_id,
+                    frozenset(source[0] for source in selected),
+                    selected,
+                )
+                hits = self.source_index.search(
+                    scope,
+                    self.embedder.embed_query(job.jd_text),
+                    self.embedder.model_name,
                     self.retrieval_top_k,
                     self.retrieval_min_score,
                 )
                 explanation = self.explanation_service.generate(
-                    tenant_id,
+                    scope,
                     resume_id,
                     item.job_version_id,
                     {
@@ -207,9 +239,9 @@ class MatchingService:
             "source_type": hit.source_type,
             "source_id": hit.source_id,
             "content": hit.content,
-            "start": hit.start,
-            "end": hit.end,
-            "page": hit.page,
+            "start_offset": hit.start_offset,
+            "end_offset": hit.end_offset,
+            "page_number": hit.page_number,
         }
 
     def latest_for_resume(self, principal: Principal, resume_id: str) -> MatchRun:

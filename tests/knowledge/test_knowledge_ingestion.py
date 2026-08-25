@@ -6,27 +6,29 @@ from app.core.exceptions import UnsupportedFileError
 from app.database import Base, create_engine_and_session
 from app.knowledge.artifacts import KnowledgeArtifactStore
 from app.knowledge.chunking import chunk_document
-from app.knowledge.schemas import ChunkInput
 from app.models.identity import Tenant
 from app.models.knowledge import KnowledgeDocument
 from app.repositories.knowledge import KnowledgeRepository
 from app.services.knowledge_processing import KnowledgeProcessingService
 
 
-class FakeIndexer:
-    def __init__(self, error: Exception | None = None):
-        self.error = error
-
-    def embed(self, chunks: list[ChunkInput]) -> list[ChunkInput]:
-        if self.error:
-            raise self.error
-        return [item.model_copy(update={"vector": [1.0, 0.0]}) for item in chunks]
-
-
 def _database(tmp_path):
-    engine, factory = create_engine_and_session(f"sqlite:///{tmp_path / 'ingestion.db'}")
+    database_url = f"sqlite:///{tmp_path / 'ingestion.db'}"
+    engine, factory = create_engine_and_session(database_url)
     Base.metadata.create_all(engine)
-    return factory
+    from tests.fakes.retrieval import sqlite_retrieval_dependencies
+    from tests.support.application import DeterministicEmbeddingAdapter
+
+    index, source_indexer = sqlite_retrieval_dependencies(database_url, DeterministicEmbeddingAdapter())
+    return factory, index, source_indexer
+
+
+class BrokenSourceIndexer:
+    def index(self, *args, **kwargs):
+        raise RuntimeError("embedding secret")
+
+    def fail(self, *args, **kwargs):
+        return None
 
 
 def _uow_factory(session_factory):
@@ -76,25 +78,22 @@ def test_artifact_key_hides_original_filename_and_rejects_escape(tmp_path):
 
 
 def test_processing_activates_embedded_generation(tmp_path):
-    factory = _database(tmp_path)
+    factory, index, source_indexer = _database(tmp_path)
     store, tenant_id, document_id = _stored_document(tmp_path, factory, b"Python interview policy")
-    KnowledgeProcessingService(_uow_factory(factory), store, FakeIndexer()).process(tenant_id, document_id)
+    KnowledgeProcessingService(_uow_factory(factory), store, source_indexer).process(tenant_id, document_id)
     with factory() as session:
         document = KnowledgeRepository(session).get_document(tenant_id, document_id)
         assert document.status == "ready"
         assert document.active_generation == 1
-        chunks = KnowledgeRepository(session).active_chunks(tenant_id, document_id)
-        assert chunks[0].content == "Python interview policy"
-        assert chunks[0].vector == [1.0, 0.0]
+        assert document.search_index_status == "ready"
+    assert index._chunks[0].content == "Python interview policy"
 
 
 def test_duplicate_worker_delivery_does_not_reprocess_ready_document(tmp_path):
-    factory = _database(tmp_path)
+    factory, _, source_indexer = _database(tmp_path)
     store, tenant_id, document_id = _stored_document(tmp_path, factory, b"stable policy")
-    KnowledgeProcessingService(_uow_factory(factory), store, FakeIndexer()).process(tenant_id, document_id)
-    KnowledgeProcessingService(_uow_factory(factory), store, FakeIndexer(RuntimeError("must not embed twice"))).process(
-        tenant_id, document_id
-    )
+    KnowledgeProcessingService(_uow_factory(factory), store, source_indexer).process(tenant_id, document_id)
+    KnowledgeProcessingService(_uow_factory(factory), store, BrokenSourceIndexer()).process(tenant_id, document_id)
     with factory() as session:
         document = KnowledgeRepository(session).get_document(tenant_id, document_id)
         assert document.status == "ready"
@@ -104,14 +103,14 @@ def test_duplicate_worker_delivery_does_not_reprocess_ready_document(tmp_path):
 def test_processing_lease_is_retried_then_stale_work_is_recovered(tmp_path):
     from datetime import datetime, timedelta, timezone
 
-    factory = _database(tmp_path)
+    factory, _, source_indexer = _database(tmp_path)
     store, tenant_id, document_id = _stored_document(tmp_path, factory, b"recoverable policy")
     with factory() as session:
         document = KnowledgeRepository(session).get_document(tenant_id, document_id)
         document.status = "processing"
         document.updated_at = datetime.now(timezone.utc)
         session.commit()
-    service = KnowledgeProcessingService(_uow_factory(factory), store, FakeIndexer())
+    service = KnowledgeProcessingService(_uow_factory(factory), store, source_indexer)
     assert service.process(tenant_id, document_id) is False
 
     with factory() as session:
@@ -126,23 +125,21 @@ def test_processing_lease_is_retried_then_stale_work_is_recovered(tmp_path):
 
 
 def test_failed_reindex_keeps_previous_generation_active(tmp_path):
-    factory = _database(tmp_path)
+    factory, index, source_indexer = _database(tmp_path)
     store, tenant_id, document_id = _stored_document(tmp_path, factory, b"new policy")
     with factory() as session:
         document = KnowledgeRepository(session).get_document(tenant_id, document_id)
-        KnowledgeRepository(session).replace_generation(
-            document,
-            1,
-            [ChunkInput(source_type="policy", content="old", start=0, end=3, vector=[1.0])],
-        )
         document.status = "uploaded"
         session.commit()
-    KnowledgeProcessingService(_uow_factory(factory), store, FakeIndexer(RuntimeError("embedding secret"))).process(
-        tenant_id, document_id
-    )
+    KnowledgeProcessingService(_uow_factory(factory), store, source_indexer).process(tenant_id, document_id)
     with factory() as session:
         document = KnowledgeRepository(session).get_document(tenant_id, document_id)
-        assert document.status == "failed"
+        document.status = "uploaded"
+        session.commit()
+    KnowledgeProcessingService(_uow_factory(factory), store, BrokenSourceIndexer()).process(tenant_id, document_id)
+    with factory() as session:
+        document = KnowledgeRepository(session).get_document(tenant_id, document_id)
+        assert document.status == "ready"
         assert document.active_generation == 1
-        assert KnowledgeRepository(session).active_chunks(tenant_id, document_id)[0].content == "old"
         assert "embedding secret" not in document.error_message
+    assert index._chunks[0].is_active is True

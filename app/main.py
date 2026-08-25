@@ -23,7 +23,6 @@ from app.core.logging import get_logger, request_id_var, setup_logging
 from app.database import create_engine_and_session
 from app.knowledge.artifacts import KnowledgeArtifactStore
 from app.knowledge.embeddings import BGEEmbedder
-from app.knowledge.index import RecruitingVectorIndex
 from app.matching.engine import MatchingEngine
 from app.matching.hybrid import HybridMatchingEngine
 from app.models import AuditLog, Job, JobTemplate, JobVersion, ModelTrace, Tenant, User  # noqa: F401
@@ -35,6 +34,10 @@ from app.services.ai_tracing import AITraceSink
 from app.services.knowledge_processing import KnowledgeProcessingService
 from app.services.resume_processing import ResumeProcessingService
 from app.tasks.dispatcher import configure_task_dispatcher
+from app.retrieval.generations import GenerationWriter
+from app.retrieval.indexing import SourceIndexer
+from app.retrieval.pgvector_index import PgVectorRecruitingIndex
+from app.retrieval.ports import RecruitingVectorIndex
 
 logger = get_logger(__name__)
 
@@ -42,7 +45,14 @@ _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _INDEX_HTML = os.path.join(_PROJECT_ROOT, "web", "index.html")
 
 
-def init_recruiting_state(app: FastAPI, settings: Settings, structured_model=None, knowledge_embedder=None) -> None:
+def init_recruiting_state(
+    app: FastAPI,
+    settings: Settings,
+    structured_model=None,
+    knowledge_embedder=None,
+    retrieval_index: RecruitingVectorIndex | None = None,
+    source_indexer: SourceIndexer | None = None,
+) -> None:
     """Initialize recruiting persistence once per application instance."""
     if getattr(app.state, "_recruiting_initialized", False):
         return
@@ -68,29 +78,33 @@ def init_recruiting_state(app: FastAPI, settings: Settings, structured_model=Non
         if settings.ai_enabled
         else fallback_parser
     )
-    knowledge_index = RecruitingVectorIndex(
-        session_factory,
-        knowledge_embedder or BGEEmbedder(settings.embedding_model),
-    )
-    # Automatic resume/JD indexing belongs to the AI feature. Keeping it off in
-    # rule-only mode also prevents an accidental model download in basic setups.
-    source_index = knowledge_index if settings.ai_enabled or knowledge_embedder is not None else None
+    embedder = knowledge_embedder or BGEEmbedder(settings.embedding_model)
+    if retrieval_index is None:
+        if engine.dialect.name != "postgresql":
+            raise RuntimeError("SQLite app composition requires an explicit retrieval fake")
+        retrieval_index = PgVectorRecruitingIndex(session_factory)
+    if source_indexer is None:
+        if engine.dialect.name != "postgresql":
+            raise RuntimeError("SQLite app composition requires an explicit generation fake")
+        source_indexer = SourceIndexer(GenerationWriter(session_factory), embedder)
     uow_factory = SqlAlchemyUnitOfWorkFactory(session_factory)
-    processor = ResumeProcessingService(uow_factory, artifact_store, parser, source_index=source_index)
+    processor = ResumeProcessingService(uow_factory, artifact_store, parser, source_indexer=source_indexer)
     knowledge_artifact_store = KnowledgeArtifactStore(Path(settings.knowledge_artifact_dir))
-    knowledge_processor = KnowledgeProcessingService(uow_factory, knowledge_artifact_store, knowledge_index)
+    knowledge_processor = KnowledgeProcessingService(uow_factory, knowledge_artifact_store, source_indexer)
     ai_trace_sink = AITraceSink(uow_factory)
     app.state.artifact_store = artifact_store
     app.state.resume_processor = processor
-    app.state.knowledge_index = knowledge_index
-    app.state.recruiting_source_index = source_index
+    app.state.retrieval_index = retrieval_index
+    app.state.source_indexer = source_indexer
+    app.state.embedding_adapter = embedder
     app.state.knowledge_artifact_store = knowledge_artifact_store
     app.state.knowledge_processor = knowledge_processor
     app.state.hybrid_matching_engine = HybridMatchingEngine(
         MatchingEngine(),
         SemanticMatcher(
             recruiting_model,
-            knowledge_index,
+            retrieval_index,
+            embedder,
             enabled=settings.ai_enabled,
             max_evidence_characters=settings.max_evidence_characters,
             trace_sink=ai_trace_sink,
@@ -101,20 +115,34 @@ def init_recruiting_state(app: FastAPI, settings: Settings, structured_model=Non
         enabled=settings.ai_enabled,
         prompt_version=settings.explanation_prompt_version,
         max_evidence_characters=settings.max_evidence_characters,
-        citation_resolver=knowledge_index.resolve_citations,
+        citation_resolver=retrieval_index.resolve_active_citations,
         trace_sink=ai_trace_sink,
     )
     configure_task_dispatcher(app, settings.task_mode, processor, knowledge_processor)
     app.state._recruiting_initialized = True
 
 
-def create_app(settings: Settings | None = None, structured_model=None, knowledge_embedder=None) -> FastAPI:
+def create_app(
+    settings: Settings | None = None,
+    structured_model=None,
+    knowledge_embedder=None,
+    *,
+    retrieval_index: RecruitingVectorIndex | None = None,
+    source_indexer: SourceIndexer | None = None,
+) -> FastAPI:
     settings = settings or Settings.load()
     setup_logging()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        init_recruiting_state(app, settings, structured_model, knowledge_embedder)
+        init_recruiting_state(
+            app,
+            settings,
+            structured_model,
+            knowledge_embedder,
+            retrieval_index,
+            source_indexer,
+        )
         yield
 
     app = FastAPI(

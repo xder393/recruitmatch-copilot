@@ -20,7 +20,7 @@ from app.ai.gateway import ModelGatewayError  # noqa: E402
 from app.ai.resume_parser import LLMResumeParser  # noqa: E402
 from app.ai.semantic_matching import SemanticMatcher, SemanticProjectScore  # noqa: E402
 from app.evaluation.ai_metrics import evaluate_ai_cases  # noqa: E402
-from app.knowledge.index import RetrievedChunk  # noqa: E402
+from app.retrieval import RetrievedChunk, SearchScope  # noqa: E402
 from app.matching.engine import MatchingEngine  # noqa: E402
 from app.matching.hybrid import HybridMatchingEngine, HybridTenantContext  # noqa: E402
 from app.matching.schemas import CandidateJob  # noqa: E402
@@ -130,32 +130,81 @@ class EvaluationIndex:
         self.resume_text = resume_text
         self.jobs = {item.job_version_id: item for item in jobs}
 
-    def source_chunks(self, tenant_id: str, source_type: str, source_id: str):
-        del tenant_id
-        if source_type == "resume" and source_id == self.case_id:
-            return [self._hit(f"resume:{source_id}", "resume", source_id, self.resume_text)]
-        if source_type == "job" and source_id in self.jobs:
-            return [self._hit(f"job:{source_id}", "job", source_id, self.jobs[source_id].jd_text)]
-        return []
+    def search(self, scope, query_embedding, embedding_model, top_k, min_score):
+        del query_embedding, embedding_model, min_score
+        candidates = []
+        for source_type, source_id, _ in scope.authorized_sources:
+            if source_type == "resume" and source_id == self.case_id:
+                candidates.append(self._hit(f"resume:{source_id}", "resume", source_id, "v1", self.resume_text))
+            elif source_type == "job_version" and source_id in self.jobs:
+                candidates.append(
+                    self._hit(f"job:{source_id}", "job_version", source_id, "1", self.jobs[source_id].jd_text)
+                )
+            elif source_type == "knowledge_document" and source_id == "policy-1":
+                candidates.append(
+                    self._hit(
+                        "policy:structured-interview",
+                        "knowledge_document",
+                        "policy-1",
+                        "policy-v1",
+                        "面试结论必须引用候选人证据",
+                    )
+                )
+        return candidates[:top_k]
 
-    def search(self, tenant_id, query, source_types, top_k, min_score):
-        del tenant_id, query, min_score
-        if "policy" not in source_types or top_k <= 0:
-            return []
-        return [self._hit("policy:structured-interview", "policy", "policy-1", "面试结论必须引用候选人证据")]
-
-    def resolve_citations(self, tenant_id: str, citation_ids: set[str]):
-        del tenant_id
+    def resolve_active_citations(self, scope: SearchScope, citation_ids: frozenset[str]):
         candidates = [self._hit("resume:" + self.case_id, "resume", self.case_id, self.resume_text)]
         candidates.extend(
-            self._hit(f"job:{source_id}", "job", source_id, job.jd_text) for source_id, job in self.jobs.items()
+            self._hit(f"job:{source_id}", "job_version", source_id, "1", job.jd_text)
+            for source_id, job in self.jobs.items()
         )
-        candidates.append(self._hit("policy:structured-interview", "policy", "policy-1", "面试结论必须引用候选人证据"))
-        return [item for item in candidates if item.citation_id in citation_ids]
+        candidates.append(
+            self._hit(
+                "policy:structured-interview",
+                "knowledge_document",
+                "policy-1",
+                "policy-v1",
+                "面试结论必须引用候选人证据",
+            )
+        )
+        return [
+            item
+            for item in candidates
+            if item.citation_id in citation_ids
+            and (item.source_type, item.source_id, item.source_version) in scope.authorized_sources
+        ]
 
     @staticmethod
-    def _hit(citation_id, source_type, source_id, content):
-        return RetrievedChunk(citation_id, source_type, source_id, content, 0, len(content), None, 1)
+    def _hit(citation_id, source_type, source_id, source_version, content=None):
+        if content is None:
+            content = source_version
+            source_version = "v1"
+        return RetrievedChunk(
+            citation_id,
+            "synthetic-tenant",
+            citation_id,
+            source_type,
+            source_id,
+            source_version,
+            1,
+            content,
+            0,
+            len(content),
+            None,
+            None,
+            1.0,
+        )
+
+
+class EvaluationEmbedder:
+    model_name = "fake-index-v1"
+
+    def embed_query(self, text):
+        del text
+        return [1.0] + [0.0] * 511
+
+    def embed_documents(self, texts):
+        return [self.embed_query(text) for text in texts]
 
 
 def _jobs() -> list[CandidateJob]:
@@ -215,10 +264,18 @@ def evaluate(dataset: list[dict], mode: str) -> dict:
         if mode == "hybrid-v1":
             rule_order = [item.job_id for item in rules.rank(profile, jobs, top_k=3)]
             before_semantic_scores = len(model.semantic_scores)
-            ranked = HybridMatchingEngine(rules, SemanticMatcher(model, index)).rank(
+            search_scope = SearchScope(
+                "synthetic-tenant",
+                frozenset({"resume", "job_version", "knowledge_document"}),
+                frozenset(
+                    {("resume", case["id"], "v1"), ("knowledge_document", "policy-1", "policy-v1")}
+                    | {("job_version", item.job_version_id, "1") for item in jobs}
+                ),
+            )
+            ranked = HybridMatchingEngine(rules, SemanticMatcher(model, index, EvaluationEmbedder())).rank(
                 profile,
                 jobs,
-                HybridTenantContext("synthetic-tenant", case["id"]),
+                HybridTenantContext(case["id"], search_scope),
                 top_k=3,
             )
             case_scores = model.semantic_scores[before_semantic_scores:]
@@ -233,14 +290,23 @@ def evaluate(dataset: list[dict], mode: str) -> dict:
         grounding_status = "not_run"
         if mode != "rules-v1" and ranked:
             top = ranked[0]
-            hits = index.source_chunks("synthetic-tenant", "resume", case["id"])
-            hits += index.source_chunks("synthetic-tenant", "job", top.job_version_id)
-            hits += index.search("synthetic-tenant", top.title, {"policy"}, 3, 0)
+            selected_scope = SearchScope(
+                "synthetic-tenant",
+                frozenset({"resume", "job_version", "knowledge_document"}),
+                frozenset(
+                    {
+                        ("resume", case["id"], "v1"),
+                        ("job_version", top.job_version_id, "1"),
+                        ("knowledge_document", "policy-1", "policy-v1"),
+                    }
+                ),
+            )
+            hits = index.search(selected_scope, EvaluationEmbedder().embed_query(top.title), "fake-index-v1", 3, -1)
             explanation = GroundedExplanationService(
                 model,
-                citation_resolver=index.resolve_citations,
+                citation_resolver=index.resolve_active_citations,
             ).generate(
-                "synthetic-tenant",
+                selected_scope,
                 case["id"],
                 top.job_version_id,
                 {

@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import Iterable
 
-from app.knowledge.index import RetrievedChunk
+from app.retrieval import RetrievedChunk
 
-_ALLOWED_SOURCE_TYPES = {"resume", "job", "policy", "interview_guide", "competency", "assessment_rubric"}
+_ALLOWED_SOURCE_TYPES = {"resume", "job_version", "knowledge_document"}
 
 
 def authorized_hits(
@@ -21,7 +21,7 @@ def authorized_hits(
             continue
         if hit.source_type == "resume" and hit.source_id != resume_id:
             continue
-        if hit.source_type == "job" and hit.source_id != job_version_id:
+        if hit.source_type == "job_version" and hit.source_id != job_version_id:
             continue
         allowed.append(hit)
     return allowed

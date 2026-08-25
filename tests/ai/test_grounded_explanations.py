@@ -6,7 +6,7 @@ from app.ai.explanations import (
     GroundedExplanationService,
     GroundedModelOutput,
 )
-from app.knowledge.index import RetrievedChunk
+from app.retrieval import RetrievedChunk, SearchScope
 
 
 class FakeModel:
@@ -31,7 +31,26 @@ class FakeModel:
 
 
 def _hit(citation_id="known", source_type="resume", source_id="resume-1", content="Python"):
-    return RetrievedChunk(citation_id, source_type, source_id, content, 0, len(content), None, 0.9)
+    return RetrievedChunk(
+        id=citation_id,
+        tenant_id="tenant-1",
+        citation_id=citation_id,
+        source_type=source_type,
+        source_id=source_id,
+        source_version="v1",
+        generation=1,
+        content=content,
+        start_offset=0,
+        end_offset=len(content),
+        page_number=None,
+        section=None,
+        score=0.9,
+    )
+
+
+def _scope(*hits):
+    authorized = frozenset((hit.source_type, hit.source_id, hit.source_version) for hit in hits)
+    return SearchScope("tenant-1", frozenset(hit.source_type for hit in hits), authorized)
 
 
 def _rules():
@@ -51,7 +70,8 @@ def test_unknown_and_empty_citations_remove_unsupported_claims():
             interview_questions=[],
         )
     )
-    result = GroundedExplanationService(model).generate("tenant-1", "resume-1", "job-1", _rules(), [_hit()])
+    hit = _hit()
+    result = GroundedExplanationService(model).generate(_scope(hit), "resume-1", "job-1", _rules(), [hit])
 
     assert result.strengths == []
     assert [item.text for item in result.gaps] == ["缺少 RAG"]
@@ -61,7 +81,9 @@ def test_unknown_and_empty_citations_remove_unsupported_claims():
 
 def test_no_hits_skips_model_and_returns_rules_fallback():
     model = FakeModel()
-    result = GroundedExplanationService(model).generate("tenant-1", "resume-1", "job-1", _rules(), [])
+    result = GroundedExplanationService(model).generate(
+        SearchScope("tenant-1", frozenset({"resume"}), frozenset()), "resume-1", "job-1", _rules(), []
+    )
 
     assert result.grounding_status == "insufficient_evidence"
     assert model.calls == []
@@ -73,13 +95,13 @@ def test_context_only_contains_authorized_sources_and_is_bounded():
     model = FakeModel(GroundedModelOutput(summary=None))
     hits = [
         _hit("resume", "resume", "resume-1", "A" * 30),
-        _hit("job", "job", "job-1", "B" * 30),
-        _hit("policy", "policy", "policy-1", "C" * 30),
+        _hit("job", "job_version", "job-1", "B" * 30),
+        _hit("policy", "knowledge_document", "policy-1", "C" * 30),
         _hit("other-resume", "resume", "resume-2", "SECRET"),
-        _hit("other-job", "job", "job-2", "SECRET"),
+        _hit("other-job", "job_version", "job-2", "SECRET"),
     ]
     GroundedExplanationService(model, max_evidence_characters=90).generate(
-        "tenant-1", "resume-1", "job-1", _rules(), hits
+        _scope(*hits), "resume-1", "job-1", _rules(), hits
     )
 
     prompt = model.calls[0].user
@@ -91,7 +113,7 @@ def test_context_only_contains_authorized_sources_and_is_bounded():
 def test_disabled_generation_uses_deterministic_fallback():
     model = FakeModel()
     result = GroundedExplanationService(model, enabled=False).generate(
-        "tenant-1", "resume-1", "job-1", _rules(), [_hit()]
+        _scope(_hit()), "resume-1", "job-1", _rules(), [_hit()]
     )
 
     assert result.grounding_status == "rules_fallback"
@@ -100,7 +122,7 @@ def test_disabled_generation_uses_deterministic_fallback():
 
 def test_empty_valid_model_output_is_not_reported_as_grounded():
     result = GroundedExplanationService(FakeModel(GroundedModelOutput())).generate(
-        "tenant-1", "resume-1", "job-1", _rules(), [_hit()]
+        _scope(_hit()), "resume-1", "job-1", _rules(), [_hit()]
     )
 
     assert result.grounding_status == "empty_model_output"
@@ -115,6 +137,6 @@ def test_trace_storage_failure_cannot_break_grounded_result():
     result = GroundedExplanationService(
         FakeModel(GroundedModelOutput(summary=GroundedClaim(text="Python", citation_ids=["known"]))),
         trace_sink=BrokenTrace(),
-    ).generate("tenant-1", "resume-1", "job-1", _rules(), [_hit()])
+    ).generate(_scope(_hit()), "resume-1", "job-1", _rules(), [_hit()])
 
     assert result.grounding_status == "grounded"

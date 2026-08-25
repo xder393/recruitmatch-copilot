@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.config import Settings
-from app.main import create_app
+from tests.support.application import create_sqlite_test_app
 from app.ai.gateway import ModelGatewayError
 from app.ai.contracts import ModelRequest, ModelResponse
 from pydantic import BaseModel
@@ -31,7 +31,7 @@ def operations_client(tmp_path):
         jwt_secret="a-test-secret-that-is-at-least-32-bytes",
     )
     prepare_test_database(settings.database_url)
-    app = create_app(settings)
+    app = create_sqlite_test_app(settings)
     with TestClient(app) as client:
         yield client
 
@@ -85,7 +85,7 @@ def test_ai_status_uses_recent_trace_health(tmp_path):
             return [1.0]
 
     prepare_test_database(settings.database_url)
-    app = create_app(settings, structured_model=NoCallModel(), knowledge_embedder=Embedder())
+    app = create_sqlite_test_app(settings, structured_model=NoCallModel(), knowledge_embedder=Embedder())
     with TestClient(app) as client:
         _login(client, "Acme", "admin@acme.test", "correct horse battery staple")
         tenant_id = client.get("/api/v1/auth/me").json()["tenant_id"]
@@ -126,7 +126,7 @@ def test_ai_status_ignores_other_tenant_model_failures(tmp_path):
         knowledge_artifact_dir=str(tmp_path / "knowledge"),
         jwt_secret="a-test-secret-that-is-at-least-32-bytes",
     )
-    app = create_app(settings)
+    app = create_sqlite_test_app(settings)
     request = ModelRequest(
         operation="semantic_project_match",
         prompt_version="semantic-project-v1",

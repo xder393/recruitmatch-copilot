@@ -10,7 +10,7 @@ from sqlalchemy import inspect
 
 from app.config import Settings
 from app.database import create_engine_and_session
-from app.main import create_app
+from tests.support.application import create_sqlite_test_app
 from tests.support.database import prepare_test_database
 
 
@@ -62,7 +62,7 @@ def test_application_startup_does_not_write_schema(tmp_path):
         knowledge_artifact_dir=str(tmp_path / "knowledge"),
         jwt_secret="a-test-secret-that-is-at-least-32-bytes",
     )
-    with TestClient(create_app(settings, knowledge_embedder=_Embedder())):
+    with TestClient(create_sqlite_test_app(settings, knowledge_embedder=_Embedder())):
         pass
 
     engine, _ = create_engine_and_session(database_url)

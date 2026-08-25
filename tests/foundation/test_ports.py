@@ -72,7 +72,7 @@ def test_contextmanager_uow_factory_is_preserved():
             return nullcontext(self.uow)
 
     factory = FakeFactory()
-    service = KnowledgeProcessingService(factory, artifact_store=object(), indexer=object())
+    service = KnowledgeProcessingService(factory, artifact_store=object(), source_indexer=object())
 
     assert service.uow_factory is factory
     with service.uow_factory() as uow:

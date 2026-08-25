@@ -2,20 +2,20 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-
 from app.core.exceptions import AuthorizationError
 from app.domain.enums import Role
 from app.knowledge.chunking import chunk_document
 from app.repositories.ports import JobRepository, ResumeRepository
 from app.repositories.unit_of_work import UnitOfWork
+from app.retrieval.generations import IndexFailureCode, SourceRef
+from app.retrieval.indexing import SourceIndexer
 
 
 class SourceIndexBackfillService:
     def __init__(
         self,
         resumes: ResumeRepository,
-        source_index,
+        source_indexer: SourceIndexer,
         jobs: JobRepository,
         *,
         uow: UnitOfWork,
@@ -23,7 +23,7 @@ class SourceIndexBackfillService:
         self.resumes = resumes
         self.jobs = jobs
         self.uow = uow
-        self.source_index = source_index
+        self.source_indexer = source_indexer
 
     def rebuild(self, principal):
         if principal.role not in {Role.ADMIN, Role.RECRUITER}:
@@ -42,7 +42,14 @@ class SourceIndexBackfillService:
             else:
                 result["failed"] += 1
         for version in versions:
-            if self._index(version, principal.tenant_id, "job", version.id, str(version.version), version.jd_text):
+            if self._index(
+                version,
+                principal.tenant_id,
+                "job_version",
+                version.id,
+                str(version.version),
+                version.jd_text,
+            ):
                 result["job_versions_indexed"] += 1
             else:
                 result["failed"] += 1
@@ -50,22 +57,20 @@ class SourceIndexBackfillService:
         return result
 
     def _index(self, record, tenant_id, source_type, source_id, source_version, text):
-        record.search_index_status = "indexing"
-        record.search_index_error = None
+        source = SourceRef(tenant_id, source_type, source_id, source_version)
         try:
-            self.source_index.index_source(
-                tenant_id,
-                source_type,
-                source_id,
-                source_version,
+            self.source_indexer.index(
+                source,
+                record.active_index_generation + 1,
                 chunk_document(text, source_type),
             )
         except Exception:
-            self._failed(record, "indexing_failed")
+            try:
+                self.source_indexer.fail(source, IndexFailureCode.EMBEDDING_FAILED)
+            except Exception:
+                pass
+            self._failed(record, "embedding_failed")
             return False
-        record.search_index_status = "ready"
-        record.search_index_error = None
-        record.search_indexed_at = datetime.now(timezone.utc)
         return True
 
     @staticmethod

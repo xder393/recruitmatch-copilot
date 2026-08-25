@@ -75,7 +75,7 @@ def test_bootstrap_is_idempotent_on_one_pgvector_alembic_head(postgres_engine: E
         heads = connection.execute(text("SELECT version_num FROM alembic_version")).scalars().all()
         template_count = connection.scalar(text("SELECT count(*) FROM job_templates"))
 
-    assert heads == ["20260824_11"]
+    assert heads == ["20260824_12"]
     assert template_count == 30
 
 
@@ -90,7 +90,15 @@ def test_explicit_and_environment_urls_target_postgresql(postgres_engine: Engine
     command.upgrade(config, "head")
 
     with postgres_engine.connect() as connection:
-        assert connection.execute(text("SELECT version_num FROM alembic_version")).scalars().all() == ["20260824_11"]
+        assert connection.execute(text("SELECT version_num FROM alembic_version")).scalars().all() == ["20260824_12"]
+
+
+def test_legacy_json_vector_table_is_removed(postgres_engine: Engine) -> None:
+    with postgres_engine.connect() as connection:
+        tables = set(connection.execute(text("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")).scalars())
+    assert "recruiting_chunks" in tables
+    legacy_table = "_".join(("knowledge", "chunks"))
+    assert legacy_table not in tables
 
 
 def test_pgvector_extension_and_recruiting_chunk_shape(postgres_engine: Engine) -> None:

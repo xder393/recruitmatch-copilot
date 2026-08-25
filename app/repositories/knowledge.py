@@ -5,8 +5,8 @@ from __future__ import annotations
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
-from app.knowledge.schemas import ChunkInput
-from app.models.knowledge import KnowledgeChunk, KnowledgeDocument
+from app.models.knowledge import KnowledgeDocument
+from app.models.retrieval import RecruitingChunk
 
 
 class KnowledgeRepository:
@@ -46,60 +46,15 @@ class KnowledgeRepository:
             )
         )
 
-    def active_chunks(self, tenant_id: str, document_id: str | None = None) -> list[KnowledgeChunk]:
-        statement = select(KnowledgeChunk).where(
-            KnowledgeChunk.tenant_id == tenant_id,
-            KnowledgeChunk.is_active.is_(True),
-        )
-        if document_id is not None:
-            statement = statement.where(KnowledgeChunk.document_id == document_id)
-        return list(self.session.scalars(statement.order_by(KnowledgeChunk.start)))
-
-    def replace_generation(
-        self,
-        document: KnowledgeDocument,
-        generation: int,
-        chunks: list[ChunkInput],
-    ) -> None:
-        self.session.execute(
-            update(KnowledgeChunk)
-            .where(
-                KnowledgeChunk.tenant_id == document.tenant_id,
-                KnowledgeChunk.document_id == document.id,
-                KnowledgeChunk.is_active.is_(True),
-            )
-            .values(is_active=False)
-        )
-        for item in chunks:
-            self.session.add(
-                KnowledgeChunk(
-                    tenant_id=document.tenant_id,
-                    document_id=document.id,
-                    source_type=item.source_type,
-                    source_id=document.id,
-                    source_version=str(generation),
-                    generation=generation,
-                    start=item.start,
-                    end=item.end,
-                    page=item.page,
-                    content=item.content,
-                    vector=item.vector,
-                    is_active=True,
-                )
-            )
-        document.active_generation = generation
-        document.status = "ready"
-        document.error_code = None
-        document.error_message = None
-        self.session.flush()
-
     def deactivate(self, document: KnowledgeDocument) -> None:
         document.status = "inactive"
+        document.search_index_status = "inactive"
         self.session.execute(
-            update(KnowledgeChunk)
+            update(RecruitingChunk)
             .where(
-                KnowledgeChunk.tenant_id == document.tenant_id,
-                KnowledgeChunk.document_id == document.id,
+                RecruitingChunk.tenant_id == document.tenant_id,
+                RecruitingChunk.source_type == "knowledge_document",
+                RecruitingChunk.source_id == document.id,
             )
             .values(is_active=False)
         )

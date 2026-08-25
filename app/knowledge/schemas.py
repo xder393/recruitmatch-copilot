@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -13,4 +13,3 @@ class ChunkInput(BaseModel):
     start: int = Field(ge=0)
     end: int = Field(gt=0)
     page: Optional[int] = Field(default=None, ge=1)
-    vector: List[float] = Field(default_factory=list)

@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-import numpy as np
 import pytest
-from sqlalchemy import delete
 from fastapi.testclient import TestClient
 
 from app.config import Settings
-from app.main import create_app
-from app.models.knowledge import KnowledgeChunk
+from tests.support.application import create_sqlite_test_app
+from app.models.knowledge import KnowledgeDocument
 from app.models.jobs import JobVersion
 from app.models.resumes import Resume
 from app.domain.enums import Role
@@ -16,12 +14,12 @@ from tests.support.database import prepare_test_database
 
 
 class HashEmbedder:
+    model_name = "fake-512-v1"
+
     def _vector(self, text):
-        vector = np.zeros(8, dtype="float32")
-        for character in text:
-            vector[ord(character) % 8] += 1
-        norm = np.linalg.norm(vector)
-        return (vector / norm if norm else vector).tolist()
+        vector = [0.0] * 512
+        vector[sum(text.encode()) % 512] = 1.0
+        return vector
 
     def embed_documents(self, texts):
         return [self._vector(text) for text in texts]
@@ -40,7 +38,7 @@ def knowledge_app(tmp_path):
         jwt_secret="a-test-secret-that-is-at-least-32-bytes",
     )
     prepare_test_database(settings.database_url)
-    return create_app(settings, knowledge_embedder=HashEmbedder())
+    return create_sqlite_test_app(settings, knowledge_embedder=HashEmbedder())
 
 
 @pytest.fixture
@@ -68,6 +66,23 @@ def _upload(client, content=b"Python interview policy"):
         "/api/v1/knowledge-documents",
         data={"document_type": "policy"},
         files={"file": ("policy.txt", content, "text/plain")},
+    )
+
+
+def _search(app, tenant_id, source_type, source_id, source_version, query):
+    from app.retrieval import SearchScope
+
+    scope = SearchScope(
+        tenant_id,
+        frozenset({source_type}),
+        frozenset({(source_type, source_id, source_version)}),
+    )
+    return app.state.retrieval_index.search(
+        scope,
+        app.state.embedding_adapter.embed_query(query),
+        app.state.embedding_adapter.model_name,
+        5,
+        -1.0,
     )
 
 
@@ -111,10 +126,12 @@ def test_cross_tenant_document_is_hidden(client):
 def test_deactivate_excludes_document_chunks_from_search(client, knowledge_app):
     tenant_id = _login(client, "Acme", "admin@acme.test")
     document_id = _upload(client).json()["id"]
-    assert knowledge_app.state.knowledge_index.search(tenant_id, "Python", {"policy"}, 5, 0)
+    with knowledge_app.state.session_factory() as session:
+        checksum = session.get(KnowledgeDocument, document_id).checksum
+    assert _search(knowledge_app, tenant_id, "knowledge_document", document_id, checksum, "Python")
     response = client.post(f"/api/v1/knowledge-documents/{document_id}/deactivate")
     assert response.json()["status"] == "inactive"
-    assert knowledge_app.state.knowledge_index.search(tenant_id, "Python", {"policy"}, 5, 0) == []
+    assert _search(knowledge_app, tenant_id, "knowledge_document", document_id, checksum, "Python") == []
 
 
 def test_resume_and_job_versions_are_indexed_for_rag(client, knowledge_app):
@@ -129,8 +146,12 @@ def test_resume_and_job_versions_are_indexed_for_rag(client, knowledge_app):
         json={"title": "AI Engineer", "jd_text": "Python RAG", "profile": {}},
     )
     assert job.status_code == 201
-    resume_hits = knowledge_app.state.knowledge_index.search(tenant_id, "Python", {"resume"}, 5, 0)
-    job_hits = knowledge_app.state.knowledge_index.search(tenant_id, "RAG", {"job"}, 5, 0)
+    assert job.json()["versions"][0]["search_index_status"] == "ready"
+    with knowledge_app.state.session_factory() as session:
+        resume_version = session.get(Resume, resume.json()["id"]).sha256
+    resume_hits = _search(knowledge_app, tenant_id, "resume", resume.json()["id"], resume_version, "Python")
+    version = job.json()["versions"][0]
+    job_hits = _search(knowledge_app, tenant_id, "job_version", version["id"], str(version["version"]), "RAG")
     assert resume_hits[0].source_id == resume.json()["id"]
     assert job_hits[0].source_id == job.json()["versions"][0]["id"]
 
@@ -165,7 +186,6 @@ def test_source_backfill_repairs_existing_resume_and_job_indexes(client, knowled
         json={"title": "AI Engineer", "jd_text": "Python RAG", "profile": {}},
     ).json()
     with knowledge_app.state.session_factory() as session:
-        session.execute(delete(KnowledgeChunk).where(KnowledgeChunk.tenant_id == tenant_id))
         stored_resume = session.get(Resume, resume["id"])
         stored_job = session.get(JobVersion, job["versions"][0]["id"])
         stored_resume.search_index_status = "pending"
@@ -175,8 +195,11 @@ def test_source_backfill_repairs_existing_resume_and_job_indexes(client, knowled
     response = client.post("/api/v1/knowledge-documents/rebuild-sources")
     assert response.status_code == 200
     assert response.json() == {"resumes_indexed": 1, "job_versions_indexed": 1, "failed": 0}
-    assert knowledge_app.state.knowledge_index.search(tenant_id, "Python", {"resume"}, 5, 0)
-    assert knowledge_app.state.knowledge_index.search(tenant_id, "RAG", {"job"}, 5, 0)
+    with knowledge_app.state.session_factory() as session:
+        resume_version = session.get(Resume, resume["id"]).sha256
+    assert _search(knowledge_app, tenant_id, "resume", resume["id"], resume_version, "Python")
+    version = job["versions"][0]
+    assert _search(knowledge_app, tenant_id, "job_version", version["id"], str(version["version"]), "RAG")
     with knowledge_app.state.session_factory() as session:
         assert session.get(Resume, resume["id"]).search_index_status == "ready"
         assert session.get(JobVersion, job["versions"][0]["id"]).search_index_status == "ready"

@@ -33,5 +33,9 @@ class JobRepository:
     def add(self, job: Job) -> None:
         self.session.add(job)
 
+    def reload(self, tenant_id: str, job_id: str) -> Optional[Job]:
+        self.session.expire_all()
+        return self.get(tenant_id, job_id)
+
     def list_versions_for_tenant(self, tenant_id: str) -> List[JobVersion]:
         return list(self.session.scalars(select(JobVersion).join(Job).where(Job.tenant_id == tenant_id)))

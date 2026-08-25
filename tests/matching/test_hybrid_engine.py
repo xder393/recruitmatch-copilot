@@ -5,14 +5,22 @@ from app.matching.engine import MatchingEngine
 from app.matching.hybrid import HybridMatchingEngine, HybridTenantContext, combine_scores
 from app.matching.schemas import CandidateJob
 from app.resumes.schemas import Evidence, ResumeProfile, SkillEvidence
+from app.retrieval import SearchScope
 
 
 class FakeSemanticMatcher:
     def __init__(self, scores):
         self.scores = scores
 
-    def score(self, tenant_id, resume_id, job_version_id):
+    def score(self, scope, resume_id, job_version_id):
         return self.scores.get(job_version_id)
+
+
+def _context():
+    return HybridTenantContext(
+        "resume-1",
+        SearchScope("t1", frozenset({"resume"}), frozenset({("resume", "resume-1", "v1")})),
+    )
 
 
 def _profile():
@@ -53,9 +61,7 @@ def test_hybrid_reranks_and_retains_rule_components():
             ),
         }
     )
-    ranked = HybridMatchingEngine(MatchingEngine(), matcher).rank(
-        _profile(), jobs, HybridTenantContext("t1", "resume-1"), top_k=2
-    )
+    ranked = HybridMatchingEngine(MatchingEngine(), matcher).rank(_profile(), jobs, _context(), top_k=2)
 
     assert ranked[0].job_id == "python"
     assert ranked[0].rule_score == 1
@@ -66,7 +72,7 @@ def test_hybrid_reranks_and_retains_rule_components():
 
 def test_missing_semantic_output_has_explicit_fallback():
     result = HybridMatchingEngine(MatchingEngine(), FakeSemanticMatcher({})).rank(
-        _profile(), [_job("python", ["Python"])], HybridTenantContext("t1", "resume-1")
+        _profile(), [_job("python", ["Python"])], _context()
     )[0]
     assert result.total_score == 0.8
     assert result.semantic_score is None

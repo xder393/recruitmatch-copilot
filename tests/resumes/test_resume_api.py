@@ -6,8 +6,8 @@ from sqlalchemy import select
 
 from app.config import Settings
 from app.core.exceptions import ResourceNotFoundError
-from app.main import create_app
-from app.models.knowledge import KnowledgeChunk
+from tests.support.application import create_sqlite_test_app
+from app.models.retrieval import RecruitingChunk
 from app.models.matching import MatchResult, MatchRun
 from app.models.resumes import Resume
 from tests.support.database import prepare_test_database
@@ -22,7 +22,7 @@ def resume_client(tmp_path):
         jwt_secret="a-test-secret-that-is-at-least-32-bytes",
     )
     prepare_test_database(settings.database_url)
-    app = create_app(settings)
+    app = create_sqlite_test_app(settings)
     with TestClient(app) as client:
         _switch_tenant(client, "Acme", "admin@acme.test", "correct horse battery staple")
         yield client
@@ -179,9 +179,9 @@ def test_list_and_soft_delete_hide_resume(resume_client):
         assert stored.artifact.extracted_text is None
         assert (
             session.scalar(
-                select(KnowledgeChunk).where(
-                    KnowledgeChunk.source_type == "resume",
-                    KnowledgeChunk.source_id == resume_id,
+                select(RecruitingChunk).where(
+                    RecruitingChunk.source_type == "resume",
+                    RecruitingChunk.source_id == resume_id,
                 )
             )
             is None

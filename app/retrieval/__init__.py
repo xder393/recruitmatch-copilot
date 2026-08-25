@@ -6,5 +6,13 @@ from app.retrieval.ports import (
     SearchScope,
     VectorIndexHealthProbe,
 )
+from app.retrieval.indexing import EmbeddingAdapter, SourceIndexer
 
-__all__ = ["RecruitingVectorIndex", "RetrievedChunk", "SearchScope", "VectorIndexHealthProbe"]
+__all__ = [
+    "EmbeddingAdapter",
+    "RecruitingVectorIndex",
+    "RetrievedChunk",
+    "SearchScope",
+    "SourceIndexer",
+    "VectorIndexHealthProbe",
+]

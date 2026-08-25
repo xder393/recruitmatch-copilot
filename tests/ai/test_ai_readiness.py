@@ -4,7 +4,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 
 from app.config import Settings
-from app.main import create_app
+from tests.support.application import create_sqlite_test_app
 from app.models.operations import ModelTrace
 from tests.ai.fakes import FakeStructuredModel
 from tests.support.database import prepare_test_database
@@ -40,7 +40,7 @@ def _authenticated(client):
 def test_ai_status_is_disabled_without_disabling_core(tmp_path):
     settings = _settings(tmp_path)
     prepare_test_database(settings.database_url)
-    with TestClient(create_app(settings)) as client:
+    with TestClient(create_sqlite_test_app(settings)) as client:
         _authenticated(client)
         body = client.get("/api/v1/ai/status").json()
         assert body == {
@@ -67,7 +67,7 @@ def test_enabled_ai_parser_persists_grounded_profile_and_safe_trace(tmp_path):
     )
     settings = _settings(tmp_path, api_key="test", ai_enabled=True)
     prepare_test_database(settings.database_url)
-    app = create_app(settings, structured_model=model)
+    app = create_sqlite_test_app(settings, structured_model=model)
     with TestClient(app) as client:
         _authenticated(client)
         response = client.post(

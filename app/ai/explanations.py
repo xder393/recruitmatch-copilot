@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 from app.ai.citations import authorized_hits, citations_are_known, format_evidence
 from app.ai.contracts import ModelRequest, StructuredModel
 from app.ai.gateway import ModelGatewayError
-from app.knowledge.index import RetrievedChunk
+from app.retrieval import RetrievedChunk, SearchScope
 
 
 class GroundedClaim(BaseModel):
@@ -30,9 +30,9 @@ class Citation(BaseModel):
     source_type: str
     source_id: str
     content: str
-    start: int
-    end: int
-    page: Optional[int] = None
+    start_offset: int
+    end_offset: int
+    page_number: Optional[int] = None
 
 
 class GroundedExplanation(BaseModel):
@@ -65,7 +65,7 @@ class GroundedExplanationService:
 
     def generate(
         self,
-        tenant_id: str,
+        scope: SearchScope,
         resume_id: str,
         job_version_id: str,
         rule_result: Dict[str, Any],
@@ -76,7 +76,7 @@ class GroundedExplanationService:
 
         permitted = authorized_hits(hits, resume_id, job_version_id)
         if self.citation_resolver is not None:
-            permitted = self.citation_resolver(tenant_id, {hit.citation_id for hit in permitted})
+            permitted = self.citation_resolver(scope, frozenset(hit.citation_id for hit in permitted))
             permitted = authorized_hits(permitted, resume_id, job_version_id)
         evidence = format_evidence(permitted, self.max_evidence_characters)
         if not evidence:
@@ -97,11 +97,11 @@ class GroundedExplanationService:
         try:
             response = self.model.generate(request)
         except ModelGatewayError as error:
-            self._trace_failed(tenant_id, resume_id, source_ids, request, error, started)
+            self._trace_failed(scope.tenant_id, resume_id, source_ids, request, error, started)
             return self._fallback(rule_result, "rules_fallback")
         except Exception:
             fallback_error = ModelGatewayError("unexpected_model_error", retryable=False)
-            self._trace_failed(tenant_id, resume_id, source_ids, request, fallback_error, started)
+            self._trace_failed(scope.tenant_id, resume_id, source_ids, request, fallback_error, started)
             return self._fallback(rule_result, "rules_fallback")
         explanation = self._validate(response.value, permitted)
         if not any(
@@ -117,7 +117,7 @@ class GroundedExplanationService:
         if self.trace_sink is not None:
             try:
                 self.trace_sink.succeeded(
-                    tenant_id,
+                    scope.tenant_id,
                     "match_explanation",
                     resume_id,
                     source_ids,
@@ -180,9 +180,9 @@ class GroundedExplanationService:
                 source_type=by_id[citation_id].source_type,
                 source_id=by_id[citation_id].source_id,
                 content=by_id[citation_id].content,
-                start=by_id[citation_id].start,
-                end=by_id[citation_id].end,
-                page=by_id[citation_id].page,
+                start_offset=by_id[citation_id].start_offset,
+                end_offset=by_id[citation_id].end_offset,
+                page_number=by_id[citation_id].page_number,
             )
             for citation_id in used_ids
         }

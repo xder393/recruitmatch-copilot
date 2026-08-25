@@ -73,7 +73,7 @@ def create_job(
     uow: RecruitingUnitOfWork = Depends(get_unit_of_work),
 ):
     return _job_response(
-        JobService(jobs, request.app.state.recruiting_source_index, uow=uow).create_job(
+        JobService(jobs, request.app.state.source_indexer, uow=uow).create_job(
             principal, payload.title, payload.jd_text, payload.profile
         )
     )
@@ -109,7 +109,7 @@ def update_job(
     uow: RecruitingUnitOfWork = Depends(get_unit_of_work),
 ):
     return _job_response(
-        JobService(jobs, request.app.state.recruiting_source_index, uow=uow).update_job(
+        JobService(jobs, request.app.state.source_indexer, uow=uow).update_job(
             principal,
             job_id,
             title=payload.title,

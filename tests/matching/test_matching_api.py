@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.config import Settings
-from app.main import create_app
+from tests.support.application import create_sqlite_test_app
 from tests.support.database import prepare_test_database
 
 
@@ -27,7 +27,7 @@ def matching_client(tmp_path):
         jwt_secret="a-test-secret-that-is-at-least-32-bytes",
     )
     prepare_test_database(settings.database_url)
-    app = create_app(settings)
+    app = create_sqlite_test_app(settings)
     with TestClient(app) as client:
         _login(client, "Acme", "admin@acme.test", "correct horse battery staple")
         for title, required, preferred in [
@@ -84,10 +84,10 @@ def test_hybrid_mode_persists_score_components(matching_client):
     from app.matching.engine import MatchingEngine
     from app.matching.hybrid import HybridMatchingEngine
     from app.ai.explanations import GroundedClaim, GroundedExplanation
-    from app.knowledge.index import RetrievedChunk
+    from app.retrieval import RetrievedChunk
 
     class Semantic:
-        def score(self, tenant_id, resume_id, job_version_id):
+        def score(self, scope, resume_id, job_version_id):
             return SemanticProjectScore(
                 score=0.75,
                 rationale="项目证据匹配",
@@ -98,9 +98,9 @@ def test_hybrid_mode_persists_score_components(matching_client):
     class Explanation:
         prompt_version = "match-explanation-v1"
 
-        def generate(self, tenant_id, resume_id, job_version_id, rule_result, hits):
+        def generate(self, scope, resume_id, job_version_id, rule_result, hits):
             resume_citation = next(hit.citation_id for hit in hits if hit.source_type == "resume")
-            job_citation = next(hit.citation_id for hit in hits if hit.source_type == "job")
+            job_citation = next(hit.citation_id for hit in hits if hit.source_type == "job_version")
             return GroundedExplanation(
                 summary=GroundedClaim(text="项目与岗位有可核验证据", citation_ids=[resume_citation, job_citation]),
                 strengths=[GroundedClaim(text="Python 项目匹配", citation_ids=[resume_citation])],
@@ -112,16 +112,31 @@ def test_hybrid_mode_persists_score_components(matching_client):
             )
 
     class SourceIndex:
-        def source_chunks(self, tenant_id, source_type, source_id):
-            return [RetrievedChunk(f"{source_type}-citation", source_type, source_id, "Python RAG", 0, 10, None, 1)]
-
-        def search(self, *args, **kwargs):
-            return [RetrievedChunk("policy-citation", "policy", "policy-1", "统一面试标准", 0, 6, None, 1)]
+        def search(self, scope, *args, **kwargs):
+            return [
+                RetrievedChunk(
+                    source_id,
+                    scope.tenant_id,
+                    f"{source_type}-citation",
+                    source_type,
+                    source_id,
+                    source_version,
+                    1,
+                    "Python RAG",
+                    0,
+                    10,
+                    None,
+                    None,
+                    1.0,
+                )
+                for source_type, source_id, source_version in scope.authorized_sources
+                if source_type in {"resume", "job_version"}
+            ]
 
     client, resume_id = matching_client
     client.app.state.hybrid_matching_engine = HybridMatchingEngine(MatchingEngine(), Semantic())
     client.app.state.grounded_explanation_service = Explanation()
-    client.app.state.knowledge_index = SourceIndex()
+    client.app.state.retrieval_index = SourceIndex()
     response = client.post(f"/api/v1/resumes/{resume_id}/matches?mode=hybrid-v1")
     assert response.status_code == 201
     body = response.json()
@@ -140,20 +155,17 @@ def test_hybrid_guidance_retrieval_failure_keeps_rules_results(matching_client):
     from app.matching.hybrid import HybridMatchingEngine
 
     class NoSemantic:
-        def score(self, tenant_id, resume_id, job_version_id):
+        def score(self, scope, resume_id, job_version_id):
             return None
 
     class BrokenIndex:
-        def source_chunks(self, *args, **kwargs):
-            raise RuntimeError("vector store unavailable")
-
         def search(self, *args, **kwargs):
             raise RuntimeError("vector store unavailable")
 
     client, resume_id = matching_client
     client.app.state.hybrid_matching_engine = HybridMatchingEngine(MatchingEngine(), NoSemantic())
     client.app.state.grounded_explanation_service = object()
-    client.app.state.knowledge_index = BrokenIndex()
+    client.app.state.retrieval_index = BrokenIndex()
 
     response = client.post(f"/api/v1/resumes/{resume_id}/matches?mode=hybrid-v1")
 

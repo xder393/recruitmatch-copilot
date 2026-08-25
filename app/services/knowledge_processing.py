@@ -3,26 +3,22 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from typing import Protocol
 
 from app.core.exceptions import AppError
 from app.knowledge.chunking import chunk_document
-from app.knowledge.schemas import ChunkInput
 from app.repositories.unit_of_work import UnitOfWorkFactory
 from app.resumes.extractors import extract_text
-
-
-class KnowledgeIndexer(Protocol):
-    def embed(self, chunks: list[ChunkInput]) -> list[ChunkInput]: ...
+from app.retrieval.generations import IndexFailureCode, SourceRef
+from app.retrieval.indexing import SourceIndexer
 
 
 class KnowledgeProcessingService:
     lease_seconds = 300
 
-    def __init__(self, uow_factory: UnitOfWorkFactory, artifact_store, indexer: KnowledgeIndexer):
+    def __init__(self, uow_factory: UnitOfWorkFactory, artifact_store, source_indexer: SourceIndexer):
         self.uow_factory = uow_factory
         self.artifact_store = artifact_store
-        self.indexer = indexer
+        self.source_indexer = source_indexer
 
     def process(self, tenant_id: str, document_id: str) -> bool:
         with self.uow_factory() as uow:
@@ -39,17 +35,14 @@ class KnowledgeProcessingService:
             document.error_message = None
             filename = document.original_filename
             artifact_key = document.artifact_key
-            document_type = document.document_type
-            next_generation = document.active_generation + 1
+            source_version = document.checksum
+            next_generation = document.active_index_generation + 1
             uow.commit()
 
         try:
             content = self.artifact_store.read(artifact_key)
             text = extract_text(filename, content)
-            chunks = chunk_document(text, document_type)
-            embedded = self.indexer.embed(chunks)
-            if len(embedded) != len(chunks) or any(not item.vector for item in embedded):
-                raise ValueError("embedding output incomplete")
+            chunks = chunk_document(text, "knowledge_document")
         except AppError as exc:
             self._mark_failed(tenant_id, document_id, exc.code, "知识文档处理失败")
             return True
@@ -57,12 +50,23 @@ class KnowledgeProcessingService:
             self._mark_failed(tenant_id, document_id, "knowledge_processing_failed", "知识文档处理失败")
             return True
 
+        source = SourceRef(tenant_id, "knowledge_document", document_id, source_version)
+        try:
+            self.source_indexer.index(source, next_generation, chunks, document_id=document_id)
+        except Exception:
+            try:
+                self.source_indexer.fail(source, IndexFailureCode.EMBEDDING_FAILED)
+            except Exception:
+                pass
+            self._mark_failed(tenant_id, document_id, "knowledge_indexing_failed", "知识文档索引失败")
+            return True
         with self.uow_factory() as uow:
-            repository = uow.knowledge
-            document = repository.get_document(tenant_id, document_id)
+            document = uow.knowledge.get_document(tenant_id, document_id)
             if document is None or document.status == "inactive":
                 return True
-            repository.replace_generation(document, next_generation, embedded)
+            document.status = "ready"
+            document.error_code = None
+            document.error_message = None
             uow.commit()
         return True
 
@@ -75,7 +79,7 @@ class KnowledgeProcessingService:
             document = uow.knowledge.get_document(tenant_id, document_id)
             if document is None or document.status == "inactive":
                 return
-            document.status = "failed"
+            document.status = "ready" if document.active_index_generation > 0 else "failed"
             document.error_code = code[:100]
             document.error_message = message[:500]
             uow.commit()

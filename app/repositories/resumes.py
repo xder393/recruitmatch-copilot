@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.domain.enums import ResumeStatus
 from app.models.resumes import Resume
-from app.models.knowledge import KnowledgeChunk
+from app.models.retrieval import RecruitingChunk
 from app.models.matching import MatchResult, MatchRun
 
 
@@ -89,10 +89,10 @@ class ResumeRepository:
         if resume.artifact is not None:
             resume.artifact.extracted_text = None
         self.session.execute(
-            delete(KnowledgeChunk).where(
-                KnowledgeChunk.tenant_id == tenant_id,
-                KnowledgeChunk.source_type == "resume",
-                KnowledgeChunk.source_id == resume.id,
+            delete(RecruitingChunk).where(
+                RecruitingChunk.tenant_id == tenant_id,
+                RecruitingChunk.source_type == "resume",
+                RecruitingChunk.source_id == resume.id,
             )
         )
         run_ids = select(MatchRun.id).where(MatchRun.tenant_id == tenant_id, MatchRun.resume_id == resume.id)

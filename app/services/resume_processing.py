@@ -10,6 +10,8 @@ from app.domain.enums import ResumeStatus
 from app.resumes.extractors import extract_text
 from app.resumes.schemas import ResumeProfile
 from app.repositories.unit_of_work import UnitOfWorkFactory
+from app.retrieval.generations import IndexFailureCode, SourceRef
+from app.retrieval.indexing import SourceIndexer
 
 
 class ArtifactReader(Protocol):
@@ -24,12 +26,16 @@ class ResumeProcessingService:
     lease_seconds = 300
 
     def __init__(
-        self, uow_factory: UnitOfWorkFactory, artifact_store: ArtifactReader, parser: ResumeParser, source_index=None
+        self,
+        uow_factory: UnitOfWorkFactory,
+        artifact_store: ArtifactReader,
+        parser: ResumeParser,
+        source_indexer: SourceIndexer | None = None,
     ):
         self.uow_factory = uow_factory
         self.artifact_store = artifact_store
         self.parser = parser
-        self.source_index = source_index
+        self.source_indexer = source_indexer
 
     def process(self, tenant_id: str, resume_id: str) -> bool:
         with self.uow_factory() as uow:
@@ -53,6 +59,7 @@ class ResumeProcessingService:
             filename = resume.original_filename
             storage_key = resume.artifact.storage_key
             source_version = resume.sha256
+            next_generation = resume.active_index_generation + 1
             uow.commit()
 
         try:
@@ -105,22 +112,19 @@ class ResumeProcessingService:
                     )
             uow.commit()
 
-        if self.source_index is not None:
+        if self.source_indexer is not None:
+            source = SourceRef(tenant_id, "resume", resume_id, source_version)
             try:
                 from app.knowledge.chunking import chunk_document
 
-                self.source_index.index_source(
-                    tenant_id,
-                    "resume",
-                    resume_id,
-                    source_version,
-                    chunk_document(text, "resume"),
-                )
-                self._mark_indexed(tenant_id, resume_id, "ready")
+                self.source_indexer.index(source, next_generation, chunk_document(text, "resume"))
             except Exception:
                 # Search enrichment must never roll back an otherwise valid
                 # resume; re-indexing can repair this side effect later.
-                self._mark_indexed(tenant_id, resume_id, "failed", "indexing_failed")
+                try:
+                    self.source_indexer.fail(source, IndexFailureCode.EMBEDDING_FAILED)
+                except Exception:
+                    pass
         return True
 
     def _lease_expired(self, updated_at: datetime) -> bool:
@@ -135,14 +139,4 @@ class ResumeProcessingService:
             resume.status = ResumeStatus.FAILED
             resume.error_code = code
             resume.error_message = message[:500]
-            uow.commit()
-
-    def _mark_indexed(self, tenant_id: str, resume_id: str, status: str, error: str | None = None) -> None:
-        with self.uow_factory() as uow:
-            resume = uow.resumes.get(tenant_id, resume_id, include_deleted=True)
-            if resume is None:
-                return
-            resume.search_index_status = status
-            resume.search_index_error = error
-            resume.search_indexed_at = datetime.now(timezone.utc) if status == "ready" else None
             uow.commit()
