@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from datetime import datetime, timezone
 import math
 import os
-from threading import Barrier
+from queue import Queue
+from threading import Barrier, Event
+import time
 
 import pytest
-from sqlalchemy import Engine, create_engine, delete, select, update
+from sqlalchemy import Engine, create_engine, delete, event, select, text, update
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.domain.enums import JobStatus, ResumeStatus
@@ -17,7 +20,7 @@ from app.models.identity import Tenant
 from app.models.jobs import Job, JobVersion
 from app.models.knowledge import KnowledgeDocument
 from app.models.retrieval import RecruitingChunk
-from app.models.resumes import Resume
+from app.models.resumes import Resume, ResumeArtifact
 from app.retrieval.generations import (
     FencingNotSupportedError,
     GenerationConflictError,
@@ -322,6 +325,93 @@ def test_stage_rejects_wrong_tenant_version_stale_generation_and_privacy_deleted
         assert [chunk.generation for chunk in source_chunks(session, reference)] == [1]
 
 
+@pytest.mark.parametrize(
+    ("source_type", "document_mode", "expected_document_id"),
+    [
+        ("knowledge_document", "none", "knowledge-generation"),
+        ("knowledge_document", "source", "knowledge-generation"),
+        ("job_version", "none", None),
+        ("resume", "none", None),
+        ("resume", "owned-artifact", "artifact-owned"),
+    ],
+)
+def test_stage_normalizes_only_source_owned_document_cleanup_keys(
+    session_factory, source_type: str, document_mode: str, expected_document_id: str | None
+) -> None:
+    reference = seed_source(session_factory, source_type)
+    if source_type == "resume":
+        with session_factory() as session:
+            session.add(
+                ResumeArtifact(
+                    id="artifact-owned",
+                    resume_id=reference.source_id,
+                    storage_key="generation/artifact-owned",
+                )
+            )
+            session.commit()
+    document_id = {
+        "none": None,
+        "source": reference.source_id,
+        "owned-artifact": "artifact-owned",
+    }[document_mode]
+
+    GenerationWriter(session_factory).stage(
+        reference,
+        1,
+        [replace(staged_chunk(f"document-{source_type}"), document_id=document_id)],
+    )
+
+    with session_factory() as session:
+        chunks = source_chunks(session, reference)
+        assert len(chunks) == 1
+        assert chunks[0].document_id == expected_document_id
+
+
+@pytest.mark.parametrize(
+    ("source_type", "document_id"),
+    [
+        ("knowledge_document", "another-knowledge-document"),
+        ("job_version", "job-artifact-not-supported"),
+        ("resume", "artifact-owned-by-another-resume"),
+    ],
+)
+def test_stage_rejects_document_cleanup_keys_not_owned_by_the_locked_source(
+    session_factory, source_type: str, document_id: str
+) -> None:
+    reference = seed_source(session_factory, source_type)
+    if source_type == "resume":
+        with session_factory() as session:
+            other_resume = Resume(
+                id="other-resume",
+                tenant_id=TENANT,
+                sha256="other-resume-sha",
+                original_filename="other.pdf",
+                media_type="application/pdf",
+                size_bytes=10,
+                status=ResumeStatus.SUCCEEDED,
+                profile={},
+            )
+            session.add(other_resume)
+            session.add(
+                ResumeArtifact(
+                    id=document_id,
+                    resume_id=other_resume.id,
+                    storage_key="generation/artifact-other",
+                )
+            )
+            session.commit()
+
+    with pytest.raises(GenerationValidationError, match="document"):
+        GenerationWriter(session_factory).stage(
+            reference,
+            1,
+            [replace(staged_chunk(f"invalid-document-{source_type}"), document_id=document_id)],
+        )
+
+    with session_factory() as session:
+        assert source_chunks(session, reference) == []
+
+
 def test_activate_rejects_zero_incomplete_mixed_identity_and_noninactive_staging(session_factory) -> None:
     writer = GenerationWriter(session_factory)
     zero_reference = seed_source(session_factory, "resume")
@@ -417,6 +507,137 @@ def test_concurrent_activation_has_one_winner_and_consistent_final_authority(ses
         assert state.active_index_generation == 1
         assert state.search_index_status == "ready"
         assert [(chunk.generation, chunk.is_active) for chunk in chunks] == [(1, True)]
+
+
+def test_concurrent_staging_maps_only_tenant_citation_conflict_to_stable_validation_error(
+    postgres_engine: Engine, session_factory
+) -> None:
+    resume = seed_source(session_factory, "resume")
+    knowledge = seed_source(session_factory, "knowledge_document")
+    writer = GenerationWriter(session_factory)
+    stage_start = Barrier(2)
+    citation_precheck = Barrier(2)
+
+    def synchronize_citation_prechecks(_conn, _cursor, statement, _parameters, _context, _executemany) -> None:
+        if statement.lstrip().startswith("SELECT") and "recruiting_chunks.citation_id IN" in statement:
+            citation_precheck.wait(timeout=5)
+
+    def stage(reference: SourceRef, suffix: str) -> tuple[str, str]:
+        stage_start.wait()
+        try:
+            writer.stage(reference, 1, [staged_chunk(suffix, citation_id="shared-tenant-citation")])
+        except GenerationValidationError as exc:
+            return "validation", str(exc)
+        except Exception as exc:  # capture unexpected DB leakage as observable test evidence
+            return "unexpected", f"{type(exc).__name__}: {exc}"
+        return "winner", ""
+
+    event.listen(postgres_engine, "before_cursor_execute", synchronize_citation_prechecks)
+    try:
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            outcomes = list(
+                executor.map(
+                    lambda item: stage(*item),
+                    [(resume, "resume-collision"), (knowledge, "knowledge-collision")],
+                )
+            )
+    finally:
+        event.remove(postgres_engine, "before_cursor_execute", synchronize_citation_prechecks)
+
+    assert sorted(outcomes) == [
+        ("validation", "citation ID already exists for this tenant"),
+        ("winner", ""),
+    ]
+    with session_factory() as session:
+        chunks = list(
+            session.scalars(
+                select(RecruitingChunk).where(
+                    RecruitingChunk.tenant_id == TENANT,
+                    RecruitingChunk.citation_id == "shared-tenant-citation",
+                )
+            )
+        )
+        assert len(chunks) == 1
+        assert chunks[0].is_active is False
+        assert source_state(session, resume).active_index_generation == 0
+        assert source_state(session, knowledge).active_index_generation == 0
+
+
+@pytest.mark.parametrize("activation_fails", [False, True])
+def test_job_activation_locks_tenant_authority_until_commit_or_rollback(
+    postgres_engine: Engine, session_factory, activation_fails: bool
+) -> None:
+    reference = seed_source(session_factory, "job_version")
+    activation_paused = Event()
+    release_activation = Event()
+
+    def checkpoint() -> None:
+        activation_paused.set()
+        assert release_activation.wait(timeout=5)
+        if activation_fails:
+            raise RuntimeError("rollback activation after both Source rows are locked")
+
+    writer = GenerationWriter(session_factory, activation_checkpoint=checkpoint)
+    writer.stage(reference, 1, [staged_chunk("job-lock")])
+
+    mover_pid: Queue[int] = Queue()
+
+    def move_job_tenant_then_rollback() -> None:
+        with session_factory() as session:
+            session.begin()
+            mover_pid.put(int(session.scalar(select(text("pg_backend_pid()"))) or 0))
+            session.execute(
+                update(Job).where(Job.id == "job-generation", Job.tenant_id == TENANT).values(tenant_id=OTHER_TENANT)
+            )
+            session.rollback()
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        activation = executor.submit(
+            writer.activate,
+            reference,
+            1,
+            expected_count=1,
+            embedding_model=MODEL,
+        )
+        assert activation_paused.wait(timeout=5)
+        mover = executor.submit(move_job_tenant_then_rollback)
+        pid = mover_pid.get(timeout=5)
+
+        deadline = time.monotonic() + 5
+        blocked_on_job_lock = False
+        while time.monotonic() < deadline:
+            with postgres_engine.connect() as connection:
+                blocked_on_job_lock = (
+                    connection.execute(
+                        select(text("wait_event_type")).select_from(text("pg_stat_activity")).where(text("pid = :pid")),
+                        {"pid": pid},
+                    ).scalar_one_or_none()
+                    == "Lock"
+                )
+            if blocked_on_job_lock:
+                break
+            if mover.done():
+                break
+            time.sleep(0.01)
+        assert blocked_on_job_lock, "Job tenant update was not blocked by activation's Source authority lock"
+        release_activation.set()
+        if activation_fails:
+            with pytest.raises(RuntimeError, match="rollback activation"):
+                activation.result(timeout=5)
+        else:
+            activation.result(timeout=5)
+        mover.result(timeout=5)
+
+    with session_factory() as session:
+        job_tenant = session.scalar(select(Job.tenant_id).where(Job.id == "job-generation"))
+        state = source_state(session, reference)
+        chunks = source_chunks(session, reference)
+        assert job_tenant == TENANT
+        assert state.active_index_generation == (0 if activation_fails else 1)
+        assert state.search_index_status == ("pending" if activation_fails else "ready")
+        assert [(chunk.tenant_id, chunk.generation, chunk.is_active) for chunk in chunks] == [
+            (TENANT, 1, not activation_fails)
+        ]
 
 
 @pytest.mark.parametrize(

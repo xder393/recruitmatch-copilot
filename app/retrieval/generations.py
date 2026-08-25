@@ -9,13 +9,14 @@ import math
 from typing import Callable, TypeAlias
 
 from sqlalchemy import String, cast, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import ColumnElement
 
 from app.domain.enums import ResumeStatus
 from app.models.jobs import Job, JobVersion
 from app.models.knowledge import KnowledgeDocument
-from app.models.resumes import Resume
+from app.models.resumes import Resume, ResumeArtifact
 from app.models.retrieval import RecruitingChunk
 from app.retrieval.ports import EMBEDDING_DIMENSION, EMBEDDING_NORM_TOLERANCE, RECRUITING_SOURCE_TYPES
 
@@ -108,32 +109,38 @@ class GenerationWriter:
         self._validate_generation_number(generation)
         embedding_model = self._validate_chunks(chunks)
 
-        with self.session_factory() as session, session.begin():
-            source_row = self._lock_source(session, source)
-            self._require_next_generation(source_row, generation)
-            self._require_unique_staging(session, source, generation, chunks)
-            for chunk in chunks:
-                session.add(
-                    RecruitingChunk(
-                        tenant_id=source.tenant_id,
-                        document_id=chunk.document_id
-                        or (source.source_id if source.source_type == "knowledge_document" else None),
-                        source_type=source.source_type,
-                        source_id=source.source_id,
-                        source_version=source.source_version,
-                        generation=generation,
-                        citation_id=chunk.citation_id,
-                        page_number=chunk.page_number,
-                        section=chunk.section,
-                        start_offset=chunk.start_offset,
-                        end_offset=chunk.end_offset,
-                        content=chunk.content,
-                        embedding=chunk.embedding,
-                        embedding_model=embedding_model,
-                        is_active=False,
+        try:
+            with self.session_factory() as session, session.begin():
+                source_row = self._lock_source(session, source)
+                self._require_next_generation(source_row, generation)
+                self._require_unique_staging(session, source, generation, chunks)
+                for chunk in chunks:
+                    document_id = self._normalize_document_id(session, source, chunk.document_id)
+                    session.add(
+                        RecruitingChunk(
+                            tenant_id=source.tenant_id,
+                            document_id=document_id,
+                            source_type=source.source_type,
+                            source_id=source.source_id,
+                            source_version=source.source_version,
+                            generation=generation,
+                            citation_id=chunk.citation_id,
+                            page_number=chunk.page_number,
+                            section=chunk.section,
+                            start_offset=chunk.start_offset,
+                            end_offset=chunk.end_offset,
+                            content=chunk.content,
+                            embedding=chunk.embedding,
+                            embedding_model=embedding_model,
+                            is_active=False,
+                        )
                     )
-                )
-            session.flush()
+                session.flush()
+        except IntegrityError as exc:
+            constraint_name = getattr(getattr(exc.orig, "diag", None), "constraint_name", None)
+            if constraint_name == "uq_recruiting_chunk_tenant_citation":
+                raise GenerationValidationError("citation ID already exists for this tenant") from None
+            raise
         return len(chunks)
 
     def activate(
@@ -318,7 +325,7 @@ class GenerationWriter:
             )
             is not None
         ):
-            raise GenerationValidationError("a citation ID already exists for this tenant")
+            raise GenerationValidationError("citation ID already exists for this tenant")
         if (
             session.scalar(
                 select(RecruitingChunk.id).where(
@@ -338,6 +345,30 @@ class GenerationWriter:
             RecruitingChunk.source_id == source.source_id,
             RecruitingChunk.source_version == source.source_version,
         )
+
+    @staticmethod
+    def _normalize_document_id(session: Session, source: SourceRef, document_id: str | None) -> str | None:
+        if source.source_type == "knowledge_document":
+            if document_id is not None and document_id != source.source_id:
+                raise GenerationValidationError("knowledge document cleanup key must equal the locked Source ID")
+            return source.source_id
+        if source.source_type == "job_version":
+            if document_id is not None:
+                raise GenerationValidationError("job-version chunks cannot carry a document cleanup key")
+            return None
+        if document_id is None:
+            return None
+        owned_artifact_id = session.scalar(
+            select(ResumeArtifact.id)
+            .where(
+                ResumeArtifact.id == document_id,
+                ResumeArtifact.resume_id == source.source_id,
+            )
+            .with_for_update(of=ResumeArtifact)
+        )
+        if owned_artifact_id is None:
+            raise GenerationValidationError("resume document cleanup key must identify the locked Source artifact")
+        return owned_artifact_id
 
     @staticmethod
     def _lock_source(session: Session, source: SourceRef) -> SourceRow:
@@ -365,7 +396,7 @@ class GenerationWriter:
                     cast(JobVersion.version, String) == source.source_version,
                     JobVersion.search_index_status != "deleted",
                 )
-                .with_for_update(of=JobVersion)
+                .with_for_update(of=(Job, JobVersion))
             )
         else:
             row = session.scalar(
