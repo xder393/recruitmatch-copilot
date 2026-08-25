@@ -27,6 +27,7 @@ class FakeRecruitingChunk:
     embedding_model: str
     is_active: bool
     content: str
+    source_search_index_status: str = "ready"
     start_offset: int = 0
     end_offset: int = 1
     page_number: int | None = None
@@ -60,6 +61,7 @@ class FakeRecruitingVectorIndex:
                 or not chunk.is_active
                 or chunk.generation != chunk.active_source_generation
                 or chunk.embedding_model != embedding_model
+                or chunk.source_search_index_status != "ready"
             ):
                 continue
             score = sum(left * right for left, right in zip(query_embedding, chunk.embedding, strict=True))
@@ -107,7 +109,11 @@ class FakeRecruitingVectorIndex:
                 or (chunk.source_type, chunk.source_id, chunk.source_version) not in scope.authorized_sources
             ):
                 continue
-            if active_only and (not chunk.is_active or chunk.generation != chunk.active_source_generation):
+            if active_only and (
+                not chunk.is_active
+                or chunk.generation != chunk.active_source_generation
+                or chunk.source_search_index_status != "ready"
+            ):
                 continue
             hits.append(self._result(chunk, 1.0))
         return sorted(hits, key=lambda hit: (hit.id, hit.citation_id))
@@ -115,7 +121,11 @@ class FakeRecruitingVectorIndex:
     @staticmethod
     def _is_resolvable(chunk: FakeRecruitingChunk, tenant_id: str) -> bool:
         return (
-            chunk.tenant_id == tenant_id and chunk.source_exists and not chunk.privacy_deleted and bool(chunk.content)
+            chunk.tenant_id == tenant_id
+            and chunk.source_exists
+            and chunk.source_search_index_status != "deleted"
+            and not chunk.privacy_deleted
+            and bool(chunk.content)
         )
 
     @staticmethod

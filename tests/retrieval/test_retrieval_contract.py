@@ -25,6 +25,9 @@ def authorized_scope() -> SearchScope:
         authorized_sources=frozenset(
             {
                 ("resume", "resume-1", "resume-v1"),
+                ("resume", "resume-pending", "resume-pending-v1"),
+                ("resume", "resume-failed", "resume-failed-v1"),
+                ("resume", "resume-deleted", "resume-deleted-v1"),
                 ("job_version", "job-version-1", "1"),
             }
         ),
@@ -43,7 +46,7 @@ def contract_rows() -> list[FakeRecruitingChunk]:
         "is_active": True,
         "content": "authorized evidence",
     }
-    return [
+    rows = [
         FakeRecruitingChunk(id="chunk-b", citation_id="citation-b", embedding=unit_vector(), **common),
         FakeRecruitingChunk(id="chunk-a", citation_id="citation-a", embedding=unit_vector(), **common),
         FakeRecruitingChunk(
@@ -88,7 +91,42 @@ def contract_rows() -> list[FakeRecruitingChunk]:
             embedding_model="other-model@512",
             **{key: value for key, value in common.items() if key != "embedding_model"},
         ),
+        FakeRecruitingChunk(
+            id="pending-source",
+            citation_id="pending-source",
+            source_id="resume-pending",
+            source_version="resume-pending-v1",
+            embedding=unit_vector(),
+            source_search_index_status="pending",
+            **{key: value for key, value in common.items() if key not in {"source_id", "source_version"}},
+        ),
+        FakeRecruitingChunk(
+            id="failed-source",
+            citation_id="failed-source",
+            source_id="resume-failed",
+            source_version="resume-failed-v1",
+            embedding=unit_vector(),
+            source_search_index_status="failed",
+            **{key: value for key, value in common.items() if key not in {"source_id", "source_version"}},
+        ),
+        FakeRecruitingChunk(
+            id="deleted-source",
+            citation_id="deleted-source",
+            source_id="resume-deleted",
+            source_version="resume-deleted-v1",
+            embedding=unit_vector(),
+            source_search_index_status="deleted",
+            **{key: value for key, value in common.items() if key not in {"source_id", "source_version"}},
+        ),
+        FakeRecruitingChunk(
+            id="empty-content",
+            citation_id="empty-content",
+            embedding=unit_vector(),
+            content="",
+            **{key: value for key, value in common.items() if key != "content"},
+        ),
     ]
+    return rows
 
 
 class RetrievalContract:
@@ -166,16 +204,42 @@ class RetrievalContract:
         )
         historical = self.index.resolve_historical_citations(
             TENANT,
-            frozenset({"citation-b", "citation-a", "inactive", "stale-authority", "unknown"}),
+            frozenset(
+                {
+                    "citation-b",
+                    "citation-a",
+                    "inactive",
+                    "stale-authority",
+                    "pending-source",
+                    "failed-source",
+                    "unknown",
+                }
+            ),
         )
 
         assert [hit.id for hit in active] == ["chunk-a", "chunk-b"]
-        assert [hit.id for hit in historical] == ["chunk-a", "chunk-b", "inactive", "stale-authority"]
+        assert [hit.id for hit in historical] == [
+            "chunk-a",
+            "chunk-b",
+            "failed-source",
+            "inactive",
+            "pending-source",
+            "stale-authority",
+        ]
 
     def test_citations_are_tenant_bound_deterministic_and_privacy_safe(self) -> None:
         historical = self.index.resolve_historical_citations(
             TENANT,
-            frozenset({"citation-b", "citation-a", "privacy-deleted", "other-tenant"}),
+            frozenset(
+                {
+                    "citation-b",
+                    "citation-a",
+                    "privacy-deleted",
+                    "deleted-source",
+                    "empty-content",
+                    "other-tenant",
+                }
+            ),
         )
 
         assert [hit.id for hit in historical] == ["chunk-a", "chunk-b"]

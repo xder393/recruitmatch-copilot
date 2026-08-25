@@ -193,6 +193,8 @@ Expected: FAIL because the generation writer does not exist and current legacy r
 
 `stage()` writes `is_active=false`. `activate()` locks the tenant-qualified Source, verifies the requested generation, staged count, citation completeness, and embedding identity, then deactivates old rows, activates new rows, and updates source generation/status in one transaction. `fail()` records a stable index error without changing the old active generation. Expose the future fencing argument at the boundary but do not implement CP4 Lease fields.
 
+Because current retrieval requires `search_index_status = 'ready'`, `fail()` must preserve `ready` when the Source already has an active generation and record the failed refresh in `search_index_error_code`; only a Source with no active generation transitions to `failed`. This keeps the old generation searchable while still exposing the refresh failure.
+
 This task deliberately does not wire production services and does not delete the legacy adapter. The new writer is independently runnable and covered; the coordinated producer/consumer cutover occurs in Task 4.
 
 - [ ] **Step 4: Verify rollback and concurrent activation**

@@ -26,6 +26,8 @@ from app.retrieval.ports import (
 
 
 DEFAULT_EXACT_SEARCH_MAX_CANDIDATES = 10_000
+DEFAULT_ANN_CANDIDATE_MULTIPLIER = 4
+DEFAULT_ANN_CANDIDATE_BUDGET_MAX = 256
 
 
 @dataclass(frozen=True)
@@ -34,6 +36,7 @@ class VectorSearchPlan:
     authorized_candidate_count: int
     plan: str
     statement: str
+    ann_candidate_budget: int | None
 
 
 class PgVectorRecruitingIndex:
@@ -44,6 +47,8 @@ class PgVectorRecruitingIndex:
         session_factory: Callable[[], Session],
         *,
         exact_search_max_candidates: int | None = None,
+        ann_candidate_multiplier: int | None = None,
+        ann_candidate_budget_max: int | None = None,
     ):
         configured_threshold = int(
             os.getenv("VECTOR_EXACT_SEARCH_MAX_CANDIDATES", str(DEFAULT_EXACT_SEARCH_MAX_CANDIDATES))
@@ -51,8 +56,18 @@ class PgVectorRecruitingIndex:
         threshold = configured_threshold if exact_search_max_candidates is None else exact_search_max_candidates
         if threshold < 0:
             raise ValueError("exact_search_max_candidates must be non-negative")
+        configured_multiplier = int(os.getenv("VECTOR_ANN_CANDIDATE_MULTIPLIER", str(DEFAULT_ANN_CANDIDATE_MULTIPLIER)))
+        configured_budget_max = int(os.getenv("VECTOR_ANN_CANDIDATE_BUDGET_MAX", str(DEFAULT_ANN_CANDIDATE_BUDGET_MAX)))
+        multiplier = configured_multiplier if ann_candidate_multiplier is None else ann_candidate_multiplier
+        budget_max = configured_budget_max if ann_candidate_budget_max is None else ann_candidate_budget_max
+        if multiplier <= 0:
+            raise ValueError("ann_candidate_multiplier must be positive")
+        if budget_max <= 0:
+            raise ValueError("ann_candidate_budget_max must be positive")
         self.session_factory = session_factory
         self.exact_search_max_candidates = threshold
+        self.ann_candidate_multiplier = multiplier
+        self.ann_candidate_budget_max = budget_max
 
     def search(
         self,
@@ -66,10 +81,11 @@ class PgVectorRecruitingIndex:
         if not scope.authorized_sources:
             return []
         with self.session_factory() as session:
-            statement, _, strategy = self._prepare_search(
+            self._begin_repeatable_read(session)
+            statement, _, strategy, _ = self._prepare_search(
                 session, scope, query_embedding, embedding_model, top_k, min_score
             )
-            self._select_strategy(session, strategy)
+            self._configure_search_strategy(session, strategy)
             rows = session.execute(statement).all()
         return [self._result(chunk, float(score)) for chunk, score in rows]
 
@@ -85,6 +101,7 @@ class PgVectorRecruitingIndex:
         predicates = [
             RecruitingChunk.tenant_id == scope.tenant_id,
             RecruitingChunk.citation_id.in_(sorted(citation_ids)),
+            RecruitingChunk.content != "",
             RecruitingChunk.source_type.in_(sorted(scope.source_types)),
             self._authorization_predicate(scope),
             RecruitingChunk.is_active == literal(True),
@@ -106,6 +123,7 @@ class PgVectorRecruitingIndex:
             [
                 RecruitingChunk.tenant_id == tenant_id,
                 RecruitingChunk.citation_id.in_(sorted(citation_ids)),
+                RecruitingChunk.content != "",
                 self._source_authority_predicate(active_only=False),
             ]
         )
@@ -121,19 +139,20 @@ class PgVectorRecruitingIndex:
         """Return reproducible planner evidence; it deliberately makes no Recall claim."""
         validate_search_request(scope, query_embedding, embedding_model, top_k, min_score)
         if not scope.authorized_sources:
-            return VectorSearchPlan("exact", 0, "empty authorized scope", "")
+            return VectorSearchPlan("exact", 0, "empty authorized scope", "", None)
         with self.session_factory() as session:
-            statement, candidate_count, strategy = self._prepare_search(
+            self._begin_repeatable_read(session)
+            statement, candidate_count, strategy, candidate_budget = self._prepare_search(
                 session, scope, query_embedding, embedding_model, top_k, min_score
             )
-            self._select_strategy(session, strategy)
+            self._configure_explain_strategy(session, strategy)
             compiled = statement.compile(
                 dialect=postgresql.dialect(),
                 compile_kwargs={"literal_binds": True, "render_postcompile": True},
             )
             statement_sql = str(compiled)
             plan_lines = session.execute(text(f"EXPLAIN (COSTS OFF) {statement_sql}")).scalars().all()
-        return VectorSearchPlan(strategy, candidate_count, "\n".join(plan_lines), statement_sql)
+        return VectorSearchPlan(strategy, candidate_count, "\n".join(plan_lines), statement_sql, candidate_budget)
 
     def _prepare_search(
         self,
@@ -143,27 +162,44 @@ class PgVectorRecruitingIndex:
         embedding_model: str,
         top_k: int,
         min_score: float,
-    ) -> tuple[Select, int, str]:
+    ) -> tuple[Select, int, str, int | None]:
         base_predicates = self._search_predicates(scope, embedding_model)
         candidate_count = int(
             session.scalar(select(func.count()).select_from(RecruitingChunk).where(*base_predicates)) or 0
         )
         strategy = "exact" if candidate_count <= self.exact_search_max_candidates else "hnsw"
+        candidate_budget = None
         distance = RecruitingChunk.embedding.cosine_distance(query_embedding)
         score = (literal(1.0) - distance).label("score")
         if strategy == "exact":
-            statement = (
-                select(RecruitingChunk, score)
+            exact_candidates = (
+                select(RecruitingChunk.id.label("chunk_id"), distance.label("distance"))
                 .where(*base_predicates, score >= min_score)
-                .order_by(distance, RecruitingChunk.id)
+                .cte("exact_candidates")
+                .prefix_with("MATERIALIZED")
+            )
+            exact_score = (literal(1.0) - exact_candidates.c.distance).label("score")
+            statement = (
+                select(RecruitingChunk, exact_score)
+                .join(exact_candidates, exact_candidates.c.chunk_id == RecruitingChunk.id)
+                .order_by(exact_candidates.c.distance, RecruitingChunk.id)
                 .limit(top_k)
             )
         else:
+            if top_k > self.ann_candidate_budget_max:
+                raise ValueError("top_k exceeds the configured ANN candidate budget")
+            candidate_budget = min(
+                candidate_count,
+                min(self.ann_candidate_budget_max, top_k * self.ann_candidate_multiplier),
+            )
+            # ANN defines a bounded, approximate candidate set. The outer query
+            # recomputes exact distance, applies min_score, and breaks ties by ID
+            # only within that set; this is not a global Recall/tie guarantee.
             ann_candidates = (
                 select(RecruitingChunk.id.label("chunk_id"), distance.label("distance"))
                 .where(*base_predicates)
                 .order_by(distance)
-                .limit(candidate_count)
+                .limit(candidate_budget)
                 .cte("ann_candidates")
                 .prefix_with("MATERIALIZED")
             )
@@ -175,23 +211,36 @@ class PgVectorRecruitingIndex:
                 .order_by(ann_candidates.c.distance, RecruitingChunk.id)
                 .limit(top_k)
             )
-        return statement, candidate_count, strategy
+        return statement, candidate_count, strategy, candidate_budget
 
     @staticmethod
-    def _select_strategy(session: Session, strategy: str) -> None:
-        if strategy == "exact":
-            session.execute(text("SET LOCAL enable_indexscan = off"))
-            session.execute(text("SET LOCAL enable_bitmapscan = off"))
-        else:
+    def _begin_repeatable_read(session: Session) -> None:
+        # COUNT-based strategy selection and retrieval must observe one source
+        # generation snapshot; setting isolation here precedes the first query.
+        session.connection(execution_options={"isolation_level": "REPEATABLE READ"})
+
+    @staticmethod
+    def _configure_search_strategy(session: Session, strategy: str) -> None:
+        if strategy == "hnsw":
             session.execute(text("SET LOCAL enable_seqscan = off"))
             session.execute(text("SET LOCAL enable_sort = off"))
             session.execute(text("SET LOCAL hnsw.iterative_scan = 'strict_order'"))
+
+    @classmethod
+    def _configure_explain_strategy(cls, session: Session, strategy: str) -> None:
+        if strategy == "exact":
+            # Diagnostic-only: demonstrate that the authorized exact query can use
+            # the tenant/source B-tree access paths without changing real search.
+            session.execute(text("SET LOCAL enable_seqscan = off"))
+            return
+        cls._configure_search_strategy(session, strategy)
 
     def _search_predicates(self, scope: SearchScope, embedding_model: str) -> list[ColumnElement[bool]]:
         return [
             RecruitingChunk.tenant_id == scope.tenant_id,
             RecruitingChunk.is_active == literal(True),
             RecruitingChunk.embedding_model == embedding_model,
+            RecruitingChunk.content != "",
             RecruitingChunk.source_type.in_(sorted(scope.source_types)),
             self._authorization_predicate(scope),
             self._source_authority_predicate(active_only=True),
@@ -226,8 +275,15 @@ class PgVectorRecruitingIndex:
         ]
         if active_only:
             resume_predicates.append(Resume.active_index_generation == RecruitingChunk.generation)
+            resume_predicates.append(Resume.search_index_status == "ready")
             job_predicates.append(JobVersion.active_index_generation == RecruitingChunk.generation)
+            job_predicates.append(JobVersion.search_index_status == "ready")
             knowledge_predicates.append(KnowledgeDocument.active_index_generation == RecruitingChunk.generation)
+            knowledge_predicates.append(KnowledgeDocument.search_index_status == "ready")
+        else:
+            resume_predicates.append(Resume.search_index_status != "deleted")
+            job_predicates.append(JobVersion.search_index_status != "deleted")
+            knowledge_predicates.append(KnowledgeDocument.search_index_status != "deleted")
         return or_(
             and_(
                 RecruitingChunk.source_type == "resume",
