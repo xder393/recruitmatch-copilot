@@ -26,6 +26,7 @@ class MatchingRepository:
                 Resume.tenant_id == tenant_id,
                 Resume.status == ResumeStatus.SUCCEEDED,
             )
+            .with_for_update(of=Resume)
         )
 
     def active_jobs(self, tenant_id: str) -> List[Job]:

@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql import ColumnElement
 from sqlalchemy.types import String
 
+from app.domain.enums import JobStatus, ResumeStatus
 from app.models.jobs import Job, JobVersion
 from app.models.knowledge import KnowledgeDocument
 from app.models.retrieval import RecruitingChunk
@@ -291,10 +292,13 @@ class PgVectorRecruitingIndex:
             KnowledgeDocument.checksum == RecruitingChunk.source_version,
         ]
         if active_only:
+            resume_predicates.append(Resume.status == ResumeStatus.SUCCEEDED)
             resume_predicates.append(Resume.active_index_generation == RecruitingChunk.generation)
             resume_predicates.append(Resume.search_index_status == "ready")
+            job_predicates.append(Job.status != JobStatus.INACTIVE)
             job_predicates.append(JobVersion.active_index_generation == RecruitingChunk.generation)
             job_predicates.append(JobVersion.search_index_status == "ready")
+            knowledge_predicates.append(KnowledgeDocument.status.not_in({"inactive", "deleted"}))
             knowledge_predicates.append(KnowledgeDocument.active_index_generation == RecruitingChunk.generation)
             knowledge_predicates.append(KnowledgeDocument.search_index_status == "ready")
         else:

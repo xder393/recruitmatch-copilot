@@ -12,7 +12,7 @@ class FakeSemanticMatcher:
     def __init__(self, scores):
         self.scores = scores
 
-    def score(self, scope, resume_id, job_version_id):
+    def score(self, scope, resume_id, job_version_id, resume_summary, job_text):
         return self.scores.get(job_version_id)
 
 
@@ -38,8 +38,8 @@ def _job(identifier, required):
 
 
 def test_hybrid_formula_is_fixed_and_model_score_is_clamped():
-    assert combine_scores(0.70, 0.90) == 0.74
-    assert combine_scores(0.5, 2.0) == 0.6
+    assert combine_scores(0.70, 90) == 0.74
+    assert combine_scores(0.5, 200) == 0.6
     assert combine_scores(0.5, None) == 0.4
 
 
@@ -54,7 +54,7 @@ def test_hybrid_reranks_and_retains_rule_components():
                 job_citation_ids=["j1"],
             ),
             "java-v1": SemanticProjectScore(
-                score=1,
+                score=100,
                 rationale="project fit",
                 resume_citation_ids=["r2"],
                 job_citation_ids=["j2"],
@@ -66,7 +66,7 @@ def test_hybrid_reranks_and_retains_rule_components():
     assert ranked[0].job_id == "python"
     assert ranked[0].rule_score == 1
     assert ranked[0].total_score == 0.8
-    assert ranked[1].semantic_score == 1
+    assert ranked[1].semantic_score == 100
     assert ranked[1].citations == ["r2", "j2"]
 
 

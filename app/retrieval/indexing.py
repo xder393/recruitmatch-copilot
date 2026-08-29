@@ -6,7 +6,25 @@ import hashlib
 from typing import Protocol
 
 from app.knowledge.schemas import ChunkInput
-from app.retrieval.generations import IndexFailureCode, SourceRef, StagedChunk
+from app.retrieval.generations import (
+    GenerationConflictError,
+    GenerationValidationError,
+    IndexFailureCode,
+    SourceNotFoundError,
+    SourceRef,
+    StagedChunk,
+)
+
+
+def classify_index_failure(error: Exception) -> IndexFailureCode:
+    """Map internal indexing exceptions to the bounded persisted taxonomy."""
+    if isinstance(error, GenerationValidationError | ValueError):
+        return IndexFailureCode.VALIDATION_FAILED
+    if isinstance(error, GenerationConflictError):
+        return IndexFailureCode.ACTIVATION_FAILED
+    if isinstance(error, SourceNotFoundError):
+        return IndexFailureCode.SOURCE_UNAVAILABLE
+    return IndexFailureCode.EMBEDDING_FAILED
 
 
 class EmbeddingAdapter(Protocol):

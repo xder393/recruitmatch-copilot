@@ -41,7 +41,7 @@ class CompositionModel:
         elif request.operation == "semantic_project_match":
             citation_ids = re.findall(r"\[citation:([^\]]+)\]", request.user)
             value = SemanticProjectScore(
-                score=0.8,
+                score=80,
                 rationale="authorized evidence",
                 resume_citation_ids=[citation_ids[0]],
                 job_citation_ids=[citation_ids[-1]],
@@ -76,6 +76,10 @@ def _settings(tmp_path):
 @pytest.fixture
 def composition_settings(tmp_path):
     settings = _settings(tmp_path)
+    engine = create_engine(settings.database_url)
+    with engine.begin() as connection:
+        connection.execute(text("TRUNCATE TABLE tenants CASCADE"))
+    engine.dispose()
     yield settings
     engine = create_engine(settings.database_url)
     with engine.begin() as connection:
@@ -141,7 +145,7 @@ def test_fastapi_and_worker_use_real_pgvector_generation_composition(composition
         assert hybrid.status_code == 201
         assert rules.json()["algorithm_version"] == "rules-v1"
         assert hybrid.json()["algorithm_version"] == "hybrid-v1"
-        assert hybrid.json()["results"][0]["semantic_score"] == 0.8
+        assert hybrid.json()["results"][0]["semantic_score"] == 80
         with app.state.session_factory() as session:
             chunks = session.query(RecruitingChunk).all()
             assert {chunk.source_type for chunk in chunks} == {

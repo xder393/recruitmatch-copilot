@@ -12,7 +12,7 @@ from app.retrieval.ports import SearchScope
 
 def combine_scores(rule_score: float, semantic_score: Optional[float]) -> float:
     bounded_rule = min(max(float(rule_score), 0.0), 1.0)
-    bounded_semantic = 0.0 if semantic_score is None else min(max(float(semantic_score), 0.0), 1.0)
+    bounded_semantic = 0.0 if semantic_score is None else min(max(float(semantic_score), 0.0), 100.0) / 100.0
     return round(0.8 * bounded_rule + 0.2 * bounded_semantic, 4)
 
 
@@ -43,6 +43,8 @@ class HybridMatchingEngine:
                 tenant_context.search_scope,
                 tenant_context.resume_id,
                 rule.job_version_id,
+                self._resume_summary(profile),
+                next(job.jd_text for job in jobs if job.job_version_id == rule.job_version_id),
             )
             citation_ids = []
             if semantic is not None:
@@ -61,3 +63,9 @@ class HybridMatchingEngine:
             )
         recommendations.sort(key=lambda item: (-item.total_score, item.job_id))
         return recommendations[:top_k]
+
+    @staticmethod
+    def _resume_summary(profile: ResumeProfile) -> str:
+        skills = "、".join(item.name for item in profile.skills)
+        projects = "\n".join(f"{item.name}: {item.description}" for item in profile.projects)
+        return f"技能：{skills}\n项目：{projects}".strip()

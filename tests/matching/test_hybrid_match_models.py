@@ -55,7 +55,7 @@ def test_hybrid_components_round_trip(tmp_path):
             job_version=version,
             rank=1,
             rule_score=0.75,
-            semantic_score=0.9,
+            semantic_score=90,
             total_score=0.78,
             dimension_scores={},
             grounding_status="grounded",

@@ -69,7 +69,7 @@ class DeterministicFakeModel:
         if request.operation == "semantic_project_match":
             if resume_ids and resume_ids[0].endswith("-14"):
                 return SemanticProjectScore(
-                    score=0.99,
+                    score=99,
                     rationale="故意交换引用以验证拒绝路径",
                     resume_citation_ids=job_ids[:1],
                     job_citation_ids=resume_ids[:1],
@@ -85,7 +85,7 @@ class DeterministicFakeModel:
                 item.strip() for item in re.split(r"[、,，]", job_line.split("；技能：", 1)[-1]) if item.strip()
             }
             overlap = len(resume_skills & job_skills) / max(1, len(job_skills))
-            score = round(0.1 + 0.9 * overlap, 4) if resume_ids and job_ids else 0.0
+            score = round((0.1 + 0.9 * overlap) * 100, 2) if resume_ids and job_ids else 0.0
             self.semantic_scores.append(score)
             return SemanticProjectScore(
                 score=score,

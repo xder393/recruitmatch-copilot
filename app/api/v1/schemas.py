@@ -109,7 +109,7 @@ class MatchResultResponse(BaseModel):
     risk_flags: List[str]
     summary: str
     rule_score: Optional[float] = None
-    semantic_score: Optional[float] = None
+    semantic_score: Optional[float] = Field(default=None, ge=0, le=100, description="语义项目匹配分，范围 0–100")
     grounding_status: Optional[str] = None
     fallback_reason: Optional[str] = None
     citations: List[Any] = Field(default_factory=list)

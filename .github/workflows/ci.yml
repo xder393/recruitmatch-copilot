@@ -52,7 +52,13 @@ jobs:
           --output /tmp/recruitmatch-ai-results.json
           --mode hybrid-v1 --fake-model
       - run: diff -u evaluation/recruitmatch-ai-v1-results.json /tmp/recruitmatch-ai-results.json
-      - run: uv run pytest tests --ignore=tests/integration -q
+      - run: >-
+          uv run pytest tests
+          --ignore=tests/integration
+          --ignore=tests/retrieval/test_citation_lifecycle.py
+          --ignore=tests/retrieval/test_generation_switch.py
+          --ignore=tests/retrieval/test_pgvector_search.py
+          -q
 
   postgres-integration:
     runs-on: ubuntu-latest
@@ -64,13 +70,9 @@ jobs:
       - run: docker compose -p recruitmatch-ci-pgvector build bootstrap test-integration
       - run: docker compose -p recruitmatch-ci-pgvector run --rm bootstrap
       - run: docker compose -p recruitmatch-ci-pgvector run --rm bootstrap
-      - run: >-
+      - name: Run PostgreSQL integration and retrieval tests
+        run: >-
           docker compose -p recruitmatch-ci-pgvector run --rm test-integration
-          pytest tests/integration/test_pgvector_migration.py -q
-      - name: Run retrieval integration tests when present
-        run: |
-          if [ -d tests/retrieval ]; then
-            docker compose -p recruitmatch-ci-pgvector run --rm test-integration pytest tests/retrieval -q
-          fi
+          pytest tests/integration tests/retrieval -q
       - if: always()
         run: docker compose -p recruitmatch-ci-pgvector down -v

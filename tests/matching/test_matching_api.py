@@ -87,9 +87,9 @@ def test_hybrid_mode_persists_score_components(matching_client):
     from app.retrieval import RetrievedChunk
 
     class Semantic:
-        def score(self, scope, resume_id, job_version_id):
+        def score(self, scope, resume_id, job_version_id, resume_summary, job_text):
             return SemanticProjectScore(
-                score=0.75,
+                score=75,
                 rationale="项目证据匹配",
                 resume_citation_ids=["resume-citation"],
                 job_citation_ids=["job-citation"],
@@ -143,7 +143,7 @@ def test_hybrid_mode_persists_score_components(matching_client):
     assert body["algorithm_version"] == "hybrid-v1"
     assert body["prompt_version"] == "semantic-project-v1+match-explanation-v1"
     assert body["results"][0]["rule_score"] is not None
-    assert body["results"][0]["semantic_score"] == 0.75
+    assert body["results"][0]["semantic_score"] == 75
     assert body["results"][0]["citations"]
     assert body["results"][0]["grounded_explanation"]["strengths"][0]["text"] == "Python 项目匹配"
     assert body["results"][0]["interview_questions"][0]["text"] == "请说明该项目的职责边界"
@@ -155,7 +155,7 @@ def test_hybrid_guidance_retrieval_failure_keeps_rules_results(matching_client):
     from app.matching.hybrid import HybridMatchingEngine
 
     class NoSemantic:
-        def score(self, scope, resume_id, job_version_id):
+        def score(self, scope, resume_id, job_version_id, resume_summary, job_text):
             return None
 
     class BrokenIndex:

@@ -96,7 +96,7 @@ class ResumeService:
         return self.resumes.list(principal.tenant_id)
 
     def delete(self, principal: Principal, resume_id: str) -> None:
-        resume = self.resumes.get(principal.tenant_id, resume_id, include_deleted=True)
+        resume = self.resumes.get(principal.tenant_id, resume_id, include_deleted=True, for_update=True)
         if resume is None:
             raise ResourceNotFoundError("简历不存在")
         storage_key = resume.artifact.storage_key if resume.artifact else None

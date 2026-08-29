@@ -31,7 +31,7 @@ def validate_semantic_score(
         return None
     if any(authorized_sources.get(item) != "job_version" for item in score.job_citation_ids):
         return None
-    return score.model_copy(update={"score": min(max(float(score.score), 0.0), 1.0)})
+    return score.model_copy(update={"score": min(max(float(score.score), 0.0), 100.0)})
 
 
 class SemanticMatcher:
@@ -44,6 +44,8 @@ class SemanticMatcher:
         enabled: bool = True,
         prompt_version: str = "semantic-project-v1",
         max_evidence_characters: int = 8000,
+        top_k: int = 6,
+        min_score: float = 0.35,
         trace_sink=None,
     ):
         self.model = model
@@ -52,6 +54,8 @@ class SemanticMatcher:
         self.enabled = enabled
         self.prompt_version = prompt_version
         self.max_evidence_characters = max_evidence_characters
+        self.top_k = top_k
+        self.min_score = min_score
         self.trace_sink = trace_sink
 
     def score(
@@ -59,6 +63,8 @@ class SemanticMatcher:
         scope: SearchScope,
         resume_id: str,
         job_version_id: str,
+        resume_summary: str,
+        job_text: str,
     ) -> Optional[SemanticProjectScore]:
         if not self.enabled:
             return None
@@ -71,20 +77,21 @@ class SemanticMatcher:
         if not resume_sources or not job_sources:
             return None
         try:
-            query = self.embedder.embed_query("candidate project evidence and job responsibilities")
+            resume_query = self.embedder.embed_query(job_text)
+            job_query = self.embedder.embed_query(resume_summary)
             resume_hits = self.source_index.search(
                 SearchScope(scope.tenant_id, frozenset({"resume"}), resume_sources),
-                query,
+                resume_query,
                 self.embedder.model_name,
-                6,
-                -1.0,
+                self.top_k,
+                self.min_score,
             )
             job_hits = self.source_index.search(
                 SearchScope(scope.tenant_id, frozenset({"job_version"}), job_sources),
-                query,
+                job_query,
                 self.embedder.model_name,
-                6,
-                -1.0,
+                self.top_k,
+                self.min_score,
             )
         except Exception:
             return None
@@ -95,7 +102,7 @@ class SemanticMatcher:
             operation="semantic_project_match",
             prompt_version=self.prompt_version,
             system=(
-                "评估候选人项目经历与岗位职责的语义匹配度，分数限定在 0 到 1。"
+                "评估候选人项目经历与岗位职责的语义匹配度，分数限定在 0 到 100。"
                 "必须分别引用至少一条 resume 和 job 证据，不得依据未提供的信息。"
             ),
             user=format_evidence(hits, self.max_evidence_characters),
@@ -111,10 +118,12 @@ class SemanticMatcher:
             fallback_error = ModelGatewayError("unexpected_model_error", retryable=False)
             self._trace_failed(scope.tenant_id, resume_id, job_version_id, request, fallback_error, started)
             return None
-        validated = validate_semantic_score(
-            response.value,
-            {hit.citation_id: hit.source_type for hit in hits},
-        )
+        requested_ids = frozenset(response.value.resume_citation_ids + response.value.job_citation_ids)
+        try:
+            active_hits = self.source_index.resolve_active_citations(scope, requested_ids)
+        except Exception:
+            active_hits = []
+        validated = validate_semantic_score(response.value, {hit.citation_id: hit.source_type for hit in active_hits})
         if self.trace_sink is not None:
             try:
                 self.trace_sink.succeeded(

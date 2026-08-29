@@ -107,6 +107,8 @@ def init_recruiting_state(
             embedder,
             enabled=settings.ai_enabled,
             max_evidence_characters=settings.max_evidence_characters,
+            top_k=settings.retrieval_top_k,
+            min_score=settings.retrieval_min_score,
             trace_sink=ai_trace_sink,
         ),
     )

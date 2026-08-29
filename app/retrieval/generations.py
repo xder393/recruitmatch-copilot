@@ -113,7 +113,18 @@ class GenerationWriter:
             with self.session_factory() as session, session.begin():
                 source_row = self._lock_source(session, source)
                 self._require_next_generation(source_row, generation)
-                self._require_unique_staging(session, source, generation, chunks)
+                existing = list(
+                    session.scalars(
+                        select(RecruitingChunk)
+                        .where(*self._chunk_scope(source), RecruitingChunk.generation == generation)
+                        .order_by(RecruitingChunk.start_offset, RecruitingChunk.end_offset, RecruitingChunk.id)
+                        .with_for_update()
+                    )
+                )
+                if existing:
+                    self._require_exact_replay(session, source, existing, chunks)
+                    return len(existing)
+                self._require_unique_citations(session, source, chunks)
                 for chunk in chunks:
                     document_id = self._normalize_document_id(session, source, chunk.document_id)
                     session.add(
@@ -308,11 +319,10 @@ class GenerationWriter:
             raise GenerationConflictError("requested generation is not the Source's current next generation")
 
     @classmethod
-    def _require_unique_staging(
+    def _require_unique_citations(
         cls,
         session: Session,
         source: SourceRef,
-        generation: int,
         chunks: list[StagedChunk],
     ) -> None:
         citation_ids = [chunk.citation_id for chunk in chunks]
@@ -326,16 +336,33 @@ class GenerationWriter:
             is not None
         ):
             raise GenerationValidationError("citation ID already exists for this tenant")
-        if (
-            session.scalar(
-                select(RecruitingChunk.id).where(
-                    *cls._chunk_scope(source),
-                    RecruitingChunk.generation == generation,
-                )
-            )
-            is not None
-        ):
-            raise GenerationValidationError("the requested generation already has staged chunks")
+
+    @classmethod
+    def _require_exact_replay(
+        cls,
+        session: Session,
+        source: SourceRef,
+        existing: list[RecruitingChunk],
+        chunks: list[StagedChunk],
+    ) -> None:
+        if len(existing) != len(chunks):
+            raise GenerationValidationError("existing staged generation is partial or mismatched")
+        ordered = sorted(chunks, key=lambda item: (item.start_offset, item.end_offset, item.citation_id))
+        for persisted, proposed in zip(existing, ordered, strict=True):
+            document_id = cls._normalize_document_id(session, source, proposed.document_id)
+            if (
+                persisted.citation_id != proposed.citation_id
+                or persisted.content != proposed.content
+                or persisted.start_offset != proposed.start_offset
+                or persisted.end_offset != proposed.end_offset
+                or list(persisted.embedding) != list(proposed.embedding)
+                or persisted.embedding_model != proposed.embedding_model
+                or persisted.document_id != document_id
+                or persisted.page_number != proposed.page_number
+                or persisted.section != proposed.section
+                or persisted.is_active
+            ):
+                raise GenerationValidationError("existing staged generation is partial or mismatched")
 
     @staticmethod
     def _chunk_scope(source: SourceRef) -> tuple[ColumnElement[bool], ...]:

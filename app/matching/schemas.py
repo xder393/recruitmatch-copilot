@@ -39,7 +39,7 @@ class MatchRecommendation(BaseModel):
 
 class HybridMatchRecommendation(MatchRecommendation):
     rule_score: float = Field(ge=0, le=1)
-    semantic_score: Optional[float] = Field(default=None, ge=0, le=1)
+    semantic_score: Optional[float] = Field(default=None, ge=0, le=100)
     grounding_status: str
     fallback_reason: Optional[str] = None
     citations: List[Any] = Field(default_factory=list)

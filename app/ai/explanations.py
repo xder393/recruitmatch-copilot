@@ -103,6 +103,21 @@ class GroundedExplanationService:
             fallback_error = ModelGatewayError("unexpected_model_error", retryable=False)
             self._trace_failed(scope.tenant_id, resume_id, source_ids, request, fallback_error, started)
             return self._fallback(rule_result, "rules_fallback")
+        if self.citation_resolver is not None:
+            requested_ids = frozenset(
+                citation_id
+                for item in [
+                    response.value.summary,
+                    *response.value.strengths,
+                    *response.value.gaps,
+                    *response.value.risk_flags,
+                    *response.value.interview_questions,
+                ]
+                if item is not None
+                for citation_id in item.citation_ids
+            )
+            permitted = self.citation_resolver(scope, requested_ids)
+            permitted = authorized_hits(permitted, resume_id, job_version_id)
         explanation = self._validate(response.value, permitted)
         if not any(
             [

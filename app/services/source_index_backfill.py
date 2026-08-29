@@ -8,7 +8,7 @@ from app.knowledge.chunking import chunk_document
 from app.repositories.ports import JobRepository, ResumeRepository
 from app.repositories.unit_of_work import UnitOfWork
 from app.retrieval.generations import IndexFailureCode, SourceRef
-from app.retrieval.indexing import SourceIndexer
+from app.retrieval.indexing import SourceIndexer, classify_index_failure
 
 
 class SourceIndexBackfillService:
@@ -34,7 +34,9 @@ class SourceIndexBackfillService:
         for resume in resumes:
             text = resume.artifact.extracted_text if resume.artifact else None
             if not text:
-                self._failed(resume, "extracted_text_missing")
+                source = SourceRef(principal.tenant_id, "resume", resume.id, resume.sha256)
+                self.source_indexer.fail(source, IndexFailureCode.VALIDATION_FAILED)
+                self.resumes.reload(principal.tenant_id, resume.id)
                 result["failed"] += 1
                 continue
             if self._index(resume, principal.tenant_id, "resume", resume.id, resume.sha256, text):
@@ -53,7 +55,6 @@ class SourceIndexBackfillService:
                 result["job_versions_indexed"] += 1
             else:
                 result["failed"] += 1
-        self.uow.commit()
         return result
 
     def _index(self, record, tenant_id, source_type, source_id, source_version, text):
@@ -62,18 +63,20 @@ class SourceIndexBackfillService:
             self.source_indexer.index(
                 source,
                 record.active_index_generation + 1,
-                chunk_document(text, source_type),
+                chunk_document(text),
             )
-        except Exception:
+        except Exception as exc:
             try:
-                self.source_indexer.fail(source, IndexFailureCode.EMBEDDING_FAILED)
+                self.source_indexer.fail(source, classify_index_failure(exc))
             except Exception:
                 pass
-            self._failed(record, "embedding_failed")
+            self._reload(tenant_id, source_type, record)
             return False
+        self._reload(tenant_id, source_type, record)
         return True
 
-    @staticmethod
-    def _failed(record, code):
-        record.search_index_status = "failed"
-        record.search_index_error = code
+    def _reload(self, tenant_id, source_type, record):
+        if source_type == "resume":
+            self.resumes.reload(tenant_id, record.id)
+        else:
+            self.jobs.reload(tenant_id, record.job_id)

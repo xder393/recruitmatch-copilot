@@ -159,7 +159,7 @@ class MatchingService:
         authorized.update(
             ("knowledge_document", item.id, item.checksum)
             for item in documents
-            if item.status == "ready" and item.search_index_status == "ready"
+            if item.status not in {"inactive", "deleted"} and item.search_index_status == "ready"
         )
         return SearchScope(tenant_id, frozenset(item[0] for item in authorized), frozenset(authorized))
 
@@ -221,7 +221,9 @@ class MatchingService:
                 "interview_questions": [
                     question.model_dump(mode="json") for question in explanation.interview_questions
                 ],
-                "grounding_status": explanation.grounding_status,
+                "grounding_status": (
+                    "rules_fallback" if getattr(item, "semantic_score", None) is None else explanation.grounding_status
+                ),
                 "fallback_reason": (
                     item.fallback_reason
                     or (None if explanation.grounding_status == "grounded" else explanation.grounding_status)

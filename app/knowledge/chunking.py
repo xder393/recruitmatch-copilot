@@ -7,7 +7,6 @@ from app.knowledge.schemas import ChunkInput
 
 def chunk_document(
     text: str,
-    source_type: str,
     chunk_size: int = 700,
     overlap: int = 100,
 ) -> list[ChunkInput]:
@@ -21,7 +20,6 @@ def chunk_document(
         if content:
             chunks.append(
                 ChunkInput(
-                    source_type=source_type,
                     content=content,
                     start=start,
                     end=end,

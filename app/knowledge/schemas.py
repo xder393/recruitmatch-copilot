@@ -8,7 +8,6 @@ from pydantic import BaseModel, Field
 
 
 class ChunkInput(BaseModel):
-    source_type: str
     content: str = Field(min_length=1)
     start: int = Field(ge=0)
     end: int = Field(gt=0)

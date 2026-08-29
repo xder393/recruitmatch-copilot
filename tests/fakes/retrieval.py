@@ -4,13 +4,23 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
+from operator import attrgetter
 
 from sqlalchemy import select
 
+from app.domain.enums import JobStatus, ResumeStatus
 from app.models.jobs import Job, JobVersion
 from app.models.knowledge import KnowledgeDocument
-from app.models.resumes import Resume
-from app.retrieval.generations import IndexFailureCode, SourceRef, StagedChunk
+from app.models.resumes import Resume, ResumeArtifact
+from app.retrieval.generations import (
+    GenerationConflictError,
+    GenerationValidationError,
+    GenerationWriter,
+    IndexFailureCode,
+    SourceNotFoundError,
+    SourceRef,
+    StagedChunk,
+)
 from app.retrieval.indexing import SourceIndexer
 
 from app.retrieval.ports import (
@@ -143,7 +153,9 @@ class FakeRecruitingVectorIndex:
     ) -> list[RetrievedChunk]:
         hits: list[RetrievedChunk] = []
         for chunk in self._chunks:
-            if chunk.citation_id not in citation_ids or not self._is_resolvable(chunk, tenant_id):
+            if chunk.citation_id not in citation_ids or not self._is_resolvable(
+                chunk, tenant_id, allow_inactive=not active_only
+            ):
                 continue
             active_generation, search_status = self._source_state(chunk)
             if scope is not None and (
@@ -158,12 +170,13 @@ class FakeRecruitingVectorIndex:
             hits.append(self._result(chunk, 1.0))
         return sorted(hits, key=lambda hit: (hit.id, hit.citation_id))
 
-    def _is_resolvable(self, chunk: FakeRecruitingChunk, tenant_id: str) -> bool:
+    def _is_resolvable(self, chunk: FakeRecruitingChunk, tenant_id: str, *, allow_inactive: bool = False) -> bool:
         _, status = self._source_state(chunk)
         return (
             chunk.tenant_id == tenant_id
             and chunk.source_exists
-            and status not in {"deleted", "inactive"}
+            and status != "deleted"
+            and (allow_inactive or status != "inactive")
             and not chunk.privacy_deleted
             and bool(chunk.content)
         )
@@ -176,6 +189,12 @@ class FakeRecruitingVectorIndex:
             row = FakeGenerationWriter._source(session, source)
             if row is None:
                 return -1, "deleted"
+            if source.source_type == "resume" and row.status is ResumeStatus.DELETED:
+                return row.active_index_generation, "deleted"
+            if source.source_type == "job_version" and row.job.status is JobStatus.INACTIVE:
+                return row.active_index_generation, "inactive"
+            if source.source_type == "knowledge_document" and row.status in {"inactive", "deleted"}:
+                return row.active_index_generation, row.status
             return row.active_index_generation, row.search_index_status
 
     @staticmethod
@@ -200,25 +219,76 @@ class FakeRecruitingVectorIndex:
 class FakeGenerationWriter:
     """SQLite test writer with the same Source authority effects as production."""
 
-    def __init__(self, session_factory, index: FakeRecruitingVectorIndex):
+    def __init__(self, session_factory, index: FakeRecruitingVectorIndex, *, activation_checkpoint=None):
         self.session_factory = session_factory
         self.index = index
+        self.activation_checkpoint = activation_checkpoint
         self.staged: dict[tuple[SourceRef, int], list[StagedChunk]] = {}
 
     def stage(self, source, generation, chunks, *, fencing_token=None):
-        del fencing_token
+        GenerationWriter._reject_unverifiable_fencing(fencing_token)
+        GenerationWriter._validate_generation_number(generation)
+        GenerationWriter._validate_chunks(chunks)
+        with self.session_factory() as session:
+            row = self._source(session, source)
+            if not self._available(row, source):
+                raise SourceNotFoundError("tenant-qualified Source is missing or privacy-deleted")
+            if generation != row.active_index_generation + 1:
+                raise GenerationConflictError("requested generation is not the Source's current next generation")
+            for chunk in chunks:
+                if (
+                    source.source_type == "knowledge_document"
+                    and chunk.document_id is not None
+                    and chunk.document_id != source.source_id
+                ):
+                    raise GenerationValidationError("knowledge cleanup key must equal Source ID")
+                if source.source_type == "job_version" and chunk.document_id is not None:
+                    raise GenerationValidationError("job-version chunks cannot carry a cleanup key")
+                if source.source_type == "resume" and chunk.document_id is not None:
+                    owned = session.scalar(
+                        select(ResumeArtifact.id).where(
+                            ResumeArtifact.id == chunk.document_id,
+                            ResumeArtifact.resume_id == source.source_id,
+                        )
+                    )
+                    if owned is None:
+                        raise GenerationValidationError("resume cleanup key must identify its Source artifact")
+        existing = self.staged.get((source, generation))
+        if existing is not None:
+            ordering = attrgetter("start_offset", "end_offset", "citation_id")
+            if sorted(existing, key=ordering) != sorted(chunks, key=ordering):
+                raise GenerationValidationError("existing staged generation is partial or mismatched")
+            return len(existing)
+        citation_ids = {item.citation_id for item in chunks}
+        all_existing = {item.citation_id for item in self.index._chunks if item.tenant_id == source.tenant_id}
+        all_existing.update(
+            item.citation_id
+            for (staged_source, _), values in self.staged.items()
+            if staged_source.tenant_id == source.tenant_id
+            for item in values
+        )
+        if citation_ids & all_existing:
+            raise GenerationValidationError("citation ID already exists for this tenant")
         self.staged[(source, generation)] = list(chunks)
         return len(chunks)
 
     def activate(self, source, generation, *, expected_count, embedding_model, fencing_token=None):
-        del fencing_token
-        chunks = self.staged[(source, generation)]
-        if len(chunks) != expected_count or any(item.embedding_model != embedding_model for item in chunks):
-            raise ValueError("staged generation is incomplete")
+        GenerationWriter._reject_unverifiable_fencing(fencing_token)
+        GenerationWriter._validate_generation_number(generation)
+        chunks = self.staged.get((source, generation), [])
+        if len(chunks) != expected_count:
+            raise GenerationValidationError("staged generation is incomplete")
+        GenerationWriter._validate_chunks(chunks)
+        if any(item.embedding_model != embedding_model for item in chunks):
+            raise GenerationValidationError("staged generation is incomplete")
         with self.session_factory() as session:
             row = self._source(session, source)
-            if row is None:
-                raise ValueError("source is unavailable")
+            if not self._available(row, source):
+                raise SourceNotFoundError("source is unavailable")
+            if generation != row.active_index_generation + 1:
+                raise GenerationConflictError("requested generation is not the Source's current next generation")
+            if self.activation_checkpoint is not None:
+                self.activation_checkpoint()
             row.active_index_generation = generation
             row.search_index_status = "ready"
             row.search_index_error_code = None
@@ -227,14 +297,26 @@ class FakeGenerationWriter:
         self.index.replace_generation(source, generation, chunks)
 
     def fail(self, source, error_code: IndexFailureCode, *, fencing_token=None):
-        del fencing_token
+        GenerationWriter._reject_unverifiable_fencing(fencing_token)
+        if not isinstance(error_code, IndexFailureCode):
+            raise GenerationValidationError("index failure code must be a stable IndexFailureCode value")
         with self.session_factory() as session:
             row = self._source(session, source)
-            if row is None:
-                return
+            if not self._available(row, source):
+                raise SourceNotFoundError("source is unavailable")
             row.search_index_status = "ready" if row.active_index_generation > 0 else "failed"
             row.search_index_error_code = error_code.value
             session.commit()
+
+    @staticmethod
+    def _available(row, source) -> bool:
+        if row is None or row.search_index_status == "deleted":
+            return False
+        if source.source_type == "resume":
+            return row.status is not ResumeStatus.DELETED and row.deleted_at is None
+        if source.source_type == "knowledge_document":
+            return row.status != "deleted"
+        return True
 
     @staticmethod
     def _source(session, source):

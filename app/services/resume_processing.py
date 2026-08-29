@@ -10,8 +10,8 @@ from app.domain.enums import ResumeStatus
 from app.resumes.extractors import extract_text
 from app.resumes.schemas import ResumeProfile
 from app.repositories.unit_of_work import UnitOfWorkFactory
-from app.retrieval.generations import IndexFailureCode, SourceRef
-from app.retrieval.indexing import SourceIndexer
+from app.retrieval.generations import SourceRef
+from app.retrieval.indexing import SourceIndexer, classify_index_failure
 
 
 class ArtifactReader(Protocol):
@@ -117,12 +117,12 @@ class ResumeProcessingService:
             try:
                 from app.knowledge.chunking import chunk_document
 
-                self.source_indexer.index(source, next_generation, chunk_document(text, "resume"))
-            except Exception:
+                self.source_indexer.index(source, next_generation, chunk_document(text))
+            except Exception as exc:
                 # Search enrichment must never roll back an otherwise valid
                 # resume; re-indexing can repair this side effect later.
                 try:
-                    self.source_indexer.fail(source, IndexFailureCode.EMBEDDING_FAILED)
+                    self.source_indexer.fail(source, classify_index_failure(exc))
                 except Exception:
                     pass
         return True

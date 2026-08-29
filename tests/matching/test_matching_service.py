@@ -93,3 +93,23 @@ def test_run_hides_resume_from_another_tenant(tmp_path):
         with pytest.raises(ResourceNotFoundError):
             uow = SqlAlchemyUnitOfWork(session)
             MatchingService(uow.matching, uow=uow).run(foreign_principal, resume_id)
+
+
+def test_scope_keeps_old_knowledge_generation_authorized_during_refresh():
+    from types import SimpleNamespace
+
+    from app.services.matching import MatchingService
+
+    documents = [
+        SimpleNamespace(id="knowledge-1", checksum="checksum", status="processing", search_index_status="ready"),
+        SimpleNamespace(id="knowledge-2", checksum="checksum-2", status="inactive", search_index_status="ready"),
+    ]
+    uow = SimpleNamespace(knowledge=SimpleNamespace(list_documents=lambda tenant_id: documents))
+    service = MatchingService(SimpleNamespace(), uow=uow)
+    resume = SimpleNamespace(id="resume-1", sha256="sha")
+    candidate = SimpleNamespace(job_version_id="job-version-1")
+
+    scope = service._search_scope("tenant-1", resume, [candidate], {"job-version-1": "1"})
+
+    assert ("knowledge_document", "knowledge-1", "checksum") in scope.authorized_sources
+    assert ("knowledge_document", "knowledge-2", "checksum-2") not in scope.authorized_sources

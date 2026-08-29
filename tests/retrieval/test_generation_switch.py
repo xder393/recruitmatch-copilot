@@ -460,6 +460,44 @@ def test_failure_after_old_deactivation_rolls_back_chunks_and_source_authority(s
         assert [(chunk.generation, chunk.is_active) for chunk in chunks] == [(1, True), (2, False)]
 
 
+def test_exact_staging_replay_resumes_activation_without_duplicate_citations(session_factory) -> None:
+    reference = seed_source(session_factory, "resume")
+    attempts = 0
+
+    def fail_once() -> None:
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            raise RuntimeError("transient activation failure")
+
+    writer = GenerationWriter(session_factory, activation_checkpoint=fail_once)
+    chunks = [staged_chunk("retry")]
+    assert writer.stage(reference, 1, chunks) == 1
+    with pytest.raises(RuntimeError, match="transient activation"):
+        writer.activate(reference, 1, expected_count=1, embedding_model=MODEL)
+
+    assert writer.stage(reference, 1, chunks) == 1
+    writer.activate(reference, 1, expected_count=1, embedding_model=MODEL)
+
+    with session_factory() as session:
+        persisted = persisted_chunks(session, reference)
+        assert len(persisted) == 1
+        assert persisted[0].citation_id == "citation-retry"
+        assert persisted[0].is_active is True
+        assert source_state(session, reference).active_index_generation == 1
+
+
+def test_partial_or_mismatched_staging_replay_fails_closed(session_factory) -> None:
+    reference = seed_source(session_factory, "knowledge_document")
+    writer = GenerationWriter(session_factory)
+    writer.stage(reference, 1, [staged_chunk("one")])
+
+    with pytest.raises(GenerationValidationError, match="partial or mismatched"):
+        writer.stage(reference, 1, [staged_chunk("one"), staged_chunk("two", offset=10)])
+    with pytest.raises(GenerationValidationError, match="partial or mismatched"):
+        writer.stage(reference, 1, [staged_chunk("one", content="changed")])
+
+
 def test_privacy_deleted_source_cannot_activate_previously_staged_rows(session_factory) -> None:
     reference = seed_source(session_factory, "resume")
     writer = GenerationWriter(session_factory)

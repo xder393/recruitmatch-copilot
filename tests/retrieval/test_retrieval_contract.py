@@ -119,6 +119,15 @@ def contract_rows() -> list[FakeRecruitingChunk]:
             **{key: value for key, value in common.items() if key not in {"source_id", "source_version"}},
         ),
         FakeRecruitingChunk(
+            id="inactive-source",
+            citation_id="inactive-source",
+            source_id="resume-inactive",
+            source_version="resume-inactive-v1",
+            embedding=unit_vector(),
+            source_search_index_status="inactive",
+            **{key: value for key, value in common.items() if key not in {"source_id", "source_version"}},
+        ),
+        FakeRecruitingChunk(
             id="empty-content",
             citation_id="empty-content",
             embedding=unit_vector(),
@@ -212,6 +221,7 @@ class RetrievalContract:
                     "stale-authority",
                     "pending-source",
                     "failed-source",
+                    "inactive-source",
                     "unknown",
                 }
             ),
@@ -223,6 +233,7 @@ class RetrievalContract:
             "chunk-b",
             "failed-source",
             "inactive",
+            "inactive-source",
             "pending-source",
             "stale-authority",
         ]

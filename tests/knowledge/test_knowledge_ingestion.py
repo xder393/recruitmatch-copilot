@@ -62,7 +62,7 @@ def _stored_document(tmp_path, factory, content=b"policy text"):
 
 def test_chunk_offsets_resolve_to_normalized_source():
     text = "A" * 900
-    chunks = chunk_document(text, "policy")
+    chunks = chunk_document(text)
     assert len(chunks) == 2
     assert all(text[item.start : item.end] == item.content for item in chunks)
     assert chunks[1].start == 600

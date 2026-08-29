@@ -140,3 +140,23 @@ def test_trace_storage_failure_cannot_break_grounded_result():
     ).generate(_scope(_hit()), "resume-1", "job-1", _rules(), [_hit()])
 
     assert result.grounding_status == "grounded"
+
+
+def test_model_citations_are_re_resolved_after_generation():
+    hit = _hit()
+    calls = 0
+
+    def resolve(scope, citation_ids):
+        nonlocal calls
+        calls += 1
+        return [hit] if calls == 1 else []
+
+    service = GroundedExplanationService(
+        FakeModel(GroundedModelOutput(summary=GroundedClaim(text="Python", citation_ids=["known"]))),
+        citation_resolver=resolve,
+    )
+
+    result = service.generate(_scope(hit), "resume-1", "job-1", _rules(), [hit])
+
+    assert result.grounding_status == "empty_model_output"
+    assert result.citations == {}

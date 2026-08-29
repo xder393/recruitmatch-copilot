@@ -145,6 +145,13 @@ def pg_index(postgres_engine):
                     active_generation=2,
                     search_index_status="failed",
                 ),
+                _resume(
+                    "resume-inactive",
+                    TENANT,
+                    "resume-inactive-v1",
+                    active_generation=2,
+                    search_index_status="inactive",
+                ),
                 _resume("resume-1-other", "tenant-b", "resume-v1", active_generation=2),
             ]
         )
@@ -227,7 +234,14 @@ def pg_index(postgres_engine):
                     source_version="resume-failed-v1",
                     offset=9,
                 ),
-                _chunk("empty-content", "empty-content", content="", offset=10),
+                _chunk(
+                    "inactive-source",
+                    "inactive-source",
+                    source_id="resume-inactive",
+                    source_version="resume-inactive-v1",
+                    offset=10,
+                ),
+                _chunk("empty-content", "empty-content", content="", offset=11),
                 *[
                     _source_chunk(
                         f"job-{suffix}",

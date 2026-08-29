@@ -11,8 +11,8 @@ from app.repositories.ports import JobRepository
 from app.repositories.unit_of_work import UnitOfWork
 from app.security.tokens import Principal
 from app.knowledge.chunking import chunk_document
-from app.retrieval.generations import IndexFailureCode, SourceRef
-from app.retrieval.indexing import SourceIndexer
+from app.retrieval.generations import SourceRef
+from app.retrieval.indexing import SourceIndexer, classify_index_failure
 
 _MUTATING_ROLES = {Role.ADMIN, Role.RECRUITER}
 _REQUIRED_PROFILE_KEYS = {"job_family", "level", "required_skills", "preferred_skills", "weights"}
@@ -127,10 +127,10 @@ class JobService:
             self.source_indexer.index(
                 source,
                 version.active_index_generation + 1,
-                chunk_document(version.jd_text, "job_version"),
+                chunk_document(version.jd_text),
             )
-        except Exception:
+        except Exception as exc:
             try:
-                self.source_indexer.fail(source, IndexFailureCode.EMBEDDING_FAILED)
+                self.source_indexer.fail(source, classify_index_failure(exc))
             except Exception:
                 pass

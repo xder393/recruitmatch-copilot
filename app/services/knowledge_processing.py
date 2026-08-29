@@ -8,8 +8,8 @@ from app.core.exceptions import AppError
 from app.knowledge.chunking import chunk_document
 from app.repositories.unit_of_work import UnitOfWorkFactory
 from app.resumes.extractors import extract_text
-from app.retrieval.generations import IndexFailureCode, SourceRef
-from app.retrieval.indexing import SourceIndexer
+from app.retrieval.generations import SourceRef
+from app.retrieval.indexing import SourceIndexer, classify_index_failure
 
 
 class KnowledgeProcessingService:
@@ -42,7 +42,7 @@ class KnowledgeProcessingService:
         try:
             content = self.artifact_store.read(artifact_key)
             text = extract_text(filename, content)
-            chunks = chunk_document(text, "knowledge_document")
+            chunks = chunk_document(text)
         except AppError as exc:
             self._mark_failed(tenant_id, document_id, exc.code, "知识文档处理失败")
             return True
@@ -53,9 +53,9 @@ class KnowledgeProcessingService:
         source = SourceRef(tenant_id, "knowledge_document", document_id, source_version)
         try:
             self.source_indexer.index(source, next_generation, chunks, document_id=document_id)
-        except Exception:
+        except Exception as exc:
             try:
-                self.source_indexer.fail(source, IndexFailureCode.EMBEDDING_FAILED)
+                self.source_indexer.fail(source, classify_index_failure(exc))
             except Exception:
                 pass
             self._mark_failed(tenant_id, document_id, "knowledge_indexing_failed", "知识文档索引失败")
