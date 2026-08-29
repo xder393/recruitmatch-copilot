@@ -297,3 +297,27 @@ mypy app: Success, 96 source files
 git diff --check: passed
 isolated PostgreSQL/Redis Compose project removed with volumes after verification
 ```
+
+### Review fix round 3
+
+The third narrow review identified one remaining branch-specific gap: when no post-model citation resolver was configured, validation still received every authorized hit from before prompt bounding. A model could therefore cite an otherwise valid chunk that the character limit had omitted from its actual prompt.
+
+The evidence renderer's structural citation IDs are now applied unconditionally immediately after prompt construction. Both resolver and no-resolver execution paths validate against only the chunks whose citation markers the renderer actually emitted. Citation-shaped text inside untrusted evidence content does not add an ID, and a truncated chunk cannot ground a claim.
+
+TDD and verification evidence:
+
+```text
+RED no-resolver explanation: 2 expected failures
+  a valid citation truncated by max_evidence_characters remained grounded
+  citation-shaped text in the rendered body plus an unrendered active chunk remained grounded
+GREEN focused explanation + semantic + matching: 43 passed
+related AI + matching suites: 62 passed
+CI SQLite selector: passed (170 tests)
+PostgreSQL integration + retrieval suites: 99 passed
+uv lock --check: passed (105 packages)
+ruff check app tests scripts: passed
+ruff format --check app tests scripts: 162 files already formatted
+mypy app: Success, 96 source files
+git diff --check: passed
+isolated PostgreSQL/Redis Compose project removed with volumes after verification
+```

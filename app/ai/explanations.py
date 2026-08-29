@@ -88,6 +88,7 @@ class GroundedExplanationService:
         )
         if not evidence:
             return self._fallback(rule_result, "insufficient_evidence")
+        permitted = [hit for hit in permitted if hit.citation_id in prompt_citation_ids]
 
         request = ModelRequest(
             operation="match_explanation",
