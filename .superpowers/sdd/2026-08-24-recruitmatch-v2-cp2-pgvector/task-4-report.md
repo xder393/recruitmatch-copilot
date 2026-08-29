@@ -265,3 +265,35 @@ git diff --check: passed
 ```
 
 The raw legacy inventory above is the complete unchanged content of `/tmp/cp2-task4-inventory.txt`, captured before the cutover edits.
+
+### Review fix round 2
+
+The second independent review found two remaining fail-open boundaries. Both are now closed without expanding the Task 4 architecture:
+
+- Semantic matching and grounded explanations derive a citation whitelist from the exact bounded evidence string sent to the model. Post-model active resolution receives only requested IDs that were actually visible in that prompt, and returned rows are filtered against both sets before validation. A resolver cannot make a prompt-external citation acceptable by resolving it from a wider active scope.
+- Semantic matching constructs a pair-specific post-model `SearchScope` containing only the current Resume and current JobVersion, even when the caller's authorized scope contains additional jobs or knowledge.
+- Semantic scores must be finite and inside the closed `0..100` interval. Values below zero, above 100, `NaN`, and both infinities are rejected rather than clamped. The hybrid engine independently treats an invalid semantic object as zero semantic contribution, removes its citations/persistence payload, and emits deterministic `rules_fallback` with `invalid_semantic_score`.
+- Explanation validation rejects only the claims that request a prompt-external citation. Its citation dictionary is rebuilt solely from citations used by retained claims, so persistence cannot contain an unsupported claim/citation pair.
+
+TDD evidence:
+
+```text
+RED semantic/explanation: 8 expected failures
+  6 score failures: 120, negative, above 100, NaN, +Inf, -Inf were clamped/accepted
+  1 semantic failure: another active job citation absent from the prompt was resolved by the wider scope
+  1 explanation failure: an active citation truncated out of the prompt was retained in a claim
+RED hybrid defense: 2 expected failures
+  invalid score contributed after clamping and then failed response-model validation instead of degrading
+RED prompt marker injection: 1 expected failure
+  a citation-shaped string inside untrusted evidence content expanded a regex-derived whitelist
+GREEN focused semantic/explanation/hybrid: 29 passed
+related AI + matching suites: 60 passed
+CI SQLite selector: passed (168 tests)
+PostgreSQL integration + retrieval suites: 99 passed
+uv lock --check: passed (105 packages)
+ruff check app tests scripts: passed
+ruff format --check app tests scripts: 162 files already formatted
+mypy app: Success, 96 source files
+git diff --check: passed
+isolated PostgreSQL/Redis Compose project removed with volumes after verification
+```

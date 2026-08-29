@@ -7,7 +7,11 @@ import time
 
 from pydantic import BaseModel, Field
 
-from app.ai.citations import authorized_hits, citations_are_known, format_evidence
+from app.ai.citations import (
+    authorized_hits,
+    citations_are_known,
+    format_evidence_with_citation_ids,
+)
 from app.ai.contracts import ModelRequest, StructuredModel
 from app.ai.gateway import ModelGatewayError
 from app.retrieval import RetrievedChunk, SearchScope
@@ -78,7 +82,10 @@ class GroundedExplanationService:
         if self.citation_resolver is not None:
             permitted = self.citation_resolver(scope, frozenset(hit.citation_id for hit in permitted))
             permitted = authorized_hits(permitted, resume_id, job_version_id)
-        evidence = format_evidence(permitted, self.max_evidence_characters)
+        evidence, prompt_citation_ids = format_evidence_with_citation_ids(
+            permitted,
+            self.max_evidence_characters,
+        )
         if not evidence:
             return self._fallback(rule_result, "insufficient_evidence")
 
@@ -116,8 +123,12 @@ class GroundedExplanationService:
                 if item is not None
                 for citation_id in item.citation_ids
             )
-            permitted = self.citation_resolver(scope, requested_ids)
-            permitted = authorized_hits(permitted, resume_id, job_version_id)
+            permitted = self.citation_resolver(scope, requested_ids & prompt_citation_ids)
+            permitted = [
+                hit
+                for hit in authorized_hits(permitted, resume_id, job_version_id)
+                if hit.citation_id in requested_ids and hit.citation_id in prompt_citation_ids
+            ]
         explanation = self._validate(response.value, permitted)
         if not any(
             [

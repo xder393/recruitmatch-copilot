@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 from app.ai.semantic_matching import SemanticProjectScore
 from app.matching.engine import MatchingEngine
 from app.matching.hybrid import HybridMatchingEngine, HybridTenantContext, combine_scores
@@ -37,9 +39,10 @@ def _job(identifier, required):
     )
 
 
-def test_hybrid_formula_is_fixed_and_model_score_is_clamped():
+def test_hybrid_formula_is_fixed_and_invalid_model_score_has_no_contribution():
     assert combine_scores(0.70, 90) == 0.74
-    assert combine_scores(0.5, 200) == 0.6
+    assert combine_scores(0.5, 200) == 0.4
+    assert combine_scores(0.5, math.nan) == 0.4
     assert combine_scores(0.5, None) == 0.4
 
 
@@ -77,3 +80,22 @@ def test_missing_semantic_output_has_explicit_fallback():
     assert result.total_score == 0.8
     assert result.semantic_score is None
     assert result.fallback_reason == "semantic_evidence_unavailable"
+
+
+def test_invalid_semantic_output_degrades_to_rules_fallback_without_persistence_payload():
+    invalid = SemanticProjectScore(
+        score=120,
+        rationale="invalid",
+        resume_citation_ids=["r1"],
+        job_citation_ids=["j1"],
+    )
+
+    result = HybridMatchingEngine(MatchingEngine(), FakeSemanticMatcher({"python-v1": invalid})).rank(
+        _profile(), [_job("python", ["Python"])], _context()
+    )[0]
+
+    assert result.total_score == 0.8
+    assert result.semantic_score is None
+    assert result.citations == []
+    assert result.grounding_status == "rules_fallback"
+    assert result.fallback_reason == "invalid_semantic_score"

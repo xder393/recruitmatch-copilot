@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import math
+
+import pytest
+
 from app.ai.semantic_matching import SemanticMatcher, SemanticProjectScore, validate_semantic_score
 from app.retrieval import RetrievedChunk, SearchScope
 
@@ -60,16 +64,40 @@ def test_unknown_citation_rejects_semantic_score():
     assert validate_semantic_score(score, {"r1": "resume", "j1": "job_version"}) is None
 
 
-def test_valid_score_is_clamped_to_percentage_scale():
+def test_out_of_range_score_is_rejected_instead_of_clamped():
     score = SemanticProjectScore(
         score=120,
         rationale="fit",
         resume_citation_ids=["r1"],
         job_citation_ids=["j1"],
     )
+    assert validate_semantic_score(score, {"r1": "resume", "j1": "job_version"}) is None
+
+
+@pytest.mark.parametrize("invalid_score", [-1.0, 100.0001, math.nan, math.inf, -math.inf])
+def test_non_finite_and_out_of_range_scores_are_rejected(invalid_score):
+    score = SemanticProjectScore(
+        score=invalid_score,
+        rationale="fit",
+        resume_citation_ids=["r1"],
+        job_citation_ids=["j1"],
+    )
+
+    assert validate_semantic_score(score, {"r1": "resume", "j1": "job_version"}) is None
+
+
+@pytest.mark.parametrize("valid_score", [0.0, 100.0])
+def test_percentage_score_boundaries_are_accepted(valid_score):
+    score = SemanticProjectScore(
+        score=valid_score,
+        rationale="fit",
+        resume_citation_ids=["r1"],
+        job_citation_ids=["j1"],
+    )
+
     validated = validate_semantic_score(score, {"r1": "resume", "j1": "job_version"})
     assert validated is not None
-    assert validated.score == 100
+    assert validated.score == valid_score
 
 
 def test_swapped_source_citations_are_rejected():
@@ -170,6 +198,65 @@ def test_model_citations_are_re_resolved_after_generation():
         )
         is None
     )
+
+
+def test_semantic_rejects_resolvable_citation_not_in_prompt_and_uses_current_pair_scope():
+    from app.ai.contracts import ModelResponse
+
+    prompt_resume = _hit("resume", "resume", "prompt-resume")
+    prompt_job = _hit("job_version", "job", "prompt-job")
+    other_job = _hit("job_version", "other-job", "other-job-citation")
+
+    class Index:
+        resolved_scope = None
+
+        def search(self, scope, *args, **kwargs):
+            return [prompt_resume] if scope.source_types == frozenset({"resume"}) else [prompt_job]
+
+        def resolve_active_citations(self, scope, citation_ids):
+            self.resolved_scope = scope
+            # This simulates a broad resolver being able to resolve a valid active
+            # citation for another job that was never supplied to the model.
+            return [prompt_resume, other_job]
+
+    class Model:
+        def generate(self, request):
+            assert "prompt-resume" in request.user
+            assert "other-job-citation" not in request.user
+            return ModelResponse(
+                value=SemanticProjectScore(
+                    score=80,
+                    rationale="unsupported",
+                    resume_citation_ids=["prompt-resume"],
+                    job_citation_ids=["other-job-citation"],
+                ),
+                provider="fake",
+                model="fake",
+                input_tokens=1,
+                output_tokens=1,
+                estimated_cost=0,
+                latency_ms=1,
+            )
+
+    broad_scope = SearchScope(
+        "tenant",
+        frozenset({"resume", "job_version"}),
+        frozenset(
+            {
+                ("resume", "resume", "sha"),
+                ("job_version", "job", "1"),
+                ("job_version", "other-job", "1"),
+            }
+        ),
+    )
+    index = Index()
+
+    result = SemanticMatcher(Model(), index, Embedder()).score(
+        broad_scope, "resume", "job", "Python AI 项目", "招聘 AI 应用开发"
+    )
+
+    assert result is None
+    assert index.resolved_scope == _scope()
 
 
 def test_job_and_resume_queries_select_relevant_chinese_chunks_above_threshold():

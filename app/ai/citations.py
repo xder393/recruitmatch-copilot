@@ -29,9 +29,19 @@ def authorized_hits(
 
 def format_evidence(hits: Iterable[RetrievedChunk], max_characters: int) -> str:
     """Render citation-addressable evidence without exceeding the prompt cap."""
+    evidence, _ = format_evidence_with_citation_ids(hits, max_characters)
+    return evidence
+
+
+def format_evidence_with_citation_ids(
+    hits: Iterable[RetrievedChunk],
+    max_characters: int,
+) -> tuple[str, frozenset[str]]:
+    """Render evidence and structurally track only the chunk markers it adds."""
     if max_characters <= 0:
-        return ""
+        return "", frozenset()
     parts: list[str] = []
+    citation_ids: set[str] = set()
     remaining = max_characters
     for hit in hits:
         prefix = f"[citation:{hit.citation_id}] "
@@ -40,11 +50,12 @@ def format_evidence(hits: Iterable[RetrievedChunk], max_characters: int) -> str:
         content = hit.content[: remaining - len(prefix)]
         part = prefix + content
         parts.append(part)
+        citation_ids.add(hit.citation_id)
         remaining -= len(part)
         if remaining <= 1:
             break
         remaining -= 1
-    return "\n".join(parts)
+    return "\n".join(parts), frozenset(citation_ids)
 
 
 def citations_are_known(citation_ids: list[str], known_ids: set[str]) -> bool:

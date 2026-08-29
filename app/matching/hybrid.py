@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import math
 from typing import List, Optional
 
 from app.matching.schemas import CandidateJob, HybridMatchRecommendation
@@ -12,7 +13,11 @@ from app.retrieval.ports import SearchScope
 
 def combine_scores(rule_score: float, semantic_score: Optional[float]) -> float:
     bounded_rule = min(max(float(rule_score), 0.0), 1.0)
-    bounded_semantic = 0.0 if semantic_score is None else min(max(float(semantic_score), 0.0), 100.0) / 100.0
+    bounded_semantic = (
+        float(semantic_score) / 100.0
+        if semantic_score is not None and math.isfinite(float(semantic_score)) and 0 <= semantic_score <= 100
+        else 0.0
+    )
     return round(0.8 * bounded_rule + 0.2 * bounded_semantic, 4)
 
 
@@ -46,6 +51,11 @@ class HybridMatchingEngine:
                 self._resume_summary(profile),
                 next(job.jd_text for job in jobs if job.job_version_id == rule.job_version_id),
             )
+            invalid_semantic = semantic is not None and (
+                not math.isfinite(float(semantic.score)) or not 0 <= semantic.score <= 100
+            )
+            if invalid_semantic:
+                semantic = None
             citation_ids = []
             if semantic is not None:
                 citation_ids = semantic.resume_citation_ids + semantic.job_citation_ids
@@ -57,7 +67,13 @@ class HybridMatchingEngine:
                     rule_score=rule.total_score,
                     semantic_score=semantic.score if semantic else None,
                     grounding_status="grounded" if semantic else "rules_fallback",
-                    fallback_reason=None if semantic else "semantic_evidence_unavailable",
+                    fallback_reason=(
+                        None
+                        if semantic
+                        else "invalid_semantic_score"
+                        if invalid_semantic
+                        else "semantic_evidence_unavailable"
+                    ),
                     citations=citation_ids,
                 )
             )
