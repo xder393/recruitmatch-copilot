@@ -136,8 +136,11 @@ Knowledge DELETE acknowledgement409 is side-effect-free; RBAC and tenant isolati
 remain enforced. Broad result/Feedback.reason scrub occurs only on first transition;
 retry after S3 failure preserves fresh matching/feedback. Real-PG barriers cover both
 matching/delete and feedback/delete orders, in-flight processing/generation, and
-Source-held Tenant-FK insert versus NO KEY UPDATE deletion guard. Tests assert SQL,
-persisted/API sentinel absence, citation denial and real MinIO permission failure.
+Source-held Tenant-FK insert versus NO KEY UPDATE deletion guard. These checked-in
+tests establish behavior, persisted/API sentinel absence, citation denial and real
+MinIO permission failure; the controller separately captured the emitted SQL.
+The final fix wave adds an automated PostgreSQL statement-capture assertion for
+the actual IdentityRepository guard query (see final-fix-report.md).
 Reconciliation tests cover grace/metadata/revalidation, dispatch durability, retry
 PENDING committed before I/O (RED1/15pass then fixed), and fresh service/UoW durable
 tenant/page progress, crash-after-reservation, wrap and exact late-object cleanup.

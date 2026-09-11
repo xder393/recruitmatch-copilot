@@ -199,6 +199,85 @@ def test_run_persists_top_three_from_active_same_tenant_jobs(tmp_path):
         assert "Foreign perfect" not in titles
 
 
+def test_final_top_three_promotes_former_fourth_after_semantic_invalidation(tmp_path):
+    """Catches truncating the eligible pool before final evidence changes scores."""
+    from types import SimpleNamespace
+
+    from sqlalchemy import select
+    from app.matching.hybrid import HybridMatchingEngine
+    from app.matching.engine import MatchingEngine
+    from app.models.matching import MatchResult
+    from app.repositories.sqlalchemy_unit_of_work import SqlAlchemyUnitOfWork
+    from app.services.matching import MatchingService
+
+    # Real rules pipeline with controlled rule scores isolates the final ranking boundary.
+    scores = {"AI": 0.90, "Backend": 0.88, "Data": 0.86, "Frontend": 0.84}
+
+    class Rules(MatchingEngine):
+        def rank(self, profile, jobs, top_k=3):
+            results = super().rank(profile, jobs, top_k=len(jobs))
+            results = [item.model_copy(update={"total_score": scores[item.title]}) for item in results]
+            return sorted(results, key=lambda item: (-item.total_score, item.job_id))[:top_k]
+
+    class FakeSemantic:
+        prompt_version = "fake-final-top3"
+
+        def __init__(self):
+            self.calls = []
+
+        def score(self, scope, resume_id, version_id, resume_summary, jd_text):
+            self.calls.append(jd_text)
+            return SimpleNamespace(score=80, resume_citation_ids=["resume-cite"], job_citation_ids=["job-cite"])
+
+    class Explanations(_ExplanationService):
+        def __init__(self):
+            super().__init__()
+            self.calls = []
+
+        def generate(self, scope, resume_id, job_version_id, rule_result, hits):
+            self.calls.append(job_version_id)
+            return super().generate(scope, resume_id, job_version_id, rule_result, hits)
+
+    class InvalidateFirst(_FinalResolutionIndex):
+        def __init__(self, invalid_version):
+            super().__init__()
+            self.invalid_version = invalid_version
+            self.resolutions = []
+
+        def resolve_active_citations(self, scope, citation_ids):
+            version_id, _ = self._source(scope, "job_version")
+            self.resolutions.append(version_id)
+            hits = super().resolve_active_citations(scope, citation_ids)
+            return [hit for hit in hits if version_id != self.invalid_version or hit.citation_id != "job-cite"]
+
+    factory, principal, _, resume_id = _setup(tmp_path)
+    semantic, explanations = FakeSemantic(), Explanations()
+    with factory() as session:
+        uow = SqlAlchemyUnitOfWork(session)
+        jobs = uow.matching.active_jobs(principal.tenant_id)
+        invalid_version = next(job.versions[0].id for job in jobs if job.title == "AI")
+        index = InvalidateFirst(invalid_version)
+        run = MatchingService(
+            uow.matching,
+            hybrid_engine=HybridMatchingEngine(Rules(), semantic),
+            explanation_service=explanations,
+            source_index=index,
+            embedder=_Embedder(),
+            uow=uow,
+        ).run(principal, resume_id, mode="hybrid-v1")
+        assert [(result.job_version.job.title, result.total_score) for result in run.results] == [
+            ("Backend", 0.864),
+            ("Data", 0.848),
+            ("Frontend", 0.832),
+        ]
+        assert [result.rank for result in run.results] == [1, 2, 3]
+        assert all(result.semantic_score == 80 for result in run.results)
+        assert len(list(session.scalars(select(MatchResult).where(MatchResult.run_id == run.id)))) == 3
+        assert semantic.calls == ["AI", "Backend", "Data", "Frontend"]
+        assert len(explanations.calls) == len(index.resolutions) == 4
+        assert set(explanations.calls) == {job.versions[0].id for job in jobs}
+
+
 def test_run_hides_resume_from_another_tenant(tmp_path):
     """Catches caller-controlled resume IDs bypassing tenant predicates."""
     from app.core.exceptions import ResourceNotFoundError

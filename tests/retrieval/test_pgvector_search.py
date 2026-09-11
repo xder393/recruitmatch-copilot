@@ -293,7 +293,8 @@ class TestPgVectorRetrievalContract(RetrievalContract):
 
 def test_pg_index_does_not_inherit_previous_fixture_hnsw_graph(postgres_engine, request) -> None:
     # Exercise a previous fixture lifecycle before requesting the fixture under
-    # test. Equal-vector history can leave unreachable ANN candidates after DELETE.
+    # test. Prior equal-vector index history was associated with reduced seed results;
+    # the original one-time empty result's exact cause remains unproven.
     previous_fixture = pg_index.__wrapped__(postgres_engine)
     previous_index = next(previous_fixture)
     try:

@@ -19,7 +19,7 @@ from app.core.exceptions import IngestionError, UnsupportedFileError
 
 _MAX_BYTES = 10 * 1024 * 1024
 _MAX_EXPANDED = 16 * 1024 * 1024
-_MAX_TEXT = 1024 * 1024
+_MAX_TEXT_CHARACTERS = 1_048_576
 # The locked pypdf version has module-level configuration. Set once during
 # module initialization, before any request can enter extraction; never toggle
 # these globals per request. All parser callers use this module.
@@ -74,7 +74,7 @@ def _docx_text(stream: BinaryIO) -> str:
     parts, total = [], 0
     for paragraph in Document(stream).paragraphs:
         total += len(paragraph.text) + 1
-        if total > _MAX_TEXT:
+        if total > _MAX_TEXT_CHARACTERS:
             _resource_limit()
         parts.append(paragraph.text)
     return "\n".join(parts)
@@ -121,7 +121,7 @@ def _pdf_text(stream: BinaryIO) -> str:
             _resource_limit()
         part = page.extract_text() or ""
         total += len(part) + 1
-        if total > _MAX_TEXT:
+        if total > _MAX_TEXT_CHARACTERS:
             _resource_limit()
         parts.append(part)
     return "\n".join(parts)
@@ -136,7 +136,7 @@ def _parse(extension: str, stream: BinaryIO) -> str:
             text = _docx_text(stream)
         else:
             text = stream.read(_MAX_BYTES + 1).decode("utf-8-sig")
-        if len(text) > _MAX_TEXT:
+        if len(text) > _MAX_TEXT_CHARACTERS:
             _resource_limit()
         return text
     except IngestionError:

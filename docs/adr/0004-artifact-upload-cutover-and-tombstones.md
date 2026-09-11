@@ -91,6 +91,19 @@ I/O or Source publication locks. Fresh service instances/processes resume this
 progress; concurrent invocations may overlap only across eventual wraps, and
 all work remains idempotent and revalidated under Source→Artifact.
 
+When invalid stale-PENDING repair enters cleanup, the same Source→Artifact guarded
+transaction releases that exact Source checksum together with the Artifact checksum.
+The unusable Source stays failed (or Knowledge inactive), never implicitly retried;
+an identical new upload may create a new owner/Artifact. Audit tradeoff: the failed
+Source relinquishes its duplicate checksum identity while its exact Artifact location
+and failure remain available for cleanup, including delayed writes.
+
+Hybrid matching retains every eligible candidate through final citation validation
+and score recomputation, then persists the deterministic final Top3. Reusing the full
+pipeline means semantic scoring, guidance generation/retrieval and final validation
+scale with the eligible pool, not three candidates. The 80/20 weights, authorization,
+fallback and rules-v1 contracts remain unchanged.
+
 A crash after reservation may defer that page until a full wrap. Rows are never
 retired after missing-object observations. Independent lanes prevent perpetual
 tombstone sweeps from starving repair/cleanup. Cost is O(tenants × lanes) cursor
@@ -140,7 +153,8 @@ transaction; existing terminal cleanup error codes remain until real cleanup.
 Upload orchestration runs in Starlette's bounded thread pool, sequentially using
 one UnitOfWork. Both request and temporary streams close on success and failure.
 Input is at most 10 MiB; DOCX validates at most 512 entries, 16 MiB expanded total,
-8 MiB per entry and 200:1 expansion ratio. Extracted output is at most 1 MiB.
+8 MiB per entry and 200:1 expansion ratio. Extracted output is at most 1,048,576
+Unicode characters; this is not a UTF-8 byte limit.
 Locked pypdf 6.16.2 filter/stream caps are configured once at module import,
 never per request. Referenced resources, pages and decoded page contents are
 bounded before text extraction. No OCR or model inference occurs in validation.

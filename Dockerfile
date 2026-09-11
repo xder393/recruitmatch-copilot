@@ -45,8 +45,11 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
 
 FROM minio/mc:RELEASE.2025-08-13T08-35-41Z@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727 AS minio-client
 
+FROM node:24-trixie-slim@sha256:6950b66b4c0cb0151ce89fa75074673850763d096b044f422c6729b588dd4956 AS test-node
+
 FROM app-base AS test
 
+COPY --from=test-node /usr/local/bin/node /usr/local/bin/node
 COPY --from=test-builder --chown=recruitmatch:recruitmatch /app/.venv /app/.venv
 COPY --from=builder /usr/local/bin/uv /usr/local/bin/uv
 COPY --chown=recruitmatch:recruitmatch pyproject.toml uv.lock .python-version Dockerfile docker-compose.yml ./

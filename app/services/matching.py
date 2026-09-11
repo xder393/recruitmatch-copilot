@@ -90,14 +90,14 @@ class MatchingService:
                 profile,
                 candidates,
                 HybridTenantContext(resume.id, search_scope),
-                top_k=3,
+                top_k=len(candidates),
             )
             recommendations = self._add_grounded_guidance(
                 search_scope,
                 resume.id,
                 candidates,
                 recommendations,
-            )
+            )[:3]
         else:
             recommendations = self.engine.rank(profile, candidates, top_k=3)
         for rank, item in enumerate(recommendations, start=1):

@@ -5,7 +5,7 @@ from threading import Event
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import select, text
+from sqlalchemy import event, select, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.models.identity import User
@@ -24,6 +24,24 @@ from app.services.knowledge_documents import KnowledgeDocumentService
 from app.services.feedback import FeedbackService
 from tests.artifacts.test_privacy_delete import seed_result
 from tests.artifacts.test_upload_saga import Dispatcher, PendingStore, upload, knowledge_upload
+
+
+def test_privacy_guard_emits_no_key_update_on_postgresql(postgres_engine, principal):
+    """Catches lock-strength regression at the actual repository SQL boundary."""
+    statements = []
+
+    def capture(connection, cursor, statement, parameters, context, executemany):
+        statements.append(" ".join(statement.upper().split()))
+
+    with postgres_engine.connect() as connection:
+        event.listen(connection, "before_cursor_execute", capture)
+        try:
+            with Session(connection) as session:
+                SqlAlchemyUnitOfWork(session).identities.lock_privacy_guard(principal.tenant_id)
+        finally:
+            event.remove(connection, "before_cursor_execute", capture)
+    assert len(statements) == 1
+    assert "FOR NO KEY UPDATE" in statements[0]
 
 
 def test_source_holder_can_insert_tenant_fk_while_delete_guard_waits(postgres_engine, principal):

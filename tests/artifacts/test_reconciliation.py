@@ -13,9 +13,10 @@ from app.domain.enums import ResumeStatus
 from app.core.exceptions import AppError
 from app.models.artifacts import Artifact
 from app.models.resumes import Resume
+from app.models.knowledge import KnowledgeDocument
 from app.repositories.sqlalchemy_unit_of_work import SqlAlchemyUnitOfWork, SqlAlchemyUnitOfWorkFactory
 from app.services.resumes import ResumeService
-from tests.artifacts.test_upload_saga import Dispatcher, PendingStore, upload
+from tests.artifacts.test_upload_saga import Dispatcher, PendingStore, upload, knowledge_upload
 
 
 def reconciler(engine, store, dispatcher, **kwargs):
@@ -77,6 +78,115 @@ def test_invalid_stale_pending_fails_and_cleans_without_dispatch(postgres_engine
     assert dispatcher.calls == []
     with pytest.raises(ArtifactMissing):
         store.inspect(location)
+
+
+@pytest.mark.parametrize("kind", ["resume", "knowledge", "inactive_knowledge"])
+@pytest.mark.parametrize("invalid", ["missing", "checksum", "size"])
+@pytest.mark.parametrize("cleanup_fails", [False, True])
+def test_invalid_repair_releases_only_old_identity_for_reupload(
+    postgres_engine, principal, kind, invalid, cleanup_fails
+):
+    """Catches Source uniqueness blocking a new upload after invalid Artifact cleanup."""
+
+    class RetryStore(PendingStore):
+        broken = False
+
+        def delete(self, location):
+            if self.broken:
+                raise ArtifactStorageFailure()
+            super().delete(location)
+
+    store, dispatcher = RetryStore(postgres_engine), Dispatcher(postgres_engine)
+    uploading = upload if kind == "resume" else knowledge_upload
+    model = Resume if kind == "resume" else KnowledgeDocument
+    checksum_field = "sha256" if kind == "resume" else "checksum"
+    terminal_status = "inactive" if kind == "inactive_knowledge" else "failed"
+    owner_id, artifact_id, *_ = uploading(postgres_engine, principal, store, dispatcher)
+    location = store.puts[-1]
+    content = store._objects[location]
+    with Session(postgres_engine) as session:
+        artifact = session.get(Artifact, artifact_id)
+        artifact.status = ArtifactStatus.PENDING
+        artifact.created_at = datetime.now(timezone.utc) - timedelta(minutes=10)
+        if kind == "inactive_knowledge":
+            session.get(model, owner_id).status = "inactive"
+        session.commit()
+    if invalid == "missing":
+        store.delete(location)
+    else:
+        store._objects[location] = b"X" * len(content) if invalid == "checksum" else b"short"
+    store.broken = cleanup_fails
+    dispatcher.calls.clear()
+    report = reconciler(postgres_engine, store, dispatcher).run_once(batch_size=1)
+    assert report.invalid == 1 and report.cleanup_failures == int(cleanup_fails)
+    assert dispatcher.calls == []
+    # Exercise the original uncaught uniqueness failure before checking internal state.
+    new_owner, new_artifact, created, *_ = uploading(postgres_engine, principal, store, dispatcher)
+    assert created and new_owner != owner_id and new_artifact != artifact_id
+    assert uploading(postgres_engine, principal, store, dispatcher)[0:3] == (new_owner, new_artifact, False)
+    assert len(store.puts) == 2
+    with Session(postgres_engine) as session:
+        assert getattr(session.get(model, owner_id), checksum_field) is None
+        assert session.get(model, owner_id).status == terminal_status
+        assert session.get(Artifact, artifact_id).sha256 is None
+        assert session.get(Artifact, new_artifact).status == ArtifactStatus.AVAILABLE
+    # A late old Put and retry must delete only the original exact location.
+    store._objects[location] = b"LATE_OLD_PRIVATE"
+    store.broken = False
+    for _ in range(4):
+        reconciler(postgres_engine, store, dispatcher).run_once(batch_size=1)
+    assert location not in store._objects
+    assert store._objects[store.puts[-1]] == content
+    assert dispatcher.calls == [(principal.tenant_id, new_owner)]
+    with Session(postgres_engine) as session:
+        assert session.get(model, owner_id).status == terminal_status
+        assert session.get(Artifact, artifact_id).status == ArtifactStatus.DELETED
+
+
+def test_mixed_lanes_reserve_independent_pages_and_resume_in_fresh_services(postgres_engine, principal):
+    """Catches one busy lane consuming the budget of pending repair or cleanup."""
+    store, dispatcher = PendingStore(postgres_engine), Dispatcher(postgres_engine)
+    lanes = {"pending": [], "cleanup": [], "deleted": []}
+    for lane, count in [("pending", 3), ("cleanup", 1), ("deleted", 1)]:
+        for index in range(count):
+            with Session(postgres_engine) as session:
+                uow = SqlAlchemyUnitOfWork(session)
+                owner, _ = ResumeService(uow.resumes, store, dispatcher, uow=uow).upload(
+                    principal, "lane.txt", "text/plain", f"{lane}-{index}".encode()
+                )
+                location = store.puts[-1]
+                lanes[lane].append(location)
+                artifact = session.get(Artifact, location.artifact_id)
+                if lane == "pending":
+                    artifact.status = ArtifactStatus.PENDING
+                    artifact.created_at = datetime.now(timezone.utc) - timedelta(minutes=10)
+                else:
+                    ResumeService(uow.resumes, store, dispatcher, uow=uow).delete(principal, owner.id)
+                    if lane == "cleanup":
+                        artifact.status = ArtifactStatus.CLEANUP_PENDING
+                    store._objects[location] = b"LATE"
+                session.commit()
+    reserved_pending = []
+    for page in range(2):
+        with Session(postgres_engine) as session:
+            uow = SqlAlchemyUnitOfWork(session)
+            batch = uow.artifacts.reserve_reconciliation_batch(
+                datetime.now(timezone.utc) - timedelta(minutes=5), limit=1
+            )
+            uow.commit()  # Crash after durable reservation; no work performed.
+        assert len(batch.pending) == 1
+        reserved_pending.append(batch.pending[0].location)
+        assert len(batch.cleanup) == (1 if page == 0 else 0)
+        assert len(batch.deleted) == (1 if page == 0 else 0)
+    assert len(set(reserved_pending)) == 2
+    dispatcher.calls.clear()
+    first = reconciler(postgres_engine, store, dispatcher).run_once(batch_size=1)
+    assert first.selected == 3 and first.repaired == 1 and first.cleaned == 2
+    assert dispatcher.calls[0][1] not in {item.owner_id for item in reserved_pending}
+    reports = [reconciler(postgres_engine, store, dispatcher).run_once(batch_size=1) for _ in range(6)]
+    assert all(item.selected <= 3 and item.partial for item in reports)
+    assert {owner_id for _, owner_id in dispatcher.calls} == {loc.owner_id for loc in lanes["pending"]}
+    assert all(loc not in store._objects for lane in ["cleanup", "deleted"] for loc in lanes[lane])
 
 
 def test_permanent_tombstone_revisited_after_missing_observation_and_fresh_instance(postgres_engine, principal):

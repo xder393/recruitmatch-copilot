@@ -5,6 +5,21 @@ from io import BytesIO
 import pytest
 
 
+@pytest.mark.parametrize("characters", [1_048_576, 1_048_577])
+def test_chinese_text_limit_counts_unicode_characters_not_utf8_bytes(characters):
+    """Catches narrowing supported Chinese text to a one-MiB encoded byte cap."""
+    from app.core.exceptions import IngestionError
+    from app.resumes.extractors import extract_text
+
+    content = "中" * characters
+    if characters == 1_048_576:
+        assert extract_text("resume.txt", content.encode("utf-8")) == content
+    else:
+        with pytest.raises(IngestionError) as error:
+            extract_text("resume.txt", content.encode("utf-8"))
+        assert error.value.code == "document_resource_limit"
+
+
 def test_txt_extraction_normalizes_bom_nul_and_line_endings():
     """Catches parser input corruption from common exported-text artifacts."""
     from app.resumes.extractors import extract_text

@@ -159,9 +159,12 @@ class ArtifactReconciliationService:
                 uow.artifacts.mark_failed(location.tenant_id, location.artifact_id, code, **scope)
                 uow.artifacts.mark_cleanup_pending(location.tenant_id, location.artifact_id, **scope)
                 if location.namespace == "resumes":
+                    source.sha256 = None
                     source.status = ResumeStatus.FAILED
-                elif source.status != "inactive":
-                    source.status = "failed"
+                else:
+                    source.checksum = None
+                    if source.status != "inactive":
+                        source.status = "failed"
                 source.error_code = code.value
                 source.error_message = "原始文件验证失败"
                 report.invalid += 1
