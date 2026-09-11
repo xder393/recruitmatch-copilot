@@ -42,11 +42,55 @@ owner_id)` locks/refreshes the exact row, checks tenant/type/owner and DELETED,
 and changes only its sanitized error metadata. Passing None records a successful
 cleanup observation without removing the row. The caller owns the transaction.
 Later health/metrics/invariant reporting must include DELETED cleanup errors as
-well as CLEANUP_PENDING/CLEANUP_FAILED. The scheduler and full cross-Source
-privacy cleanup belong to Task 4.
+well as CLEANUP_PENDING/CLEANUP_FAILED. Task 4 supplies bounded orchestration
+and full cross-Source privacy cleanup. CP4 owns the sole Beat schedule and
+dispatch/recovery wiring; Beat must not perform object I/O. Cleanup health and
+performance invariants remain CP5/CP6 work.
 
 The tradeoff is permanent tombstone retention and repeated bounded inspection
 cost. Retiring them requires a future proven upload-fencing/completion protocol.
+
+## Task 4 privacy boundary and maintenance progress
+
+Accepted by the controller on 2026-09-11 before implementation. Grounded model
+explanations persist selected citations, not complete input lineage. Knowledge
+may influence generated text without appearing in its displayed citations.
+Privacy deletion therefore clears every existing MatchResult content/JSON field
+in the tenant and every linked Feedback.reason. Results retain deliberate
+non-content audit/numeric fields and a privacy-redacted marker; later feedback
+on them is rejected. Fresh matching can use the remaining live Sources. Resume
+deletion clears its own result and feedback content. This conservatively
+invalidates unrelated same-tenant match history; it is not exact derivation
+tracking or a semantic content classifier.
+
+Matching, privacy deletion and feedback first lock the existing Tenant row,
+then acquire Source and Artifact locks in that order when needed. Matching
+holds the tenant guard across Knowledge selection, model generation and commit.
+Deletion scrubs under the same guard; feedback revalidates after locking.
+Thus either matching/feedback commits first and deletion clears it, or deletion
+commits first and stale sensitive writes are rejected. Slow model calls serialize
+same-tenant matching/deletion/feedback. This is a correctness-first Compose demo
+boundary, not a throughput claim. Processing and generation publication continue
+to lock/revalidate their exact Source before writing; lifecycle deletion wins.
+
+A PostgreSQL maintenance cursor table with unique (scope, lane), validated
+finite lanes and atomic initialization records only exclusive last IDs. A global
+tenant lane rotates one tenant in stable ID order per invocation and wraps.
+Each tenant has independent stale-PENDING, cleanup and DELETED lanes, reserving
+bounded Artifact pages. Cursor rows follow one deterministic lock order. The
+short reservation transaction advances all positions and commits before object
+I/O or Source publication locks. Fresh service instances/processes resume this
+progress; concurrent invocations may overlap only across eventual wraps, and
+all work remains idempotent and revalidated under Source→Artifact.
+
+A crash after reservation may defer that page until a full wrap. Rows are never
+retired after missing-object observations. Independent lanes prevent perpetual
+tombstone sweeps from starving repair/cleanup. Cost is O(tenants × lanes) cursor
+metadata, permanent Artifact tombstones and repeated bounded object I/O. This
+table represents maintenance progress, not processing ownership or a second
+scheduler. Reports describe bounded partial observations only. Orphan inspection
+is a separate controlled administrative paged operation, returning sanitized
+counts with an opaque adapter cursor; unrelated objects are never auto-deleted.
 
 ## Schema and data preservation
 
