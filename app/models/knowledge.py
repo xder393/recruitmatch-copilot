@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy import DateTime, ForeignKey, ForeignKeyConstraint, Integer, String, UniqueConstraint
+from sqlalchemy import Computed, DateTime, ForeignKey, ForeignKeyConstraint, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, synonym
 
 from app.database import Base
@@ -25,8 +25,8 @@ class KnowledgeDocument(Base):
     __table_args__ = (
         UniqueConstraint("tenant_id", "checksum", "document_type", name="uq_knowledge_tenant_checksum_type"),
         ForeignKeyConstraint(
-            ["tenant_id", "id", "artifact_id"],
-            ["artifacts.tenant_id", "artifacts.owner_id", "artifacts.id"],
+            ["tenant_id", "artifact_owner_type", "id", "artifact_id"],
+            ["artifacts.tenant_id", "artifacts.owner_type", "artifacts.owner_id", "artifacts.id"],
             name="fk_knowledge_documents_artifact_owner",
         ),
     )
@@ -40,6 +40,9 @@ class KnowledgeDocument(Base):
     checksum: Mapped[str] = mapped_column(String(64), nullable=False)
     artifact_key: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
     artifact_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+    artifact_owner_type: Mapped[str] = mapped_column(
+        String(18), Computed("'knowledge_document'", persisted=True), nullable=False
+    )
     status: Mapped[str] = mapped_column(String(30), index=True, nullable=False)
     active_index_generation: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     search_index_status: Mapped[str] = mapped_column(String(30), default="pending", nullable=False)

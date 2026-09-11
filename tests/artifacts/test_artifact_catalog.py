@@ -2,6 +2,7 @@
 
 from uuid import uuid4
 
+import pytest
 from alembic import command
 from alembic.config import Config
 from sqlalchemy import text
@@ -11,6 +12,7 @@ from app.database import Base
 from app.models.identity import Tenant
 from app.models.knowledge import KnowledgeDocument
 from app.models.resumes import Resume, ResumeArtifact
+from app.repositories.artifacts import ArtifactRepository
 
 
 def catalog(connection, schema):
@@ -91,10 +93,34 @@ def test_orm_and_migration_have_identical_postgres_artifact_catalog(postgres_eng
             assert anchors[0][1].replace(schema + ".", "").replace("public.", "") == anchors[1][1].replace(
                 schema + ".", ""
             ).replace("public.", "")
+            assert "(tenant_id, artifact_owner_type, id, artifact_id)" in anchors[0][1]
+            source_columns = list(
+                connection.execute(
+                    text("""
+                SELECT n.nspname, format_type(a.atttypid, a.atttypmod), a.attnotnull,
+                       a.attgenerated, pg_get_expr(d.adbin, d.adrelid)
+                FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid
+                JOIN pg_namespace n ON n.oid=c.relnamespace
+                JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+                WHERE n.nspname IN ('public', :schema) AND c.relname=:table
+                  AND a.attname='artifact_owner_type' ORDER BY n.nspname
+            """),
+                    {"schema": schema, "table": table},
+                )
+            )
+            assert len(source_columns) == 2
+            expected_type = "resume" if table == "resumes" else "knowledge_document"
+            assert tuple(source_columns[0][1:]) == tuple(source_columns[1][1:])
+            assert tuple(source_columns[0][1:]) == (
+                "character varying(18)",
+                True,
+                "s",
+                f"'{expected_type}'::character varying",
+            )
         connection.execute(text(f'DROP SCHEMA "{schema}" CASCADE'))
 
 
-def test_revision_12_to_13_preserves_local_sources_without_backfill(postgres_engine):
+def test_revision_12_to_head_preserves_local_sources_without_backfill(postgres_engine):
     tenant_id = str(uuid4())
     with Session(postgres_engine) as session:
         session.add(Tenant(id=tenant_id, name="legacy-preservation"))
@@ -155,6 +181,100 @@ def test_revision_12_to_13_preserves_local_sources_without_backfill(postgres_eng
                 == 0
             )
     finally:
+        command.upgrade(config, "head")
+        with postgres_engine.begin() as connection:
+            connection.execute(text("DELETE FROM tenants WHERE id=:tenant"), {"tenant": tenant_id})
+
+
+def _anchored_sources(engine):
+    tenant_id, owner_id = str(uuid4()), str(uuid4())
+    with Session(engine) as session:
+        session.add(Tenant(id=tenant_id, name="typed-anchor-upgrade"))
+        session.flush()
+        repo = ArtifactRepository(session)
+        resume_artifact = repo.claim_upload(tenant_id, "resume", owner_id, "a" * 64, "text/plain", 10)
+        knowledge_artifact = repo.claim_upload(tenant_id, "knowledge_document", owner_id, "a" * 64, "text/plain", 10)
+        session.add(
+            Resume(
+                id=owner_id,
+                tenant_id=tenant_id,
+                sha256="a" * 64,
+                original_filename="resume.txt",
+                media_type="text/plain",
+                size_bytes=10,
+                artifact_id=resume_artifact.id,
+            )
+        )
+        session.add(
+            KnowledgeDocument(
+                id=owner_id,
+                tenant_id=tenant_id,
+                checksum="a" * 64,
+                document_type="policy",
+                original_filename="policy.txt",
+                media_type="text/plain",
+                size_bytes=10,
+                artifact_id=knowledge_artifact.id,
+                status="uploaded",
+            )
+        )
+        ids = tenant_id, owner_id, resume_artifact.id, knowledge_artifact.id
+        session.commit()
+        return ids
+
+
+def test_revision_13_upgrade_preserves_valid_typed_anchors(postgres_engine):
+    tenant_id, owner_id, resume_artifact_id, knowledge_artifact_id = _anchored_sources(postgres_engine)
+    config = Config("alembic.ini")
+    try:
+        command.downgrade(config, "20260824_13")
+        command.upgrade(config, "head")
+        with postgres_engine.connect() as connection:
+            for table, artifact_id, owner_type in (
+                ("resumes", resume_artifact_id, "resume"),
+                ("knowledge_documents", knowledge_artifact_id, "knowledge_document"),
+            ):
+                row = connection.execute(
+                    text(f"SELECT artifact_id, artifact_owner_type FROM {table} WHERE tenant_id=:tenant AND id=:owner"),
+                    {"tenant": tenant_id, "owner": owner_id},
+                ).one()
+                assert tuple(row) == (artifact_id, owner_type)
+    finally:
+        command.upgrade(config, "head")
+        with postgres_engine.begin() as connection:
+            connection.execute(text("DELETE FROM tenants WHERE id=:tenant"), {"tenant": tenant_id})
+
+
+@pytest.mark.parametrize("table", ["resumes", "knowledge_documents"])
+def test_revision_13_invalid_typed_anchor_fails_without_rebinding(postgres_engine, table):
+    tenant_id, owner_id, resume_artifact_id, knowledge_artifact_id = _anchored_sources(postgres_engine)
+    correct, wrong = (
+        (resume_artifact_id, knowledge_artifact_id)
+        if table == "resumes"
+        else (knowledge_artifact_id, resume_artifact_id)
+    )
+    config = Config("alembic.ini")
+    try:
+        command.downgrade(config, "20260824_13")
+        with postgres_engine.begin() as connection:
+            connection.execute(
+                text(f"UPDATE {table} SET artifact_id=:artifact WHERE id=:owner"),
+                {"artifact": wrong, "owner": owner_id},
+            )
+        with pytest.raises(RuntimeError, match="artifact_owner_type_mismatch: " + table):
+            command.upgrade(config, "head")
+        with postgres_engine.connect() as connection:
+            assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "20260824_13"
+            assert (
+                connection.scalar(text(f"SELECT artifact_id FROM {table} WHERE id=:owner"), {"owner": owner_id})
+                == wrong
+            )
+    finally:
+        with postgres_engine.begin() as connection:
+            connection.execute(
+                text(f"UPDATE {table} SET artifact_id=:artifact WHERE id=:owner"),
+                {"artifact": correct, "owner": owner_id},
+            )
         command.upgrade(config, "head")
         with postgres_engine.begin() as connection:
             connection.execute(text("DELETE FROM tenants WHERE id=:tenant"), {"tenant": tenant_id})

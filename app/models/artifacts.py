@@ -17,7 +17,7 @@ def _utcnow() -> datetime:
 class Artifact(Base):
     __tablename__ = "artifacts"
     __table_args__ = (
-        UniqueConstraint("tenant_id", "owner_id", "id", name="uq_artifact_owner_anchor"),
+        UniqueConstraint("tenant_id", "owner_type", "owner_id", "id", name="uq_artifact_owner_anchor"),
         CheckConstraint("size_bytes > 0 AND size_bytes <= 10485760", name="ck_artifact_size"),
         CheckConstraint("sha256 IS NULL OR length(sha256) = 64", name="ck_artifact_sha256"),
         CheckConstraint(

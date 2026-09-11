@@ -140,3 +140,82 @@ No Task 1 blocker remains. Source owner-type enforcement is at the repository bo
 Downgrading after future anchor-only Knowledge rows exist intentionally refuses to restore the old NOT NULL key constraint; it does not fabricate local keys. The tested roundtrip covers legacy rows, which retain their real keys. Task 3 owns the coordinated production cutover and remaining legacy-field migration.
 
 Cleanup completed successfully with `docker compose -p recruitmatch-cp3-task1-sep11 down -v`: the task's PostgreSQL, Redis and bootstrap containers, network, and the two disposable database volumes were removed. No default Compose project or shared production data was targeted.
+
+## Review fix round 1 — Source owner-type anchors
+
+Date: 2026-09-11. Fix base: `410019ee5215cd5e7320ab0a3cdb34a9ea64ed46`.
+Fix commit subject: `fix: enforce artifact owner type on source anchors`; this section is included in that commit together with the implementation and regression tests.
+Status: DONE_WITH_CONCERNS, solely because the broader retrieval suite had the unexplained intermittent HNSW failure recorded below. The scoped owner-type fix and its tests pass.
+
+The review finding was verified on real PostgreSQL revision 13: both Resume→knowledge Artifact and KnowledgeDocument→resume Artifact persisted when tenant and owner ID matched. This corrective section supersedes the original report's limitation that Source owner type was enforced only by later repository operations.
+
+Changes:
+
+- Appended `20260911_14_artifact_owner_type.py`, revision `20260911_14`, directly after `20260824_13`. Committed migration 13 was not edited.
+- Each Source now has a stored database-generated, non-null `artifact_owner_type`, fixed to `resume` or `knowledge_document`. Callers cannot override the discriminator to attach another Source type's file.
+- Source foreign keys now reference `(tenant_id, artifact_owner_type, id, artifact_id)` against Artifact `(tenant_id, owner_type, owner_id, id)`. The matching Artifact unique constraint includes owner type. Nullable artifact_id still permits legacy rows.
+- Migration preflight checks existing typed anchors before schema changes. An invalid row raises `RuntimeError("artifact_owner_type_mismatch: <table>")`, exposing neither file IDs nor content and never rebinding the anchor. Tests confirm the failed migration leaves revision 13 and the original invalid anchor intact; restoring the correct reference permits upgrade.
+- Updated actual-head expectations to revision 14 and extended exact PostgreSQL catalog checks to the generated-column type, nullability, generation mode/expression, and four-column foreign keys.
+- Added both wrong-type directions, valid typed-anchor 13→14 preservation, and both invalid historical-anchor upgrade failures. The existing legacy-local-data preservation test now covers 12→head, including 13→14; old local keys/text survive with null Artifact anchors.
+
+Direct TDD evidence before changing production code:
+
+```text
+docker compose -p recruitmatch-cp3-task1-sep11 run --rm -e AI_ENABLED=false \
+  -v /Users/xder393/Desktop/agent/.worktrees/recruitmatch-v2/tests/artifacts:/app/tests/artifacts:ro \
+  test-integration pytest tests/artifacts/test_artifact_repository.py::test_source_anchor_rejects_other_artifact_owner_type -q
+RED: resume and knowledge_document both FAILED: DID NOT RAISE IntegrityError
+2 failed in 0.49s
+```
+
+After the fix, rebuilt worktree images ran the focused suite. The first catalog run showed that PostgreSQL normalizes generated constants to `::character varying`, not the test's initial `::text` expectation; actual ORM/migration equality already passed. The expected catalog representation was corrected, with no production change:
+
+```text
+docker compose -p recruitmatch-cp3-task1-sep11 build bootstrap test-integration
+docker compose -p recruitmatch-cp3-task1-sep11 run --rm --no-deps -e AI_ENABLED=false \
+  -v /Users/xder393/Desktop/agent/.worktrees/recruitmatch-v2/tests/artifacts:/app/tests/artifacts:ro \
+  test-integration pytest tests/artifacts -q
+GREEN: 64 passed in 0.98s
+```
+
+Final worktree images were rebuilt, then the combined suites ran once in this exact order:
+
+```text
+docker compose -p recruitmatch-cp3-task1-sep11 run --rm -e AI_ENABLED=false \
+  test-integration pytest tests/artifacts tests/integration tests/retrieval -q
+1 failed, 162 passed in 7.82s
+FAILED tests/retrieval/test_pgvector_search.py::test_exact_threshold_boundary_and_hnsw_explain_are_reproducible
+tests/retrieval/test_pgvector_search.py:331:
+assert [hit.id for hit in hits] == ["chunk-a", "chunk-b"]
+actual: []
+```
+
+All Artifact, owner-type, migration, and catalog tests passed in that combined run. Before the failure, the same test's exact and HNSW candidate-count assertions (5), HNSW strategy, candidate budget (3), and expected HNSW index plan assertions passed.
+
+The systematic-debugging investigation preserved the first failure and performed exactly one unchanged, targeted rerun—no retry loop, retrieval modification, VACUUM, REINDEX, data reset, or assertion weakening:
+
+```text
+docker compose -p recruitmatch-cp3-task1-sep11 run --rm --no-deps -e AI_ENABLED=false \
+  test-integration pytest tests/retrieval/test_pgvector_search.py::test_exact_threshold_boundary_and_hnsw_explain_are_reproducible -q
+1 passed in 0.83s
+```
+
+Read-only diagnostics: PostgreSQL 16.12 on aarch64; pgvector 0.8.1; default transaction isolation READ COMMITTED. Retrieval sets REPEATABLE READ and strict-order iterative HNSW, using an approximate ANN seed with budget 3 in this test. The HNSW index remains `USING hnsw (embedding vector_cosine_ops) WHERE (is_active = true)`. Its fixture repeatedly DELETEs/reinserts source/chunk rows. After the rerun, statistics showed 24 dead recruiting_chunk tuples and autovacuum activity (`2026-09-11 07:51:47.247176+00`). Retrieval implementation and tests have no diff from the fix base. Index/fixture-state-dependent ANN behavior is a plausible hypothesis, not a proven root cause; the combined suite is not claimed green. This unresolved concern is handed to the controller for separate diagnosis rather than broadening the Source-anchor fix.
+
+The separate final SQLite suite passed:
+
+```text
+DATABASE_URL=sqlite:////tmp/recruitmatch-cp3-task1-sqlite.db TASK_MODE=inline AI_ENABLED=false \
+  .venv/bin/pytest tests --ignore=tests/integration --ignore=tests/artifacts \
+  --ignore=tests/retrieval/test_citation_lifecycle.py --ignore=tests/retrieval/test_generation_switch.py \
+  --ignore=tests/retrieval/test_pgvector_search.py -o addopts= -q
+177 passed in 7.25s
+```
+
+Final static checks passed: Ruff on app/tests/scripts plus migration 14; format check (`169 files already formatted`); mypy (`40 source files`); offline lock check (`105 packages`); `git diff --check`. The existing host parent-pyproject warning is unchanged and remains the controller's previously tracked minor item.
+
+Production-image import was run separately after the failed combined command and passed: `docker compose -p recruitmatch-cp3-task1-sep11 run --rm --no-deps -e AI_ENABLED=false bootstrap python -c 'import app.main; print("production import passed")'`.
+
+No other correctness finding was implemented, and no storage cutover, controller-ledger edit, subagent dispatch, push, or merge occurred. All Docker work stayed within `recruitmatch-cp3-task1-sep11`.
+
+Fix-round cleanup completed with `docker compose -p recruitmatch-cp3-task1-sep11 down -v`; only its bootstrap/PostgreSQL/Redis containers, network, and two disposable volumes were removed.

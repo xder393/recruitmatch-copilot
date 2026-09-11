@@ -288,7 +288,7 @@ def test_claim_rejects_invalid_metadata_without_partial_write(postgres_engine, t
 
 def test_schema_has_new_head_and_nullable_source_anchors(postgres_engine):
     with postgres_engine.connect() as connection:
-        assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "20260824_13"
+        assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "20260911_14"
         for table in ("resumes", "knowledge_documents"):
             assert (
                 connection.scalar(
@@ -330,4 +330,26 @@ def test_sources_can_use_new_anchor_alone_and_reject_other_owner(postgres_engine
             session.flush()
         with pytest.raises(IntegrityError), session.begin_nested():
             source.artifact_id = claim(ArtifactRepository(session), tenants[0], "wrong-owner", "b" * 64, source_type).id
+            session.flush()
+
+
+@pytest.mark.parametrize("source_type", ["resume", "knowledge_document"])
+def test_source_anchor_rejects_other_artifact_owner_type(postgres_engine, tenants, source_type):
+    with Session(postgres_engine) as session:
+        other_type = "knowledge_document" if source_type == "resume" else "resume"
+        artifact = claim(ArtifactRepository(session), tenants[0], owner_type=other_type)
+        fields = dict(
+            id="owner-1",
+            tenant_id=tenants[0],
+            artifact_id=artifact.id,
+            original_filename="example.txt",
+            media_type="text/plain",
+            size_bytes=10,
+        )
+        if source_type == "resume":
+            source = Resume(**fields, sha256="a" * 64)
+        else:
+            source = KnowledgeDocument(**fields, checksum="a" * 64, document_type="policy", status="queued")
+        session.add(source)
+        with pytest.raises(IntegrityError):
             session.flush()
