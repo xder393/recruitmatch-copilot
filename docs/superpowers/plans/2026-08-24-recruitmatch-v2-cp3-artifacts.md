@@ -18,6 +18,15 @@
 - Worker messages contain tenant and owner IDs only.
 - Orphan objects are reported, never auto-deleted in v2.
 
+## Implementation alignment (2026-09-11)
+
+- CP2 already owns revision `20260824_12` (legacy chunk-table removal). Task 1 uses `20260824_13`, with `down_revision = "20260824_12"`. Further cutover migrations and CP4 must continue the actual single head rather than reuse a planned number.
+- Artifact states are exactly `PENDING`, `AVAILABLE`, `FAILED`, `CLEANUP_PENDING`, `CLEANUP_FAILED`, `DELETED` from frozen §6.2. Source processing states such as `QUEUED` never become Artifact states; `AVAILABLE/QUEUED` below means two separate records.
+- Task 1 is additive: add nullable Artifact references to existing Resume/Knowledge owners while keeping the current producers runnable. Task 3 removes the old local-storage fields/adapters in its coordinated cutover; do not backfill old local files or fabricate available S3 objects.
+- PostgreSQL owns concurrent deduplication on `(tenant_id, owner_type, sha256)` for active checksums. A newly proposed owner ID must not bypass this uniqueness; concurrent claims return the winning Artifact and owner identity. Tenant-scoped transitions must check persisted state under a row lock or compare-and-set, not rely on a stale ORM instance.
+- Tests depending on PostgreSQL or MinIO must enter the real-infrastructure CI lane and remain excluded from SQLite. Update the selectors as each new test directory is introduced.
+- All verification below runs under an explicit isolated Compose project name. Cleanup only that project's disposable test volumes; the default project may contain user data.
+
 ---
 
 ### Task 1: Persist Artifact as an independent state machine
@@ -26,7 +35,7 @@
 - Create: `app/models/artifacts.py`
 - Create: `app/domain/artifacts.py`
 - Create: `app/repositories/artifacts.py`
-- Create: `alembic/versions/20260824_12_artifacts.py`
+- Create: `alembic/versions/20260824_13_artifacts.py`
 - Modify: `app/models/resumes.py`
 - Modify: `app/models/knowledge.py`
 - Test: `tests/artifacts/test_artifact_repository.py`
@@ -40,6 +49,7 @@
 ```python
 def test_deleted_checksum_can_be_uploaded_again(repo):
     first = repo.claim_upload(upload("same-sha"))
+    repo.mark_available(first.id)
     repo.mark_cleanup_pending(first.id)
     repo.mark_deleted(first.id)
     second = repo.claim_upload(upload("same-sha"))
@@ -58,7 +68,7 @@ Expected: FAIL importing `ArtifactRepository`.
 
 - [ ] **Step 3: Implement model, partial uniqueness and guarded transitions**
 
-Fields are `tenant_id`, `owner_type`, `owner_id`, nullable `sha256`, `media_type`, `size_bytes`, `status`, `error_code`, timestamps. Add a PostgreSQL partial unique index over active `(tenant_id, owner_type, sha256)` states. Transition methods reject invalid state changes and clear/replace SHA-256 at privacy deletion.
+Fields are `tenant_id`, `owner_type`, `owner_id`, nullable `sha256`, `media_type`, `size_bytes`, `status`, `error_code`, timestamps. Add a PostgreSQL partial unique index over active `(tenant_id, owner_type, sha256)` states. Transition methods reject invalid state changes and clear/replace SHA-256 at privacy deletion, when entering cleanup rather than waiting for S3 success. Implement `mark_failed`, `mark_cleanup_failed`, `mark_deleted`, and tenant-qualified immutable `ArtifactLocation` resolution as required by §6.2–6.5. ORM and migration must agree on enum persistence, constraints, and index definitions. Verify concurrent claims with distinct proposed owner IDs, tenant isolation, persisted-state transition guards, cleanup-failure retry, deleted-checksum re-upload, and exact PostgreSQL catalog definitions. Fast SQLite tests may cover the pure transition rules; they cannot substitute for the PostgreSQL tests.
 
 - [ ] **Step 4: Verify repository and clean migration**
 
@@ -69,7 +79,7 @@ Expected: all tests pass.
 - [ ] **Step 5: Commit Artifact persistence**
 
 ```bash
-git add app/domain/artifacts.py app/models/artifacts.py app/models/resumes.py app/models/knowledge.py app/repositories/artifacts.py alembic/versions/20260824_12_artifacts.py tests/artifacts/test_artifact_repository.py
+git add app/domain/artifacts.py app/models/artifacts.py app/models/resumes.py app/models/knowledge.py app/repositories/artifacts.py alembic/versions/20260824_13_artifacts.py tests/artifacts/test_artifact_repository.py
 git commit -m "feat: persist artifact lifecycle and upload idempotency"
 ```
 
