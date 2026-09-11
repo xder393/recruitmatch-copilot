@@ -122,7 +122,9 @@ def _source_chunk(
 def pg_index(postgres_engine):
     factory = sessionmaker(bind=postgres_engine, expire_on_commit=False)
     with Session(postgres_engine) as session:
-        session.execute(delete(RecruitingChunk))
+        # DELETE preserves the approximate graph, so previous fixtures can affect
+        # ANN candidates even when the visible rows are identical. Reset it too.
+        session.execute(text("TRUNCATE TABLE recruiting_chunks"))
         session.execute(delete(Resume))
         session.execute(delete(Tenant))
         session.add_all([Tenant(id=TENANT, name="Acme"), Tenant(id="tenant-b", name="Globex")])
@@ -287,6 +289,32 @@ class TestPgVectorRetrievalContract(RetrievalContract):
     @pytest.fixture(autouse=True)
     def _index(self, pg_index) -> None:
         self.index = pg_index
+
+
+def test_pg_index_does_not_inherit_previous_fixture_hnsw_graph(postgres_engine, request) -> None:
+    # Exercise a previous fixture lifecycle before requesting the fixture under
+    # test. Equal-vector history can leave unreachable ANN candidates after DELETE.
+    previous_fixture = pg_index.__wrapped__(postgres_engine)
+    previous_index = next(previous_fixture)
+    try:
+        with previous_index.session_factory() as session:
+            session.add_all(
+                [_chunk(f"previous-{i}", f"previous-{i}", offset=100 + i) for i in range(1000)]
+            )
+            session.commit()
+            previous_graph = session.scalar(
+                text("SELECT pg_relation_filenode('ix_recruiting_chunk_embedding_hnsw_active')")
+            )
+    finally:
+        next(previous_fixture, None)
+
+    current_index = request.getfixturevalue("pg_index")
+    with current_index.session_factory() as session:
+        current_graph = session.scalar(
+            text("SELECT pg_relation_filenode('ix_recruiting_chunk_embedding_hnsw_active')")
+        )
+    assert current_graph != previous_graph, "pg_index inherited the previous fixture's physical HNSW graph"
+    test_exact_threshold_boundary_and_hnsw_explain_are_reproducible(current_index)
 
 
 def test_exact_threshold_boundary_and_hnsw_explain_are_reproducible(pg_index) -> None:
