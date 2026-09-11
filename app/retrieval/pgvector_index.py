@@ -279,6 +279,7 @@ class PgVectorRecruitingIndex:
             Resume.tenant_id == RecruitingChunk.tenant_id,
             Resume.sha256 == RecruitingChunk.source_version,
             Resume.deleted_at.is_(None),
+            Resume.lifecycle_status == "active",
         ]
         job_predicates = [
             JobVersion.id == RecruitingChunk.source_id,
@@ -290,6 +291,7 @@ class PgVectorRecruitingIndex:
             KnowledgeDocument.id == RecruitingChunk.source_id,
             KnowledgeDocument.tenant_id == RecruitingChunk.tenant_id,
             KnowledgeDocument.checksum == RecruitingChunk.source_version,
+            KnowledgeDocument.lifecycle_status == "active",
         ]
         if active_only:
             resume_predicates.append(Resume.status == ResumeStatus.SUCCEEDED)

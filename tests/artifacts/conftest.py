@@ -4,6 +4,7 @@ import os
 
 import pytest
 from sqlalchemy import create_engine
+from tests.artifacts.test_upload_saga import principal as principal
 
 
 @pytest.fixture(scope="session")

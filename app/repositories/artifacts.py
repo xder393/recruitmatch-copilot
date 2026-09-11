@@ -2,7 +2,7 @@
 
 import re
 
-from sqlalchemy import select, text
+from sqlalchemy import select, text, tuple_
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -15,8 +15,9 @@ from app.domain.artifacts import (
     ArtifactTransitionError,
     validate_transition,
 )
-from app.models.artifacts import Artifact
-from app.repositories.ports import ArtifactTombstone
+from app.models.artifacts import Artifact, ArtifactMaintenanceCursor
+from app.models.identity import Tenant
+from app.repositories.ports import ArtifactTombstone, ArtifactReconciliationBatch, PendingArtifact
 
 
 class ArtifactRepository:
@@ -37,6 +38,97 @@ class ArtifactRepository:
         if for_update:
             query = query.with_for_update()
         return self.session.scalar(query)
+
+    def _maintenance_cursor(self, scope, lane):
+        valid = (scope == "global" and lane == "tenants") or (
+            scope != "global" and lane in {"pending", "cleanup", "deleted"}
+        )
+        if not valid:
+            raise ValueError("artifact_maintenance_cursor_invalid")
+        self.session.execute(
+            insert(ArtifactMaintenanceCursor)
+            .values(
+                scope=scope,
+                lane=lane,
+                tenant_id=None if scope == "global" else scope,
+            )
+            .on_conflict_do_nothing(index_elements=["scope", "lane"])
+        )
+        return self.session.scalar(
+            select(ArtifactMaintenanceCursor)
+            .where(ArtifactMaintenanceCursor.scope == scope, ArtifactMaintenanceCursor.lane == lane)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+
+    def reserve_reconciliation_batch(self, stale_before, *, limit):
+        if type(limit) is not int or not 1 <= limit <= 1000:
+            raise ValueError("artifact_page_limit_invalid")
+        if stale_before.tzinfo is None:
+            raise ValueError("artifact_maintenance_clock_invalid")
+        # All reservations use global first, then tenant lanes in lexical order.
+        # These locks are released by the caller before any Source or object I/O.
+        global_cursor = self._maintenance_cursor("global", "tenants")
+        tenants = select(Tenant.id).order_by(Tenant.id).limit(1)
+        tenant_id = (
+            self.session.scalar(tenants.where(Tenant.id > global_cursor.after_id)) if global_cursor.after_id else None
+        )
+        if tenant_id is None:
+            tenant_id = self.session.scalar(tenants)
+        global_cursor.after_id = tenant_id
+        if tenant_id is None:
+            return ArtifactReconciliationBatch()
+        pages = {}
+        for lane in ("cleanup", "deleted", "pending"):
+            cursor = self._maintenance_cursor(tenant_id, lane)
+            if lane == "deleted":
+                page = self.list_deleted_tombstones(tenant_id, after_id=cursor.after_id, limit=limit)
+                cursor.after_id = page[-1].location.artifact_id if len(page) == limit else None
+                pages[lane] = tuple(page)
+                continue
+            query = select(Artifact).where(Artifact.tenant_id == tenant_id)
+            if lane == "pending":
+                query = query.where(Artifact.status == ArtifactStatus.PENDING, Artifact.created_at <= stale_before)
+            else:
+                query = query.where(
+                    Artifact.status.in_([ArtifactStatus.CLEANUP_PENDING, ArtifactStatus.CLEANUP_FAILED])
+                )
+            if cursor.after_id is not None:
+                query = query.where(Artifact.id > cursor.after_id)
+            rows = list(self.session.scalars(query.order_by(Artifact.id).limit(limit)))
+            cursor.after_id = rows[-1].id if len(rows) == limit else None
+            pages[lane] = tuple(
+                PendingArtifact(self._location(row), row.sha256, row.size_bytes)
+                if lane == "pending"
+                else self._location(row)
+                for row in rows
+            )
+        self.session.flush()
+        return ArtifactReconciliationBatch(**pages)
+
+    def count_associated_locations(self, locations):
+        if len(locations) > 1000:
+            raise ValueError("artifact_page_limit_invalid")
+        if not locations:
+            return 0
+        identities = [
+            (
+                loc.tenant_id,
+                "resume" if loc.namespace == "resumes" else "knowledge_document",
+                loc.owner_id,
+                loc.artifact_id,
+            )
+            for loc in locations
+        ]
+        return len(
+            list(
+                self.session.scalars(
+                    select(Artifact.id).where(
+                        tuple_(Artifact.tenant_id, Artifact.owner_type, Artifact.owner_id, Artifact.id).in_(identities)
+                    )
+                )
+            )
+        )
 
     def list_deleted_tombstones(self, tenant_id, *, after_id=None, limit=100) -> list[ArtifactTombstone]:
         if type(limit) is not int or not 1 <= limit <= 1000:

@@ -47,6 +47,7 @@ class MatchingService:
             raise ConflictError("不支持的匹配算法")
         if mode == "hybrid-v1" and self.hybrid_engine is None:
             raise ConflictError("混合匹配服务未配置")
+        self.uow.identities.lock_privacy_guard(principal.tenant_id)
         resume = self.repository.get_succeeded_resume(principal.tenant_id, resume_id)
         if resume is None:
             raise ResourceNotFoundError("已完成解析的简历不存在")

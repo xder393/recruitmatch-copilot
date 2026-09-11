@@ -24,6 +24,17 @@ class IdentityRepository:
     def get_tenant(self, tenant_id: str) -> Tenant | None:
         return self.session.scalar(select(Tenant).where(Tenant.id == tenant_id, Tenant.is_active.is_(True)))
 
+    def lock_privacy_guard(self, tenant_id: str) -> None:
+        # NO KEY UPDATE serializes this guard but permits FK KEY SHARE checks
+        # by workers already holding a Source lock. FOR UPDATE would deadlock.
+        with self.session.no_autoflush:
+            self.session.scalar(
+                select(Tenant)
+                .where(Tenant.id == tenant_id)
+                .with_for_update(key_share=True)
+                .execution_options(populate_existing=True)
+            )
+
     def add_tenant_admin(self, tenant_name: str, email: str, password_hash: str) -> User:
         tenant = Tenant(name=tenant_name)
         user = User(email=email, password_hash=password_hash, role=Role.ADMIN, tenant=tenant)

@@ -6,12 +6,12 @@ from app.core.exceptions import ConflictError, ResourceNotFoundError
 from app.domain.enums import FeedbackAction
 from app.models.matching import Feedback
 from app.repositories.ports import FeedbackRepository
-from app.repositories.unit_of_work import UnitOfWork
+from app.repositories.unit_of_work import RecruitingUnitOfWork
 from app.security.tokens import Principal
 
 
 class FeedbackService:
-    def __init__(self, repository: FeedbackRepository, uow: UnitOfWork):
+    def __init__(self, repository: FeedbackRepository, uow: RecruitingUnitOfWork):
         self.repository = repository
         self.uow = uow
 
@@ -23,6 +23,7 @@ class FeedbackService:
         reason: str | None = None,
         corrected_job_version_id: str | None = None,
     ) -> Feedback:
+        self.uow.identities.lock_privacy_guard(principal.tenant_id)
         result = self.repository.get_result(principal.tenant_id, result_id)
         if result is None:
             raise ResourceNotFoundError("匹配结果不存在")

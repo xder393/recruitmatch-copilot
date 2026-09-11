@@ -6,7 +6,16 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy import Computed, DateTime, ForeignKey, ForeignKeyConstraint, Integer, String, UniqueConstraint
+from sqlalchemy import (
+    CheckConstraint,
+    Computed,
+    DateTime,
+    ForeignKey,
+    ForeignKeyConstraint,
+    Integer,
+    String,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, synonym
 
 from app.database import Base
@@ -23,6 +32,7 @@ def _utcnow() -> datetime:
 class KnowledgeDocument(Base):
     __tablename__ = "knowledge_documents"
     __table_args__ = (
+        CheckConstraint("lifecycle_status IN ('active', 'deleted')", name="ck_knowledge_lifecycle"),
         UniqueConstraint("tenant_id", "checksum", "document_type", name="uq_knowledge_tenant_checksum_type"),
         ForeignKeyConstraint(
             ["tenant_id", "artifact_owner_type", "id", "artifact_id"],
@@ -34,10 +44,12 @@ class KnowledgeDocument(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), index=True)
     document_type: Mapped[str] = mapped_column(String(50), nullable=False)
-    original_filename: Mapped[str] = mapped_column(String(500), nullable=False)
+    original_filename: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    lifecycle_status: Mapped[str] = mapped_column(String(10), default="active", server_default="active", nullable=False)
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     media_type: Mapped[str] = mapped_column(String(100), nullable=False)
     size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
-    checksum: Mapped[str] = mapped_column(String(64), nullable=False)
+    checksum: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     artifact_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
     artifact_owner_type: Mapped[str] = mapped_column(
         String(18), Computed("'knowledge_document'", persisted=True), nullable=False

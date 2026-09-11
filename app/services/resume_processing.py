@@ -40,7 +40,11 @@ class ResumeProcessingService:
     def process(self, tenant_id: str, resume_id: str) -> bool:
         with self.uow_factory() as uow:
             resume = uow.resumes.get(tenant_id, resume_id, include_deleted=True, for_update=True)
-            if resume is None or resume.status in {ResumeStatus.DELETED, ResumeStatus.SUCCEEDED, ResumeStatus.FAILED}:
+            if (
+                resume is None
+                or resume.lifecycle_status != "active"
+                or resume.status in {ResumeStatus.SUCCEEDED, ResumeStatus.FAILED}
+            ):
                 return True
             if resume.status is ResumeStatus.RUNNING and not self._lease_expired(resume.updated_at):
                 return False
@@ -85,7 +89,7 @@ class ResumeProcessingService:
 
         with self.uow_factory() as uow:
             resume = uow.resumes.get(tenant_id, resume_id, include_deleted=True, for_update=True)
-            if resume is None or resume.status is ResumeStatus.DELETED:
+            if resume is None or resume.lifecycle_status != "active":
                 return True
             artifact = uow.artifacts.get(tenant_id, "resume", resume_id, location.artifact_id, for_update=True)
             if artifact is None or artifact.status != ArtifactStatus.AVAILABLE:
@@ -141,7 +145,7 @@ class ResumeProcessingService:
     def _mark_failed(self, tenant_id: str, resume_id: str, code: str, message: str) -> None:
         with self.uow_factory() as uow:
             resume = uow.resumes.get(tenant_id, resume_id, include_deleted=True, for_update=True)
-            if resume is None or resume.status is ResumeStatus.DELETED:
+            if resume is None or resume.lifecycle_status != "active":
                 return
             artifact = uow.artifacts.get(tenant_id, "resume", resume_id, resume.artifact_id, for_update=True)
             if artifact is None or artifact.status != ArtifactStatus.AVAILABLE:

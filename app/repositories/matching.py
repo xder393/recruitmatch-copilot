@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session, selectinload
 
 from app.domain.enums import JobStatus, ResumeStatus
 from app.models.jobs import Job, JobVersion
-from app.models.matching import MatchResult, MatchRun
+from app.models.matching import Feedback, MatchResult, MatchRun
 from app.models.resumes import Resume
 
 
@@ -24,8 +24,10 @@ class MatchingRepository:
                 Resume.id == resume_id,
                 Resume.tenant_id == tenant_id,
                 Resume.status == ResumeStatus.SUCCEEDED,
+                Resume.lifecycle_status == "active",
             )
             .with_for_update(of=Resume)
+            .execution_options(populate_existing=True)
         )
 
     def active_jobs(self, tenant_id: str) -> List[Job]:
@@ -40,6 +42,35 @@ class MatchingRepository:
 
     def add_run(self, run: MatchRun) -> None:
         self.session.add(run)
+
+    def scrub_private_results(self, tenant_id: str, *, resume_id: str | None = None) -> None:
+        runs = select(MatchRun.id).where(MatchRun.tenant_id == tenant_id)
+        if resume_id is not None:
+            runs = runs.where(MatchRun.resume_id == resume_id)
+        results = select(MatchResult.id).where(MatchResult.run_id.in_(runs))
+        self.session.execute(
+            update(Feedback)
+            .where(Feedback.tenant_id == tenant_id, Feedback.match_result_id.in_(results))
+            .values(reason=None)
+        )
+        self.session.execute(
+            update(MatchResult)
+            .where(MatchResult.run_id.in_(runs))
+            .values(
+                dimension_scores={},
+                matched_items=[],
+                missing_items=[],
+                uncertain_items=[],
+                evidence=[],
+                risk_flags=[],
+                summary=None,
+                citations=[],
+                grounded_explanation={},
+                interview_questions=[],
+                grounding_status="privacy_redacted",
+                fallback_reason=None,
+            )
+        )
 
     def get_run(self, tenant_id: str, run_id: str) -> Optional[MatchRun]:
         result_loader = selectinload(MatchRun.results).selectinload(MatchResult.job_version)

@@ -155,3 +155,18 @@ def deactivate_document(
     uow: RecruitingUnitOfWork = Depends(get_unit_of_work),
 ):
     return _response(_service(request, repository, uow).deactivate(principal, document_id))
+
+
+@router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_document(
+    document_id: str,
+    request: Request,
+    confirm_tenant_history_redaction: bool = False,
+    principal: Principal = Depends(get_current_principal),
+    repository: KnowledgeRepository = Depends(get_knowledge_repository),
+    uow: RecruitingUnitOfWork = Depends(get_unit_of_work),
+):
+    """Privacy-delete Knowledge and all existing tenant match content after explicit acknowledgement."""
+    _service(request, repository, uow).delete(
+        principal, document_id, confirm_tenant_history_redaction=confirm_tenant_history_redaction
+    )

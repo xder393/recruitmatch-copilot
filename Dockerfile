@@ -28,7 +28,7 @@ COPY --chown=recruitmatch:recruitmatch app/ app/
 COPY --chown=recruitmatch:recruitmatch web/ web/
 COPY --chown=recruitmatch:recruitmatch alembic/ alembic/
 COPY --chown=recruitmatch:recruitmatch alembic.ini ./
-COPY --chown=recruitmatch:recruitmatch scripts/bootstrap.py scripts/seed_job_templates.py scripts/
+COPY --chown=recruitmatch:recruitmatch scripts/bootstrap.py scripts/seed_job_templates.py scripts/reconcile_artifacts.py scripts/
 
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONDONTWRITEBYTECODE=1 \

@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import uuid
+from datetime import datetime, timezone
 from typing import BinaryIO
 
 from app.core.exceptions import AppError, AuthorizationError, ConflictError, ResourceNotFoundError, UnsupportedFileError
 from app.artifacts.cleanup import cleanup_location
 from app.artifacts.errors import storage_error_code
 from app.artifacts.ports import ArtifactStore
-from app.domain.artifacts import ArtifactStatus
+from app.domain.artifacts import ArtifactErrorCode, ArtifactStatus
 from app.domain.enums import Role
 from app.models.knowledge import KnowledgeDocument
 from app.repositories.ports import KnowledgeRepository
@@ -147,7 +148,9 @@ class KnowledgeDocumentService:
 
     def reindex(self, principal: Principal, document_id: str) -> KnowledgeDocument:
         self._require_mutation(principal)
-        document = self.get(principal, document_id)
+        document = self.repository.get_document(principal.tenant_id, document_id, for_update=True)
+        if document is None:
+            raise ResourceNotFoundError("招聘知识文档不存在")
         if document.status == "inactive":
             raise UnsupportedFileError("已停用文档不能重新索引")
         document.status = "uploaded"
@@ -157,10 +160,45 @@ class KnowledgeDocumentService:
 
     def deactivate(self, principal: Principal, document_id: str) -> KnowledgeDocument:
         self._require_mutation(principal)
-        document = self.get(principal, document_id)
+        document = self.repository.get_document(principal.tenant_id, document_id, for_update=True)
+        if document is None:
+            raise ResourceNotFoundError("招聘知识文档不存在")
         self.repository.deactivate(document)
         self.uow.commit()
         return self.get(principal, document.id)
+
+    def delete(self, principal: Principal, document_id: str, *, confirm_tenant_history_redaction: bool = False) -> None:
+        self._require_mutation(principal)
+        if not confirm_tenant_history_redaction:
+            raise ConflictError(
+                "删除将清除本企业已有匹配结果内容，请明确确认", code="knowledge_privacy_confirmation_required"
+            )
+        self.uow.identities.lock_privacy_guard(principal.tenant_id)
+        document = self.repository.get_document(principal.tenant_id, document_id, include_deleted=True, for_update=True)
+        if document is None:
+            raise ResourceNotFoundError("招聘知识文档不存在")
+        location = None
+        if document.artifact_id is not None:
+            artifact = self.uow.artifacts.get(
+                principal.tenant_id, "knowledge_document", document.id, document.artifact_id, for_update=True
+            )
+            if artifact is not None:
+                location = self.uow.artifacts.resolve_location(
+                    principal.tenant_id, "knowledge_document", document.id, artifact.id
+                )
+                scope = {"owner_type": "knowledge_document", "owner_id": document.id}
+                if artifact.status == ArtifactStatus.PENDING:
+                    self.uow.artifacts.mark_failed(
+                        principal.tenant_id, artifact.id, ArtifactErrorCode.STORAGE_UNAVAILABLE, **scope
+                    )
+                if artifact.status in {ArtifactStatus.AVAILABLE, ArtifactStatus.FAILED, ArtifactStatus.CLEANUP_FAILED}:
+                    self.uow.artifacts.mark_cleanup_pending(principal.tenant_id, artifact.id, **scope)
+        if document.lifecycle_status != "deleted":
+            self.repository.scrub_private_data(principal.tenant_id, document, datetime.now(timezone.utc))
+            self.uow.matching.scrub_private_results(principal.tenant_id)
+        self.uow.commit()
+        if location is not None:
+            cleanup_location(self.uow, self.artifact_store, location, "knowledge_document")
 
     @staticmethod
     def _require_mutation(principal: Principal) -> None:

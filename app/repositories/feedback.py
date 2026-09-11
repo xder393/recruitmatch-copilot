@@ -4,11 +4,12 @@ from __future__ import annotations
 
 from typing import Optional
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.models.jobs import Job, JobVersion
 from app.models.matching import MatchResult, MatchRun
+from app.models.resumes import Resume
 
 
 class FeedbackRepository:
@@ -19,8 +20,16 @@ class FeedbackRepository:
         return self.session.scalar(
             select(MatchResult)
             .join(MatchRun, MatchResult.run_id == MatchRun.id)
+            .join(Resume, Resume.id == MatchRun.resume_id)
             .options(selectinload(MatchResult.job_version).selectinload(JobVersion.job))
-            .where(MatchResult.id == result_id, MatchRun.tenant_id == tenant_id)
+            .where(
+                MatchResult.id == result_id,
+                MatchRun.tenant_id == tenant_id,
+                Resume.tenant_id == tenant_id,
+                Resume.lifecycle_status == "active",
+                or_(MatchResult.grounding_status.is_(None), MatchResult.grounding_status != "privacy_redacted"),
+            )
+            .execution_options(populate_existing=True)
         )
 
     def get_job_version(self, tenant_id: str, version_id: str) -> Optional[JobVersion]:

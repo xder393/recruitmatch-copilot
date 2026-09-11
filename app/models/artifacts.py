@@ -78,3 +78,20 @@ class Artifact(Base):
         onupdate=_utcnow,
         nullable=False,
     )
+
+
+class ArtifactMaintenanceCursor(Base):
+    """Durable bounded sweep progress; never processing ownership or a lease."""
+
+    __tablename__ = "artifact_maintenance_cursors"
+    __table_args__ = (
+        CheckConstraint(
+            "(scope = 'global' AND lane = 'tenants' AND tenant_id IS NULL) OR "
+            "(scope = tenant_id AND tenant_id IS NOT NULL AND lane IN ('pending', 'cleanup', 'deleted'))",
+            name="ck_artifact_maintenance_scope_lane",
+        ),
+    )
+    scope: Mapped[str] = mapped_column(String(36), primary_key=True)
+    lane: Mapped[str] = mapped_column(String(10), primary_key=True)
+    tenant_id: Mapped[str | None] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), nullable=True)
+    after_id: Mapped[str | None] = mapped_column(String(36), nullable=True)

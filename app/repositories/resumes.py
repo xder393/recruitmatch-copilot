@@ -2,17 +2,16 @@
 
 from __future__ import annotations
 
-import hashlib
 from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.domain.enums import ResumeStatus
 from app.models.resumes import Resume
 from app.models.retrieval import RecruitingChunk
-from app.models.matching import MatchResult, MatchRun
+from app.repositories.matching import MatchingRepository
 
 
 class ResumeRepository:
@@ -29,7 +28,7 @@ class ResumeRepository:
     ) -> Optional[Resume]:
         statement = select(Resume).where(Resume.id == resume_id, Resume.tenant_id == tenant_id)
         if not include_deleted:
-            statement = statement.where(Resume.status != ResumeStatus.DELETED)
+            statement = statement.where(Resume.lifecycle_status == "active")
         if for_update:
             statement = statement.with_for_update().execution_options(populate_existing=True)
         return self.session.scalar(statement)
@@ -39,7 +38,7 @@ class ResumeRepository:
             select(Resume).where(
                 Resume.tenant_id == tenant_id,
                 Resume.sha256 == sha256,
-                Resume.status != ResumeStatus.DELETED,
+                Resume.lifecycle_status == "active",
             )
         )
 
@@ -47,7 +46,7 @@ class ResumeRepository:
         return list(
             self.session.scalars(
                 select(Resume)
-                .where(Resume.tenant_id == tenant_id, Resume.status != ResumeStatus.DELETED)
+                .where(Resume.tenant_id == tenant_id, Resume.lifecycle_status == "active")
                 .order_by(Resume.created_at.desc())
             )
         )
@@ -58,7 +57,11 @@ class ResumeRepository:
     def list_succeeded(self, tenant_id: str) -> List[Resume]:
         return list(
             self.session.scalars(
-                select(Resume).where(Resume.tenant_id == tenant_id, Resume.status == ResumeStatus.SUCCEEDED)
+                select(Resume).where(
+                    Resume.tenant_id == tenant_id,
+                    Resume.status == ResumeStatus.SUCCEEDED,
+                    Resume.lifecycle_status == "active",
+                )
             )
         )
 
@@ -67,8 +70,8 @@ class ResumeRepository:
         return self.get(tenant_id, resume_id)
 
     def scrub_private_data(self, tenant_id: str, resume: Resume, deleted_at: datetime) -> None:
-        resume.sha256 = hashlib.sha256(f"deleted:{resume.id}".encode()).hexdigest()
-        resume.original_filename = "deleted"
+        resume.sha256 = None
+        resume.original_filename = None
         resume.size_bytes = 0
         resume.uploaded_by = None
         resume.profile = {}
@@ -85,22 +88,6 @@ class ResumeRepository:
                 RecruitingChunk.source_id == resume.id,
             )
         )
-        run_ids = select(MatchRun.id).where(MatchRun.tenant_id == tenant_id, MatchRun.resume_id == resume.id)
-        self.session.execute(
-            update(MatchResult)
-            .where(MatchResult.run_id.in_(run_ids))
-            .values(
-                dimension_scores={},
-                matched_items=[],
-                missing_items=[],
-                uncertain_items=[],
-                evidence=[],
-                risk_flags=[],
-                summary=None,
-                citations=[],
-                grounded_explanation={},
-                interview_questions=[],
-            )
-        )
-        resume.status = ResumeStatus.DELETED
+        MatchingRepository(self.session).scrub_private_results(tenant_id, resume_id=resume.id)
+        resume.lifecycle_status = "deleted"
         resume.deleted_at = deleted_at

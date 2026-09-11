@@ -70,7 +70,8 @@ content in their tenant is cleared. No console Delete action is exposed here.
 The tenant-wide scrub runs only on the first live→deleted privacy transition;
 cleanup retries must preserve fresh matching results created after deletion.
 
-Matching, privacy deletion and feedback first lock the existing Tenant row,
+Matching, privacy deletion and feedback first lock the existing Tenant row with
+`FOR NO KEY UPDATE` (compatible with implicit FK `KEY SHARE` checks by workers),
 then acquire Source and Artifact locks in that order when needed. Matching
 holds the tenant guard across Knowledge selection, model generation and commit.
 Deletion scrubs under the same guard; feedback revalidates after locking.
@@ -120,6 +121,19 @@ reset. Do not run volume-removal commands against a user/default project.
 Already-valid new Artifact data can migrate in place. This cutover cannot be
 downgraded automatically because removed local object identities cannot be
 reconstructed; restore an operator-managed pre-cutover backup for rollback.
+
+Revision 16 makes Source lifecycle explicit and preserves prior deletion. For
+databases already at 15, it scrubs legacy deleted Resume fields, every chunk
+generation (including NULL document linkage), owned result content and linked
+feedback reasons. Live Source and result content are preserved. Legacy Knowledge
+`status='deleted'` does not imply consent to tenant-wide history erasure: if any
+such tenant retains result content or feedback reasons, migration fails before
+DDL with `knowledge_privacy_migration_requires_operator_resolution`. Operators
+must review that tenant's deletion/history scope and explicitly resolve it under
+their approved privacy procedure before retrying; no reset or acknowledgement
+bypass is supplied by the migration. Already-empty legacy history can migrate.
+PENDING cancellation uses FAILED before CLEANUP_PENDING within the migration
+transaction; existing terminal cleanup error codes remain until real cleanup.
 
 ## Resource and execution bounds
 

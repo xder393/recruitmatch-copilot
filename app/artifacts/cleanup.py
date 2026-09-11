@@ -20,6 +20,10 @@ def cleanup_location(
     }:
         uow.rollback()
         raise ArtifactTransitionError("artifact_cleanup_requires_tombstone")
+    if artifact.status == ArtifactStatus.CLEANUP_FAILED:
+        uow.artifacts.mark_cleanup_pending(
+            location.tenant_id, location.artifact_id, owner_type=owner_type, owner_id=location.owner_id
+        )
     # Cleanup states cannot return to a live state. Release the DB lock before
     # network I/O while retaining the exact associated identity for retry.
     uow.commit()

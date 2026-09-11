@@ -8,7 +8,6 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.database import Base
-from app.models.knowledge import KnowledgeDocument
 from tests.support.migrations import isolated_migration_database, seed_legacy_resume
 from app.repositories.artifacts import ArtifactRepository
 
@@ -183,18 +182,16 @@ def _anchored_sources(engine):
     with Session(engine) as session:
         repo = ArtifactRepository(session)
         knowledge_artifact = repo.claim_upload(tenant_id, "knowledge_document", owner_id, "a" * 64, "text/plain", 10)
-        session.add(
-            KnowledgeDocument(
-                id=owner_id,
-                tenant_id=tenant_id,
-                checksum="a" * 64,
-                document_type="policy",
-                original_filename="policy.txt",
-                media_type="text/plain",
-                size_bytes=10,
-                artifact_id=knowledge_artifact.id,
-                status="uploaded",
-            )
+        # Seed revision 14's actual columns, independent of later ORM lifecycle fields.
+        session.execute(
+            text("""
+            INSERT INTO knowledge_documents(id,tenant_id,checksum,document_type,original_filename,
+                media_type,size_bytes,artifact_id,status,active_index_generation,
+                search_index_status,created_at,updated_at)
+            VALUES (:owner,:tenant,:sha,'policy','policy.txt','text/plain',10,:artifact,
+                'uploaded',0,'pending',now(),now())
+        """),
+            {"owner": owner_id, "tenant": tenant_id, "sha": "a" * 64, "artifact": knowledge_artifact.id},
         )
         ids = tenant_id, owner_id, resume_artifact_id, knowledge_artifact.id
         session.commit()

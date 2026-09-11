@@ -125,7 +125,8 @@ def seed_source(
                 original_filename="resume.pdf",
                 media_type="application/pdf",
                 size_bytes=10,
-                status=ResumeStatus.DELETED if deleted else ResumeStatus.SUCCEEDED,
+                status=ResumeStatus.SUCCEEDED,
+                lifecycle_status="deleted" if deleted else "active",
                 profile={},
                 deleted_at=datetime.now(timezone.utc) if deleted else None,
                 active_index_generation=active_generation,
@@ -159,7 +160,8 @@ def seed_source(
                 media_type="text/plain",
                 size_bytes=10,
                 checksum="knowledge-sha",
-                status="deleted" if deleted else "ready",
+                status="ready",
+                lifecycle_status="deleted" if deleted else "active",
                 active_index_generation=active_generation,
                 search_index_status="deleted" if deleted else status,
             )
@@ -522,7 +524,7 @@ def test_privacy_deleted_source_cannot_activate_previously_staged_rows(session_f
             update(Resume)
             .where(Resume.tenant_id == reference.tenant_id, Resume.id == reference.source_id)
             .values(
-                status=ResumeStatus.DELETED,
+                lifecycle_status="deleted",
                 search_index_status="deleted",
                 deleted_at=datetime.now(timezone.utc),
             )

@@ -13,7 +13,6 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import ColumnElement
 
-from app.domain.enums import ResumeStatus
 from app.models.jobs import Job, JobVersion
 from app.models.knowledge import KnowledgeDocument
 from app.models.resumes import Resume
@@ -414,7 +413,7 @@ class GenerationWriter:
                     Resume.id == source.source_id,
                     Resume.sha256 == source.source_version,
                     Resume.deleted_at.is_(None),
-                    Resume.status != ResumeStatus.DELETED,
+                    Resume.lifecycle_status == "active",
                     Resume.search_index_status != "deleted",
                 )
                 .with_for_update(of=Resume)
@@ -438,7 +437,7 @@ class GenerationWriter:
                     KnowledgeDocument.tenant_id == source.tenant_id,
                     KnowledgeDocument.id == source.source_id,
                     KnowledgeDocument.checksum == source.source_version,
-                    KnowledgeDocument.status != "deleted",
+                    KnowledgeDocument.lifecycle_status == "active",
                     KnowledgeDocument.search_index_status != "deleted",
                 )
                 .with_for_update(of=KnowledgeDocument)

@@ -18,7 +18,7 @@ def test_cutover_preserves_valid_artifact_and_source_text(postgres_engine):
             before = dict(
                 connection.execute(text("SELECT * FROM artifacts WHERE id=:a"), {"a": artifact}).mappings().one()
             )
-        command.upgrade(config, "head")
+        command.upgrade(config, "20260911_15")
         with engine.connect() as connection:
             assert (
                 dict(connection.execute(text("SELECT * FROM artifacts WHERE id=:a"), {"a": artifact}).mappings().one())
@@ -36,7 +36,7 @@ def test_cutover_rejects_legacy_content_before_ddl(postgres_engine):
     with isolated_migration_database(postgres_engine) as (engine, config):
         _, owner, _, _ = seed_legacy_resume(engine, anchored=False)
         with pytest.raises(RuntimeError, match="artifact_cutover_requires_explicit_reset"):
-            command.upgrade(config, "head")
+            command.upgrade(config, "20260911_15")
         with engine.connect() as connection:
             assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "20260911_14"
             assert (
@@ -72,9 +72,9 @@ def test_cutover_preserves_chunk_payload_and_validates_legacy_lineage(postgres_e
             before = dict(connection.execute(text("SELECT * FROM recruiting_chunks")).mappings().one())
         if invalid:
             with pytest.raises(RuntimeError, match="artifact_cutover_invalid_lineage"):
-                command.upgrade(config, "head")
+                command.upgrade(config, "20260911_15")
         else:
-            command.upgrade(config, "head")
+            command.upgrade(config, "20260911_15")
         with engine.connect() as connection:
             after = dict(connection.execute(text("SELECT * FROM recruiting_chunks")).mappings().one())
             expected = {**before, "document_id": before["document_id"] if invalid else artifact}
@@ -95,7 +95,7 @@ def test_inactive_knowledge_without_anchor_is_not_treated_as_privacy_deleted(pos
                 {"t": tenant, "sha": "b" * 64},
             )
         with pytest.raises(RuntimeError, match="artifact_cutover_requires_explicit_reset"):
-            command.upgrade(config, "head")
+            command.upgrade(config, "20260911_15")
         with engine.connect() as connection:
             assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "20260911_14"
             assert connection.scalar(text("SELECT artifact_key FROM knowledge_documents")) == "synthetic/key"
@@ -116,13 +116,13 @@ def test_anchorless_deleted_legacy_source_requires_sanitization(postgres_engine,
             if sanitized:
                 connection.execute(text("UPDATE resume_artifacts SET extracted_text=NULL"))
         if sanitized:
-            command.upgrade(config, "head")
+            command.upgrade(config, "20260911_15")
             with engine.connect() as connection:
                 row = connection.execute(text("SELECT artifact_id,extracted_text FROM resumes")).one()
                 assert tuple(row) == (None, None)
         else:
             with pytest.raises(RuntimeError, match="artifact_cutover_requires_explicit_reset"):
-                command.upgrade(config, "head")
+                command.upgrade(config, "20260911_15")
 
 
 @pytest.mark.parametrize("deleted", [True, False])
@@ -167,9 +167,9 @@ def test_null_linked_private_chunks_require_retained_source(postgres_engine, del
             legacy_before = dict(connection.execute(text("SELECT * FROM resume_artifacts")).mappings().one())
         if deleted:
             with pytest.raises(RuntimeError, match="artifact_cutover_requires_explicit_reset"):
-                command.upgrade(config, "head")
+                command.upgrade(config, "20260911_15")
         else:
-            command.upgrade(config, "head")
+            command.upgrade(config, "20260911_15")
         with engine.connect() as connection:
             assert dict(connection.execute(text("SELECT * FROM recruiting_chunks")).mappings().one()) == chunk_before
             if deleted:

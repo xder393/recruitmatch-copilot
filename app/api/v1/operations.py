@@ -5,7 +5,7 @@ from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from app.api.v1.deps import get_current_principal, get_db
-from app.domain.enums import JobStatus, ResumeStatus
+from app.domain.enums import JobStatus
 from app.models.jobs import Job, JobVersion
 from app.models.matching import Feedback, MatchRun
 from app.models.operations import ModelTrace
@@ -43,7 +43,7 @@ def ai_status(
             .select_from(Resume)
             .where(
                 Resume.tenant_id == tenant_id,
-                Resume.status != ResumeStatus.DELETED,
+                Resume.lifecycle_status == "active",
                 Resume.search_index_status == "failed",
             )
         )
@@ -92,7 +92,7 @@ def analytics_summary(
         session.scalar(
             select(func.count())
             .select_from(Resume)
-            .where(Resume.tenant_id == tenant_id, Resume.status != ResumeStatus.DELETED)
+            .where(Resume.tenant_id == tenant_id, Resume.lifecycle_status == "active")
         )
         or 0
     )

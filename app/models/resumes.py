@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional
 
 from sqlalchemy import (
     Computed,
+    CheckConstraint,
     DateTime,
     Enum,
     ForeignKey,
@@ -35,6 +36,7 @@ def _utcnow() -> datetime:
 class Resume(Base):
     __tablename__ = "resumes"
     __table_args__ = (
+        CheckConstraint("lifecycle_status IN ('active', 'deleted')", name="ck_resume_lifecycle"),
         UniqueConstraint("tenant_id", "sha256", name="uq_resume_tenant_hash"),
         ForeignKeyConstraint(
             ["tenant_id", "artifact_owner_type", "id", "artifact_id"],
@@ -48,8 +50,9 @@ class Resume(Base):
     uploaded_by: Mapped[Optional[str]] = mapped_column(ForeignKey("users.id"), nullable=True)
     artifact_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
     artifact_owner_type: Mapped[str] = mapped_column(String(18), Computed("'resume'", persisted=True), nullable=False)
-    sha256: Mapped[str] = mapped_column(String(64), nullable=False)
-    original_filename: Mapped[str] = mapped_column(String(500), nullable=False)
+    sha256: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    original_filename: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    lifecycle_status: Mapped[str] = mapped_column(String(10), default="active", server_default="active", nullable=False)
     media_type: Mapped[str] = mapped_column(String(200), nullable=False)
     size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
     status: Mapped[ResumeStatus] = mapped_column(

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import re
 from typing import BinaryIO, Protocol
 
@@ -71,6 +71,24 @@ class ArtifactInspection:
 class ArtifactStoreInspector(Protocol):
     def inspect(self, location: ArtifactLocation) -> ArtifactInspection:
         raise NotImplementedError
+
+
+@dataclass(frozen=True)
+class ArtifactListingCursor:
+    """Opaque adapter continuation, excluded from user-facing reports and repr."""
+
+    token: str = field(repr=False)
+
+
+@dataclass(frozen=True)
+class ArtifactObjectPage:
+    locations: tuple[ArtifactLocation, ...]
+    unrecognized: int
+    next_cursor: ArtifactListingCursor | None
+
+
+class ArtifactStoreLister(Protocol):
+    def list_page(self, *, cursor: ArtifactListingCursor | None = None, limit: int = 100) -> ArtifactObjectPage: ...
 
 
 class ArtifactStore(Protocol):

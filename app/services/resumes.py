@@ -81,7 +81,7 @@ class ResumeService:
             )
             if (
                 resume is not None
-                and resume.status != ResumeStatus.DELETED
+                and resume.lifecycle_status == "active"
                 and current is not None
                 and current.status == ArtifactStatus.PENDING
             ):
@@ -107,7 +107,7 @@ class ResumeService:
         )
         if (
             resume is None
-            or resume.status == ResumeStatus.DELETED
+            or resume.lifecycle_status == "deleted"
             or current is None
             or current.status
             not in {
@@ -130,7 +130,7 @@ class ResumeService:
             self.dispatcher.dispatch_resume(tenant_id, resume.id)
         except Exception:
             current = self.resumes.get(tenant_id, resume.id, include_deleted=True, for_update=True)
-            if current is None or current.status != ResumeStatus.QUEUED:
+            if current is None or current.lifecycle_status != "active" or current.status != ResumeStatus.QUEUED:
                 self.uow.rollback()
                 return
             current.error_code = "task_dispatch_failed"
@@ -147,6 +147,7 @@ class ResumeService:
         return self.resumes.list(principal.tenant_id)
 
     def delete(self, principal: Principal, resume_id: str) -> None:
+        self.uow.identities.lock_privacy_guard(principal.tenant_id)
         resume = self.resumes.get(principal.tenant_id, resume_id, include_deleted=True, for_update=True)
         if resume is None:
             raise ResourceNotFoundError("简历不存在")
@@ -164,7 +165,7 @@ class ResumeService:
                     )
                 if artifact.status in {ArtifactStatus.AVAILABLE, ArtifactStatus.FAILED, ArtifactStatus.CLEANUP_FAILED}:
                     self.uow.artifacts.mark_cleanup_pending(principal.tenant_id, artifact.id, **scope)
-        if resume.status is not ResumeStatus.DELETED:
+        if resume.lifecycle_status != "deleted":
             self.resumes.scrub_private_data(principal.tenant_id, resume, datetime.now(timezone.utc))
         self.uow.commit()
         if location is not None:

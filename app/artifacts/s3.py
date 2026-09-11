@@ -29,6 +29,8 @@ from app.artifacts.ports import (
     ArtifactInvalidLocation,
     ArtifactLengthMismatch,
     ArtifactLocation,
+    ArtifactListingCursor,
+    ArtifactObjectPage,
     ArtifactMissing,
     ArtifactStorageFailure,
     ArtifactTooLarge,
@@ -167,6 +169,35 @@ class S3ArtifactStore:
             if size > MAX_ARTIFACT_BYTES:
                 raise ArtifactTooLarge()
             return ArtifactInspection(size, _checksum(head))
+
+    def list_page(self, *, cursor: ArtifactListingCursor | None = None, limit: int = 100) -> ArtifactObjectPage:
+        if type(limit) is not int or not 1 <= limit <= 1000:
+            raise ValueError("artifact_page_limit_invalid")
+        with _storage_errors():
+            request = {"Bucket": BUCKET, "Prefix": "tenants/", "MaxKeys": limit}
+            if cursor is not None:
+                request["ContinuationToken"] = cursor.token
+            response = self._client.list_objects_v2(**request)
+            objects = response.get("Contents", [])
+            if len(objects) > limit:
+                raise ArtifactStorageFailure()
+            locations = []
+            unrecognized = 0
+            for item in objects:
+                parts = item["Key"].split("/")
+                try:
+                    if len(parts) != 5 or parts[0] != "tenants":
+                        raise ArtifactInvalidLocation()
+                    locations.append(ArtifactLocation(parts[1], parts[2], parts[3], parts[4]))
+                except ArtifactInvalidLocation:
+                    unrecognized += 1
+            next_cursor = None
+            if response.get("IsTruncated"):
+                token = response.get("NextContinuationToken")
+                if not isinstance(token, str) or not token:
+                    raise ArtifactStorageFailure()
+                next_cursor = ArtifactListingCursor(token)
+            return ArtifactObjectPage(tuple(locations), unrecognized, next_cursor)
 
     def put(self, location: ArtifactLocation, stream: BinaryIO, size_bytes: int, sha256: str) -> None:
         key = _key(location)

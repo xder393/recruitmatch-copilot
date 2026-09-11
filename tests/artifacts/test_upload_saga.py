@@ -225,7 +225,7 @@ def test_late_put_cannot_resurrect_deleted_source_and_retains_recovery_anchor(
         uow = SqlAlchemyUnitOfWork(session)
         tombstone = uow.artifacts.list_deleted_tombstones(principal.tenant_id)[0]
         assert tombstone.location == location
-        assert session.get(Resume, location.owner_id).status == ResumeStatus.DELETED
+        assert session.get(Resume, location.owner_id).lifecycle_status == "deleted"
         assert session.get(Artifact, location.artifact_id).sha256 is None
         if late_delete_failure:
             assert tombstone.error_code.value == "storage_unavailable"
