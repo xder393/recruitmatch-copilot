@@ -63,6 +63,13 @@ deletion clears its own result and feedback content. This conservatively
 invalidates unrelated same-tenant match history; it is not exact derivation
 tracking or a semantic content classifier.
 
+The Knowledge DELETE API requires `confirm_tenant_history_redaction=true`.
+Without it, return stable `knowledge_privacy_confirmation_required` (409) before
+any mutation. API callers must inform the operator that all existing match
+content in their tenant is cleared. No console Delete action is exposed here.
+The tenant-wide scrub runs only on the first live→deleted privacy transition;
+cleanup retries must preserve fresh matching results created after deletion.
+
 Matching, privacy deletion and feedback first lock the existing Tenant row,
 then acquire Source and Artifact locks in that order when needed. Matching
 holds the tenant guard across Knowledge selection, model generation and commit.
