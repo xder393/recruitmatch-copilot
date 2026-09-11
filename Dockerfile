@@ -43,6 +43,8 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/ready', timeout=2)"
 
 
+FROM minio/mc:RELEASE.2025-08-13T08-35-41Z@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727 AS minio-client
+
 FROM app-base AS test
 
 COPY --from=test-builder --chown=recruitmatch:recruitmatch /app/.venv /app/.venv
@@ -51,6 +53,8 @@ COPY --chown=recruitmatch:recruitmatch pyproject.toml uv.lock .python-version Do
 COPY --chown=recruitmatch:recruitmatch scripts/ scripts/
 COPY --chown=recruitmatch:recruitmatch tests/ tests/
 COPY --chown=recruitmatch:recruitmatch evaluation/ evaluation/
+COPY --chown=recruitmatch:recruitmatch ops/minio/ ops/minio/
+COPY --from=minio-client /usr/bin/mc /usr/local/bin/mc
 
 USER recruitmatch
 

@@ -15,8 +15,58 @@ x-app-environment: &app-environment
   OPENAI_API_KEY: ${OPENAI_API_KEY:-}
   OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.deepseek.com}
   OPENAI_MODEL: ${OPENAI_MODEL:-deepseek-chat}
+  OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL:-BAAI/bge-small-zh-v1.5}
+  HF_ENDPOINT: ${HF_ENDPOINT:-https://huggingface.co}
+  JWT_SECRET: ${JWT_SECRET:-dev-only-change-me-before-production}
+  ACCESS_TOKEN_MINUTES: ${ACCESS_TOKEN_MINUTES:-30}
+  MODEL_PROVIDER: ${MODEL_PROVIDER:-openai-compatible}
+  LLM_TEMPERATURE: ${LLM_TEMPERATURE:-0.2}
+  MODEL_TIMEOUT_SECONDS: ${MODEL_TIMEOUT_SECONDS:-20}
+  MODEL_MAX_RETRIES: ${MODEL_MAX_RETRIES:-1}
+  MODEL_INPUT_COST_PER_MILLION: ${MODEL_INPUT_COST_PER_MILLION:-0}
+  MODEL_OUTPUT_COST_PER_MILLION: ${MODEL_OUTPUT_COST_PER_MILLION:-0}
+  RESUME_PROMPT_VERSION: ${RESUME_PROMPT_VERSION:-resume-extract-v1}
+  EXPLANATION_PROMPT_VERSION: ${EXPLANATION_PROMPT_VERSION:-match-explanation-v1}
+  RETRIEVAL_TOP_K: ${RETRIEVAL_TOP_K:-6}
+  RETRIEVAL_MIN_SCORE: ${RETRIEVAL_MIN_SCORE:-0.35}
+  MAX_EVIDENCE_CHARACTERS: ${MAX_EVIDENCE_CHARACTERS:-8000}
+  S3_ENDPOINT_URL: http://minio:9000
+  S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-recruitmatch-app-demo}
+  S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-demo-app-password-change-me}
 
 services:
+  minio:
+    image: ${COMPOSE_PROJECT_NAME:-recruitmatch}-minio:2025-10-15
+    build:
+      context: ops/minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-recruitmatch-root-demo}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-demo-root-password-change-me}
+      MINIO_BROWSER: "off"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - minio-data:/data
+    restart: unless-stopped
+
+  minio-init:
+    image: minio/mc:RELEASE.2025-08-13T08-35-41Z@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727
+    entrypoint: ["/bin/sh", "/init/init.sh"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-recruitmatch-root-demo}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-demo-root-password-change-me}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-recruitmatch-app-demo}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-demo-app-password-change-me}
+    depends_on:
+      minio:
+        condition: service_healthy
+    volumes:
+      - ./ops/minio:/init:ro
+    restart: "no"
+
   postgres:
     image: pgvector/pgvector:0.8.1-pg16
     environment:
@@ -43,10 +93,8 @@ services:
       - redis-data:/data
 
   bootstrap:
-    image: recruitmatch-app
+    image: ${COMPOSE_PROJECT_NAME:-recruitmatch}-app
     build: *runtime-build
-    env_file:
-      - .env
     environment:
       DATABASE_URL: postgresql+psycopg://recruitmatch:recruitmatch@postgres:5432/recruitmatch
     depends_on:
@@ -58,12 +106,10 @@ services:
     restart: "no"
 
   api:
-    image: recruitmatch-app
+    image: ${COMPOSE_PROJECT_NAME:-recruitmatch}-app
     build: *runtime-build
     ports:
       - "8000:8000"
-    env_file:
-      - .env
     environment:
       <<: *app-environment
       TASK_MODE: celery
@@ -83,10 +129,8 @@ services:
     restart: unless-stopped
 
   worker:
-    image: recruitmatch-app
+    image: ${COMPOSE_PROJECT_NAME:-recruitmatch}-app
     build: *runtime-build
-    env_file:
-      - .env
     environment: *app-environment
     depends_on:
       bootstrap:
@@ -102,7 +146,7 @@ services:
     restart: unless-stopped
 
   test-unit:
-    image: recruitmatch-app-test
+    image: ${COMPOSE_PROJECT_NAME:-recruitmatch}-app-test
     build: *test-build
     profiles: ["test"]
     environment:
@@ -111,29 +155,51 @@ services:
       KNOWLEDGE_ARTIFACT_DIR: /tmp/recruitmatch-knowledge
       TASK_MODE: inline
       AI_ENABLED: "false"
-    command: pytest -q
+      OPENAI_API_KEY: ""
+    command: >-
+      pytest tests --ignore=tests/integration --ignore=tests/artifacts
+      --ignore=tests/retrieval/test_citation_lifecycle.py
+      --ignore=tests/retrieval/test_generation_switch.py
+      --ignore=tests/retrieval/test_pgvector_search.py -q
     healthcheck:
       disable: true
 
   test-integration:
-    image: recruitmatch-app-test
+    image: ${COMPOSE_PROJECT_NAME:-recruitmatch}-app-test
     build: *test-build
     profiles: ["test"]
-    env_file:
-      - .env
     environment:
       <<: *app-environment
       TASK_MODE: celery
+      AI_ENABLED: "false"
+      OPENAI_API_KEY: ""
     depends_on:
       bootstrap:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
-    command: pytest -q
+      minio-test-setup:
+        condition: service_completed_successfully
+    command: pytest tests/integration tests/retrieval tests/artifacts -q
     healthcheck:
       disable: true
 
+  minio-test-setup:
+    image: minio/mc:RELEASE.2025-08-13T08-35-41Z@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727
+    profiles: ["test"]
+    entrypoint: ["/bin/sh", "/init/test-setup.sh"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-recruitmatch-root-demo}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-demo-root-password-change-me}
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
+    volumes:
+      - ./ops/minio:/init:ro
+    restart: "no"
+
 volumes:
+  minio-data:
   postgres-data:
   redis-data:
   app-data:

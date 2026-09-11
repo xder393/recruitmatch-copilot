@@ -68,10 +68,12 @@ jobs:
       - uses: actions/checkout@v4
       - run: cp .env.example .env
       - run: docker compose -p recruitmatch-ci-pgvector up -d postgres
-      - run: docker compose -p recruitmatch-ci-pgvector build bootstrap test-integration
+      - run: docker compose -p recruitmatch-ci-pgvector build bootstrap test-integration minio
       - run: docker compose -p recruitmatch-ci-pgvector run --rm bootstrap
       - run: docker compose -p recruitmatch-ci-pgvector run --rm bootstrap
-      - name: Run PostgreSQL integration and retrieval tests
+      - run: docker compose -p recruitmatch-ci-pgvector run --rm minio-init
+      - run: docker compose -p recruitmatch-ci-pgvector run --rm minio-init
+      - name: Run PostgreSQL, MinIO and retrieval integration tests
         run: >-
           docker compose -p recruitmatch-ci-pgvector run --rm test-integration
           pytest tests/integration tests/retrieval tests/artifacts -q
