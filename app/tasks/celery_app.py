@@ -4,18 +4,17 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from pathlib import Path
 
 from celery import Celery  # type: ignore[import-untyped]
 
 from app.config import Settings
 from app.database import create_engine_and_session
-from app.resumes.artifacts import LocalArtifactStore
+from app.artifacts.ports import ArtifactStore
+from app.artifacts.s3 import S3ArtifactStore, S3Settings
 from app.resumes.parser import HeuristicResumeParser
 from app.services.resume_processing import ResumeProcessingService
 from app.ai.gateway import OpenAICompatibleGateway
 from app.ai.resume_parser import LLMResumeParser
-from app.knowledge.artifacts import KnowledgeArtifactStore
 from app.knowledge.embeddings import BGEEmbedder
 from app.services.knowledge_processing import KnowledgeProcessingService
 from app.repositories.sqlalchemy_unit_of_work import SqlAlchemyUnitOfWorkFactory
@@ -35,6 +34,7 @@ class WorkerDependencies:
 def build_worker_dependencies(
     settings: Settings,
     embedder: EmbeddingAdapter | None = None,
+    artifact_store: ArtifactStore | None = None,
 ) -> WorkerDependencies:
     _, session_factory = create_engine_and_session(settings.database_url)
     embedding_adapter = embedder or BGEEmbedder(settings.embedding_model)
@@ -52,16 +52,17 @@ def build_worker_dependencies(
         else fallback_parser
     )
     uow_factory = SqlAlchemyUnitOfWorkFactory(session_factory)
+    artifact_store = artifact_store if artifact_store is not None else S3ArtifactStore(S3Settings.from_env().client())
     return WorkerDependencies(
         resume_processor=ResumeProcessingService(
             uow_factory,
-            LocalArtifactStore(Path(settings.artifact_dir)),
+            artifact_store,
             parser,
             source_indexer=source_indexer,
         ),
         knowledge_processor=KnowledgeProcessingService(
             uow_factory,
-            KnowledgeArtifactStore(Path(settings.knowledge_artifact_dir)),
+            artifact_store,
             source_indexer,
         ),
         retrieval_index=retrieval_index,

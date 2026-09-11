@@ -20,7 +20,6 @@ class MatchingRepository:
     def get_succeeded_resume(self, tenant_id: str, resume_id: str) -> Optional[Resume]:
         return self.session.scalar(
             select(Resume)
-            .options(selectinload(Resume.artifact))
             .where(
                 Resume.id == resume_id,
                 Resume.tenant_id == tenant_id,

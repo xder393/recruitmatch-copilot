@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, File, Request, Response, UploadFile, status
+from starlette.concurrency import run_in_threadpool
 from app.api.v1.deps import get_current_principal, get_resume_repository, get_unit_of_work
 from app.api.v1.schemas import ResumeListResponse, ResumeResponse
 from app.models.resumes import Resume
@@ -47,13 +48,16 @@ async def upload_resume(
     resumes: ResumeRepository = Depends(get_resume_repository),
     uow: RecruitingUnitOfWork = Depends(get_unit_of_work),
 ):
-    content = await file.read(10 * 1024 * 1024 + 1)
-    resume, created = _service(request, resumes, uow).upload(
-        principal,
-        file.filename or "resume",
-        file.content_type or "application/octet-stream",
-        content,
-    )
+    try:
+        resume, created = await run_in_threadpool(
+            _service(request, resumes, uow).upload,
+            principal,
+            file.filename or "resume",
+            file.content_type or "application/octet-stream",
+            file.file,
+        )
+    finally:
+        await file.close()
     if not created:
         response.status_code = status.HTTP_200_OK
     return _response(resume)

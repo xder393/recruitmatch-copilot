@@ -58,8 +58,6 @@ def test_application_startup_does_not_write_schema(tmp_path):
     database_url = f"sqlite:///{tmp_path / 'empty.db'}"
     settings = Settings(
         database_url=database_url,
-        artifact_dir=str(tmp_path / "resumes"),
-        knowledge_artifact_dir=str(tmp_path / "knowledge"),
         jwt_secret="a-test-secret-that-is-at-least-32-bytes",
     )
     with TestClient(create_sqlite_test_app(settings, knowledge_embedder=_Embedder())):

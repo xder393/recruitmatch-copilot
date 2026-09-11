@@ -20,7 +20,9 @@ from app.models.identity import Tenant
 from app.models.jobs import Job, JobVersion
 from app.models.knowledge import KnowledgeDocument
 from app.models.retrieval import RecruitingChunk
-from app.models.resumes import Resume, ResumeArtifact
+from app.models.resumes import Resume
+from app.models.artifacts import Artifact
+from app.domain.artifacts import ArtifactStatus
 from app.retrieval.generations import (
     FencingNotSupportedError,
     GenerationConflictError,
@@ -157,7 +159,6 @@ def seed_source(
                 media_type="text/plain",
                 size_bytes=10,
                 checksum="knowledge-sha",
-                artifact_key="knowledge/policy",
                 status="deleted" if deleted else "ready",
                 active_index_generation=active_generation,
                 search_index_status="deleted" if deleted else status,
@@ -342,12 +343,19 @@ def test_stage_normalizes_only_source_owned_document_cleanup_keys(
     if source_type == "resume":
         with session_factory() as session:
             session.add(
-                ResumeArtifact(
+                Artifact(
                     id="artifact-owned",
-                    resume_id=reference.source_id,
-                    storage_key="generation/artifact-owned",
+                    tenant_id=reference.tenant_id,
+                    owner_type="resume",
+                    owner_id=reference.source_id,
+                    sha256="a" * 64,
+                    media_type="text/plain",
+                    size_bytes=10,
+                    status=ArtifactStatus.AVAILABLE,
                 )
             )
+            session.flush()
+            session.get(Resume, reference.source_id).artifact_id = "artifact-owned"
             session.commit()
     document_id = {
         "none": None,
@@ -393,12 +401,19 @@ def test_stage_rejects_document_cleanup_keys_not_owned_by_the_locked_source(
             )
             session.add(other_resume)
             session.add(
-                ResumeArtifact(
+                Artifact(
                     id=document_id,
-                    resume_id=other_resume.id,
-                    storage_key="generation/artifact-other",
+                    tenant_id=TENANT,
+                    owner_type="resume",
+                    owner_id=other_resume.id,
+                    sha256="b" * 64,
+                    media_type="text/plain",
+                    size_bytes=10,
+                    status=ArtifactStatus.AVAILABLE,
                 )
             )
+            session.flush()
+            other_resume.artifact_id = document_id
             session.commit()
 
     with pytest.raises(GenerationValidationError, match="document"):

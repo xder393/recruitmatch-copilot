@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 def _database(tmp_path):
     from app.database import Base, create_engine_and_session
     from app.models import Job, JobTemplate, JobVersion, Tenant, User  # noqa: F401
-    from app.models.resumes import Resume, ResumeArtifact  # noqa: F401
+    from app.models.resumes import Resume  # noqa: F401
 
     engine, factory = create_engine_and_session(f"sqlite:///{tmp_path / 'resumes.db'}")
     Base.metadata.create_all(engine)

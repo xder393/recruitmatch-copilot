@@ -65,8 +65,6 @@ def _settings(tmp_path):
         api_key="test-key",
         database_url=os.environ["DATABASE_URL"],
         jwt_secret="integration-secret-that-is-at-least-32-bytes",
-        artifact_dir=str(tmp_path / "resumes"),
-        knowledge_artifact_dir=str(tmp_path / "knowledge"),
         task_mode="inline",
         ai_enabled=True,
         retrieval_min_score=0.0,

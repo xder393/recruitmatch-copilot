@@ -7,6 +7,7 @@ offer a generic CRUD surface and do not expose an ORM session.
 from __future__ import annotations
 
 from datetime import datetime
+from dataclasses import dataclass
 from typing import Any, List, Protocol
 
 from app.ai.contracts import ModelRequest, ModelResponse
@@ -18,7 +19,34 @@ class RepositoryConflictError(Exception):
     """A persistence uniqueness conflict safe for application handling."""
 
 
+@dataclass(frozen=True)
+class ArtifactTombstone:
+    location: ArtifactLocation
+    error_code: ArtifactErrorCode | None
+
+
 class ArtifactRepository(Protocol):
+    def get(
+        self,
+        tenant_id: str,
+        owner_type: ArtifactOwnerType | str,
+        owner_id: str,
+        artifact_id: str,
+        *,
+        for_update: bool = False,
+    ) -> Any | None: ...
+    def list_deleted_tombstones(
+        self, tenant_id: str, *, after_id: str | None = None, limit: int = 100
+    ) -> list[ArtifactTombstone]: ...
+    def record_deleted_cleanup_result(
+        self,
+        tenant_id: str,
+        artifact_id: str,
+        error_code: ArtifactErrorCode | None,
+        *,
+        owner_type: ArtifactOwnerType | str,
+        owner_id: str,
+    ) -> Any: ...
     def claim_upload(
         self,
         tenant_id: str,

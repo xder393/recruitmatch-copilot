@@ -8,8 +8,6 @@ x-test-build: &test-build
 
 x-app-environment: &app-environment
   DATABASE_URL: postgresql+psycopg://recruitmatch:recruitmatch@postgres:5432/recruitmatch
-  ARTIFACT_DIR: /app/data/resumes
-  KNOWLEDGE_ARTIFACT_DIR: /app/data/knowledge
   CELERY_BROKER_URL: redis://redis:6379/0
   AI_ENABLED: ${AI_ENABLED:-false}
   OPENAI_API_KEY: ${OPENAI_API_KEY:-}
@@ -114,12 +112,13 @@ services:
       <<: *app-environment
       TASK_MODE: celery
     depends_on:
+      minio-init:
+        condition: service_completed_successfully
       bootstrap:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
     volumes:
-      - app-data:/app/data
       - hf-cache-v2:/home/recruitmatch/.cache/huggingface
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/ready', timeout=2)"]
@@ -133,13 +132,14 @@ services:
     build: *runtime-build
     environment: *app-environment
     depends_on:
+      minio-init:
+        condition: service_completed_successfully
       bootstrap:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
     command: celery -A app.tasks.celery_app.celery_app worker --loglevel=INFO
     volumes:
-      - app-data:/app/data
       - hf-cache-v2:/home/recruitmatch/.cache/huggingface
     healthcheck:
       disable: true
@@ -151,8 +151,6 @@ services:
     profiles: ["test"]
     environment:
       DATABASE_URL: sqlite:////tmp/recruitmatch-test.db
-      ARTIFACT_DIR: /tmp/recruitmatch-resumes
-      KNOWLEDGE_ARTIFACT_DIR: /tmp/recruitmatch-knowledge
       TASK_MODE: inline
       AI_ENABLED: "false"
       OPENAI_API_KEY: ""
@@ -202,5 +200,4 @@ volumes:
   minio-data:
   postgres-data:
   redis-data:
-  app-data:
   hf-cache-v2:

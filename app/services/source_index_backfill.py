@@ -32,7 +32,7 @@ class SourceIndexBackfillService:
         versions = self.jobs.list_versions_for_tenant(principal.tenant_id)
         result = {"resumes_indexed": 0, "job_versions_indexed": 0, "failed": 0}
         for resume in resumes:
-            text = resume.artifact.extracted_text if resume.artifact else None
+            text = resume.extracted_text
             if not text:
                 source = SourceRef(principal.tenant_id, "resume", resume.id, resume.sha256)
                 self.source_indexer.fail(source, IndexFailureCode.VALIDATION_FAILED)
@@ -64,6 +64,7 @@ class SourceIndexBackfillService:
                 source,
                 record.active_index_generation + 1,
                 chunk_document(text),
+                document_id=record.artifact_id if source_type == "resume" else None,
             )
         except Exception as exc:
             try:

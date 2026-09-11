@@ -16,7 +16,8 @@ from sqlalchemy.sql import ColumnElement
 from app.domain.enums import ResumeStatus
 from app.models.jobs import Job, JobVersion
 from app.models.knowledge import KnowledgeDocument
-from app.models.resumes import Resume, ResumeArtifact
+from app.models.resumes import Resume
+from app.models.artifacts import Artifact
 from app.models.retrieval import RecruitingChunk
 from app.retrieval.ports import EMBEDDING_DIMENSION, EMBEDDING_NORM_TOLERANCE, RECRUITING_SOURCE_TYPES
 
@@ -386,12 +387,17 @@ class GenerationWriter:
         if document_id is None:
             return None
         owned_artifact_id = session.scalar(
-            select(ResumeArtifact.id)
+            select(Artifact.id)
+            .join(Resume, Resume.artifact_id == Artifact.id)
             .where(
-                ResumeArtifact.id == document_id,
-                ResumeArtifact.resume_id == source.source_id,
+                Artifact.id == document_id,
+                Artifact.tenant_id == source.tenant_id,
+                Artifact.owner_type == "resume",
+                Artifact.owner_id == source.source_id,
+                Resume.id == source.source_id,
+                Resume.tenant_id == source.tenant_id,
             )
-            .with_for_update(of=ResumeArtifact)
+            .with_for_update(of=Artifact)
         )
         if owned_artifact_id is None:
             raise GenerationValidationError("resume document cleanup key must identify the locked Source artifact")

@@ -6,7 +6,6 @@ import os
 import time
 import uuid
 from contextlib import asynccontextmanager
-from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -21,13 +20,13 @@ from app.config import Settings
 from app.core.exceptions import AppError
 from app.core.logging import get_logger, request_id_var, setup_logging
 from app.database import create_engine_and_session
-from app.knowledge.artifacts import KnowledgeArtifactStore
+from app.artifacts.ports import ArtifactStore
+from app.artifacts.s3 import S3ArtifactStore, S3Settings
 from app.knowledge.embeddings import BGEEmbedder
 from app.matching.engine import MatchingEngine
 from app.matching.hybrid import HybridMatchingEngine
 from app.models import AuditLog, Job, JobTemplate, JobVersion, ModelTrace, Tenant, User  # noqa: F401
 from app.repositories.sqlalchemy_unit_of_work import SqlAlchemyUnitOfWorkFactory
-from app.resumes.artifacts import LocalArtifactStore
 from app.resumes.parser import HeuristicResumeParser
 from app.security.tokens import TokenSettings
 from app.services.ai_tracing import AITraceSink
@@ -52,6 +51,7 @@ def init_recruiting_state(
     knowledge_embedder=None,
     retrieval_index: RecruitingVectorIndex | None = None,
     source_indexer: SourceIndexer | None = None,
+    artifact_store: ArtifactStore | None = None,
 ) -> None:
     """Initialize recruiting persistence once per application instance."""
     if getattr(app.state, "_recruiting_initialized", False):
@@ -63,7 +63,7 @@ def init_recruiting_state(
         secret_key=settings.jwt_secret,
         access_token_minutes=settings.access_token_minutes,
     )
-    artifact_store = LocalArtifactStore(Path(settings.artifact_dir))
+    artifact_store = artifact_store if artifact_store is not None else S3ArtifactStore(S3Settings.from_env().client())
     fallback_parser = HeuristicResumeParser()
     recruiting_model = structured_model
     if recruiting_model is None and settings.ai_enabled:
@@ -89,15 +89,14 @@ def init_recruiting_state(
         source_indexer = SourceIndexer(GenerationWriter(session_factory), embedder)
     uow_factory = SqlAlchemyUnitOfWorkFactory(session_factory)
     processor = ResumeProcessingService(uow_factory, artifact_store, parser, source_indexer=source_indexer)
-    knowledge_artifact_store = KnowledgeArtifactStore(Path(settings.knowledge_artifact_dir))
-    knowledge_processor = KnowledgeProcessingService(uow_factory, knowledge_artifact_store, source_indexer)
+    knowledge_processor = KnowledgeProcessingService(uow_factory, artifact_store, source_indexer)
     ai_trace_sink = AITraceSink(uow_factory)
     app.state.artifact_store = artifact_store
     app.state.resume_processor = processor
     app.state.retrieval_index = retrieval_index
     app.state.source_indexer = source_indexer
     app.state.embedding_adapter = embedder
-    app.state.knowledge_artifact_store = knowledge_artifact_store
+    app.state.knowledge_artifact_store = artifact_store
     app.state.knowledge_processor = knowledge_processor
     app.state.hybrid_matching_engine = HybridMatchingEngine(
         MatchingEngine(),
@@ -131,6 +130,7 @@ def create_app(
     *,
     retrieval_index: RecruitingVectorIndex | None = None,
     source_indexer: SourceIndexer | None = None,
+    artifact_store: ArtifactStore | None = None,
 ) -> FastAPI:
     settings = settings or Settings.load()
     setup_logging()
@@ -144,6 +144,7 @@ def create_app(
             knowledge_embedder,
             retrieval_index,
             source_indexer,
+            artifact_store,
         )
         yield
 

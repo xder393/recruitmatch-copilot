@@ -18,7 +18,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
-from sqlalchemy.orm import Mapped, mapped_column, relationship, synonym
+from sqlalchemy.orm import Mapped, mapped_column, synonym
 
 from app.database import Base
 from app.domain.enums import ResumeStatus
@@ -69,20 +69,4 @@ class Resume(Base):
     )
     deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    artifact: Mapped[Optional["ResumeArtifact"]] = relationship(
-        back_populates="resume", cascade="all, delete-orphan", uselist=False
-    )
-
-
-class ResumeArtifact(Base):
-    __tablename__ = "resume_artifacts"
-
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
-    resume_id: Mapped[str] = mapped_column(
-        ForeignKey("resumes.id", ondelete="CASCADE"), unique=True, index=True, nullable=False
-    )
-    storage_key: Mapped[str] = mapped_column(String(500), unique=True, nullable=False)
     extracted_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
-
-    resume: Mapped[Resume] = relationship(back_populates="artifact")

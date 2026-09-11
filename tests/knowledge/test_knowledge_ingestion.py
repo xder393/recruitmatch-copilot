@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import pytest
 
-from app.core.exceptions import UnsupportedFileError
 from app.database import Base, create_engine_and_session
-from app.knowledge.artifacts import KnowledgeArtifactStore
+from tests.fakes.artifacts import FakeArtifactStore
+from tests.support.artifacts import attach_artifact
 from app.knowledge.chunking import chunk_document
 from app.models.identity import Tenant
 from app.models.knowledge import KnowledgeDocument
@@ -38,7 +37,7 @@ def _uow_factory(session_factory):
 
 
 def _stored_document(tmp_path, factory, content=b"policy text"):
-    store = KnowledgeArtifactStore(tmp_path / "artifacts")
+    store = FakeArtifactStore()
     with factory() as session:
         tenant = Tenant(name="Acme")
         session.add(tenant)
@@ -50,12 +49,10 @@ def _stored_document(tmp_path, factory, content=b"policy text"):
             media_type="text/plain",
             size_bytes=len(content),
             checksum="a" * 64,
-            artifact_key="pending",
             status="uploaded",
         )
         session.add(document)
-        session.flush()
-        document.artifact_key = store.put(tenant.id, document.id, "policy.txt", content).key
+        attach_artifact(session, document, content, owner_type="knowledge_document", store=store)
         session.commit()
         return store, tenant.id, document.id
 
@@ -66,15 +63,6 @@ def test_chunk_offsets_resolve_to_normalized_source():
     assert len(chunks) == 2
     assert all(text[item.start : item.end] == item.content for item in chunks)
     assert chunks[1].start == 600
-
-
-def test_artifact_key_hides_original_filename_and_rejects_escape(tmp_path):
-    store = KnowledgeArtifactStore(tmp_path)
-    stored = store.put("tenant-1", "document-1", "机密制度.docx", b"content")
-    assert "机密制度" not in stored.key
-    assert stored.key.startswith("knowledge/tenant-1/document-1/")
-    with pytest.raises(UnsupportedFileError):
-        store.read("../../outside")
 
 
 def test_processing_activates_embedded_generation(tmp_path):
@@ -89,18 +77,18 @@ def test_processing_activates_embedded_generation(tmp_path):
     assert index._chunks[0].content == "Python interview policy"
 
 
-def test_legacy_processor_reports_missing_key_without_guessing_storage(tmp_path):
+def test_processor_does_not_process_missing_artifact_anchor(tmp_path):
     factory, index, source_indexer = _database(tmp_path)
     store, tenant_id, document_id = _stored_document(tmp_path, factory)
     with factory() as session:
         document = KnowledgeRepository(session).get_document(tenant_id, document_id)
-        document.artifact_key = None
+        document.artifact_id = None
         session.commit()
     KnowledgeProcessingService(_uow_factory(factory), store, source_indexer).process(tenant_id, document_id)
     with factory() as session:
         document = KnowledgeRepository(session).get_document(tenant_id, document_id)
-        assert document.status == "failed"
-        assert document.error_code == "knowledge_artifact_missing"
+        assert document.status == "uploaded"
+        assert document.error_code is None
         assert document.active_generation == 0
     assert not index._chunks
 

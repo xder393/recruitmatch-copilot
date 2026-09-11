@@ -11,7 +11,8 @@ from sqlalchemy import select
 from app.domain.enums import JobStatus, ResumeStatus
 from app.models.jobs import Job, JobVersion
 from app.models.knowledge import KnowledgeDocument
-from app.models.resumes import Resume, ResumeArtifact
+from app.models.resumes import Resume
+from app.models.artifacts import Artifact
 from app.retrieval.generations import (
     GenerationConflictError,
     GenerationValidationError,
@@ -246,9 +247,15 @@ class FakeGenerationWriter:
                     raise GenerationValidationError("job-version chunks cannot carry a cleanup key")
                 if source.source_type == "resume" and chunk.document_id is not None:
                     owned = session.scalar(
-                        select(ResumeArtifact.id).where(
-                            ResumeArtifact.id == chunk.document_id,
-                            ResumeArtifact.resume_id == source.source_id,
+                        select(Artifact.id)
+                        .join(Resume, Resume.artifact_id == Artifact.id)
+                        .where(
+                            Artifact.id == chunk.document_id,
+                            Artifact.tenant_id == source.tenant_id,
+                            Artifact.owner_type == "resume",
+                            Artifact.owner_id == source.source_id,
+                            Resume.id == source.source_id,
+                            Resume.tenant_id == source.tenant_id,
                         )
                     )
                     if owned is None:

@@ -21,7 +21,6 @@ def _document(tenant_id: str, checksum: str = "a" * 64):
         media_type="text/plain",
         size_bytes=6,
         checksum=checksum,
-        artifact_key="knowledge/doc/file.txt",
         status="uploaded",
     )
 

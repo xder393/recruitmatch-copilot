@@ -93,6 +93,51 @@ def test_claim_and_transition_do_not_commit_caller_transaction(postgres_engine, 
         assert session.get(Artifact, artifact_id) is None
 
 
+def test_deleted_tombstones_remain_pageable_after_success_and_late_error(postgres_engine, tenants):
+    with Session(postgres_engine) as session:
+        repo = ArtifactRepository(session)
+        artifact = claim(repo, tenants[0])
+        transition(repo, "mark_failed", tenants[0], artifact.id, ArtifactErrorCode.STORAGE_UNAVAILABLE)
+        transition(repo, "mark_cleanup_pending", tenants[0], artifact.id)
+        transition(repo, "mark_deleted", tenants[0], artifact.id)
+        repo.record_deleted_cleanup_result(
+            tenants[0], artifact.id, ArtifactErrorCode.ACCESS_DENIED, owner_type="resume", owner_id="owner-1"
+        )
+        session.commit()
+        page = repo.list_deleted_tombstones(tenants[0], limit=1)
+        assert [entry.location.artifact_id for entry in page] == [artifact.id]
+        assert page[0].error_code == ArtifactErrorCode.ACCESS_DENIED
+        assert repo.list_deleted_tombstones(tenants[0], after_id=artifact.id, limit=1) == []
+        repo.record_deleted_cleanup_result(tenants[0], artifact.id, None, owner_type="resume", owner_id="owner-1")
+        session.commit()
+        assert len(repo.list_deleted_tombstones(tenants[0], limit=1)) == 1
+        assert artifact.status == ArtifactStatus.DELETED and artifact.sha256 is None
+        assert repo.list_deleted_tombstones(tenants[1], limit=1) == []
+
+
+def test_tombstone_error_update_cannot_change_active_artifact(postgres_engine, tenants):
+    with Session(postgres_engine) as session:
+        repo = ArtifactRepository(session)
+        artifact = claim(repo, tenants[0])
+        with pytest.raises(ArtifactTransitionError):
+            repo.record_deleted_cleanup_result(
+                tenants[0], artifact.id, ArtifactErrorCode.ACCESS_DENIED, owner_type="resume", owner_id="owner-1"
+            )
+
+
+def test_tombstone_error_guard_uses_persisted_state_without_autoflush(postgres_engine, tenants):
+    with Session(postgres_engine, expire_on_commit=False) as session:
+        repo = ArtifactRepository(session)
+        artifact = claim(repo, tenants[0])
+        session.commit()
+        artifact.status, artifact.sha256 = ArtifactStatus.DELETED, None
+        with pytest.raises(ArtifactTransitionError):
+            repo.record_deleted_cleanup_result(
+                tenants[0], artifact.id, ArtifactErrorCode.ACCESS_DENIED, owner_type="resume", owner_id="owner-1"
+            )
+        session.rollback()
+
+
 @pytest.mark.parametrize("initial", ["available", "failed"])
 def test_cleanup_redacts_checksum_before_storage_success_and_allows_retry(postgres_engine, tenants, initial):
     with Session(postgres_engine) as session:
@@ -288,7 +333,7 @@ def test_claim_rejects_invalid_metadata_without_partial_write(postgres_engine, t
 
 def test_schema_has_new_head_and_nullable_source_anchors(postgres_engine):
     with postgres_engine.connect() as connection:
-        assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "20260911_14"
+        assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "20260911_15"
         for table in ("resumes", "knowledge_documents"):
             assert (
                 connection.scalar(
@@ -322,9 +367,7 @@ def test_sources_can_use_new_anchor_alone_and_reject_other_owner(postgres_engine
         session.flush()
         assert source.artifact_id == artifact.id
         if source_type == "resume":
-            assert source.artifact is None
-        else:
-            assert source.artifact_key is None
+            assert source.extracted_text is None
         with pytest.raises(IntegrityError), session.begin_nested():
             source.artifact_id = claim(ArtifactRepository(session), tenants[1], owner_type=source_type).id
             session.flush()

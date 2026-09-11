@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile, status
+from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel
 from app.api.v1.deps import (
     get_current_principal,
@@ -82,14 +83,17 @@ async def upload_document(
     repository: KnowledgeRepository = Depends(get_knowledge_repository),
     uow: RecruitingUnitOfWork = Depends(get_unit_of_work),
 ):
-    content = await file.read(10 * 1024 * 1024 + 1)
-    document, _ = _service(request, repository, uow).upload(
-        principal,
-        document_type,
-        file.filename or "document",
-        file.content_type or "application/octet-stream",
-        content,
-    )
+    try:
+        document, _ = await run_in_threadpool(
+            _service(request, repository, uow).upload,
+            principal,
+            document_type,
+            file.filename or "document",
+            file.content_type or "application/octet-stream",
+            file.file,
+        )
+    finally:
+        await file.close()
     return _response(document)
 
 

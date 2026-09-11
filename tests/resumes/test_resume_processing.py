@@ -6,7 +6,7 @@ class _MemoryStore:
         self.content = content
         self.error = error
 
-    def read(self, key: str) -> bytes:
+    def read_bounded(self, location, max_bytes: int) -> bytes:
         if self.error is not None:
             raise self.error
         return self.content or b""
@@ -18,10 +18,10 @@ def _uow_factory(session_factory):
     return SqlAlchemyUnitOfWorkFactory(session_factory)
 
 
-def _resume_database(tmp_path):
+def _resume_database(tmp_path, content=b"Python developer"):
     from app.database import Base, create_engine_and_session
     from app.domain.enums import ResumeStatus
-    from app.models import Job, JobTemplate, JobVersion, Resume, ResumeArtifact, Tenant, User  # noqa: F401
+    from app.models import Job, JobTemplate, JobVersion, Resume, Tenant, User  # noqa: F401
 
     engine, factory = create_engine_and_session(f"sqlite:///{tmp_path / 'processing.db'}")
     Base.metadata.create_all(engine)
@@ -36,9 +36,11 @@ def _resume_database(tmp_path):
             media_type="text/plain",
             size_bytes=20,
             status=ResumeStatus.QUEUED,
-            artifact=ResumeArtifact(storage_key="tenant/file.txt"),
         )
         session.add(resume)
+        from tests.support.artifacts import attach_artifact
+
+        attach_artifact(session, resume, content)
         session.commit()
         return factory, tenant.id, resume.id
 
@@ -50,7 +52,7 @@ def test_processing_persists_text_profile_and_success_status(tmp_path):
     from app.resumes.parser import HeuristicResumeParser
     from app.services.resume_processing import ResumeProcessingService
 
-    factory, tenant_id, resume_id = _resume_database(tmp_path)
+    factory, tenant_id, resume_id = _resume_database(tmp_path, "使用 Python 和 FastAPI 开发 5 年".encode())
     service = ResumeProcessingService(
         _uow_factory(factory),
         _MemoryStore("使用 Python 和 FastAPI 开发 5 年".encode()),
@@ -61,7 +63,7 @@ def test_processing_persists_text_profile_and_success_status(tmp_path):
     with factory() as session:
         resume = session.get(Resume, resume_id)
         assert resume.status is ResumeStatus.SUCCEEDED
-        assert resume.artifact.extracted_text == "使用 Python 和 FastAPI 开发 5 年"
+        assert resume.extracted_text == "使用 Python 和 FastAPI 开发 5 年"
         assert [item["name"] for item in resume.profile["skills"]] == ["Python", "FastAPI"]
         assert resume.profile["experience_years"] == 5
 
@@ -81,7 +83,7 @@ def test_processing_failure_records_stable_error_without_raising(tmp_path):
     with factory() as session:
         resume = session.get(Resume, resume_id)
         assert resume.status is ResumeStatus.FAILED
-        assert resume.error_code == "artifact_read_failed"
+        assert resume.error_code == "storage_unavailable"
         assert "disk secret" not in (resume.error_message or "")
 
 

@@ -27,7 +27,6 @@ def operations_client(tmp_path):
     settings = Settings(
         api_key="test-key",
         database_url=f"sqlite:///{tmp_path / 'operations.db'}",
-        artifact_dir=str(tmp_path / "artifacts"),
         jwt_secret="a-test-secret-that-is-at-least-32-bytes",
     )
     prepare_test_database(settings.database_url)
@@ -68,8 +67,6 @@ def test_ai_status_uses_recent_trace_health(tmp_path):
         api_key="test-key",
         ai_enabled=True,
         database_url=f"sqlite:///{tmp_path / 'ai-health.db'}",
-        artifact_dir=str(tmp_path / "artifacts"),
-        knowledge_artifact_dir=str(tmp_path / "knowledge"),
         jwt_secret="a-test-secret-that-is-at-least-32-bytes",
     )
 
@@ -122,8 +119,6 @@ def test_ai_status_ignores_other_tenant_model_failures(tmp_path):
         api_key="test-key",
         ai_enabled=True,
         database_url=f"sqlite:///{tmp_path / 'tenant-ai-health.db'}",
-        artifact_dir=str(tmp_path / "artifacts"),
-        knowledge_artifact_dir=str(tmp_path / "knowledge"),
         jwt_secret="a-test-secret-that-is-at-least-32-bytes",
     )
     app = create_sqlite_test_app(settings)

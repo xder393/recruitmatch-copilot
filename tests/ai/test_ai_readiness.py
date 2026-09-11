@@ -14,7 +14,6 @@ def _settings(tmp_path, **overrides):
     values = {
         "api_key": "",
         "database_url": f"sqlite:///{tmp_path / 'ai-status.db'}",
-        "artifact_dir": str(tmp_path / "artifacts"),
         "jwt_secret": "a-test-secret-that-is-at-least-32-bytes",
     }
     values.update(overrides)

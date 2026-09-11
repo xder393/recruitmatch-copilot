@@ -4,18 +4,18 @@ from __future__ import annotations
 
 from typing import Protocol
 from datetime import datetime, timedelta, timezone
+import hashlib
 
 from app.core.exceptions import AppError
 from app.domain.enums import ResumeStatus
+from app.domain.artifacts import ArtifactStatus
+from app.artifacts.ports import ArtifactStore, ArtifactChecksumMismatch, ArtifactLengthMismatch, MAX_ARTIFACT_BYTES
+from app.artifacts.errors import storage_error_code
 from app.resumes.extractors import extract_text
 from app.resumes.schemas import ResumeProfile
 from app.repositories.unit_of_work import UnitOfWorkFactory
 from app.retrieval.generations import SourceRef
 from app.retrieval.indexing import SourceIndexer, classify_index_failure
-
-
-class ArtifactReader(Protocol):
-    def read(self, key: str) -> bytes: ...
 
 
 class ResumeParser(Protocol):
@@ -28,7 +28,7 @@ class ResumeProcessingService:
     def __init__(
         self,
         uow_factory: UnitOfWorkFactory,
-        artifact_store: ArtifactReader,
+        artifact_store: ArtifactStore,
         parser: ResumeParser,
         source_indexer: SourceIndexer | None = None,
     ):
@@ -46,26 +46,28 @@ class ResumeProcessingService:
                 return False
             if resume.status not in {ResumeStatus.QUEUED, ResumeStatus.RUNNING}:
                 return True
-            if resume.artifact is None:
-                resume.status = ResumeStatus.FAILED
-                resume.error_code = "artifact_missing"
-                resume.error_message = "简历文件记录不存在"
-                uow.commit()
+            artifact = uow.artifacts.get(tenant_id, "resume", resume_id, resume.artifact_id, for_update=True)
+            if artifact is None or artifact.status != ArtifactStatus.AVAILABLE:
                 return True
             resume.status = ResumeStatus.RUNNING
             resume.updated_at = datetime.now(timezone.utc)
             resume.error_code = None
             resume.error_message = None
             filename = resume.original_filename
-            storage_key = resume.artifact.storage_key
+            location = uow.artifacts.resolve_location(tenant_id, "resume", resume_id, artifact.id)
+            expected_size, expected_sha = artifact.size_bytes, artifact.sha256
             source_version = resume.sha256
             next_generation = resume.active_index_generation + 1
             uow.commit()
 
         try:
-            content = self.artifact_store.read(storage_key)
-        except Exception:
-            self._mark_failed(tenant_id, resume_id, "artifact_read_failed", "无法读取简历文件")
+            content = self.artifact_store.read_bounded(location, MAX_ARTIFACT_BYTES)
+            if len(content) != expected_size:
+                raise ArtifactLengthMismatch()
+            if hashlib.sha256(content).hexdigest() != expected_sha:
+                raise ArtifactChecksumMismatch()
+        except Exception as exc:
+            self._mark_failed(tenant_id, resume_id, storage_error_code(exc).value, "无法读取简历文件")
             return True
 
         try:
@@ -82,10 +84,13 @@ class ResumeProcessingService:
             return True
 
         with self.uow_factory() as uow:
-            resume = uow.resumes.get(tenant_id, resume_id, include_deleted=True)
+            resume = uow.resumes.get(tenant_id, resume_id, include_deleted=True, for_update=True)
             if resume is None or resume.status is ResumeStatus.DELETED:
                 return True
-            resume.artifact.extracted_text = text
+            artifact = uow.artifacts.get(tenant_id, "resume", resume_id, location.artifact_id, for_update=True)
+            if artifact is None or artifact.status != ArtifactStatus.AVAILABLE:
+                return True
+            resume.extracted_text = text
             resume.profile = profile.model_dump(mode="json")
             resume.status = ResumeStatus.SUCCEEDED
             resume.error_code = None
@@ -117,7 +122,9 @@ class ResumeProcessingService:
             try:
                 from app.knowledge.chunking import chunk_document
 
-                self.source_indexer.index(source, next_generation, chunk_document(text))
+                self.source_indexer.index(
+                    source, next_generation, chunk_document(text), document_id=location.artifact_id
+                )
             except Exception as exc:
                 # Search enrichment must never roll back an otherwise valid
                 # resume; re-indexing can repair this side effect later.
@@ -133,8 +140,11 @@ class ResumeProcessingService:
 
     def _mark_failed(self, tenant_id: str, resume_id: str, code: str, message: str) -> None:
         with self.uow_factory() as uow:
-            resume = uow.resumes.get(tenant_id, resume_id, include_deleted=True)
+            resume = uow.resumes.get(tenant_id, resume_id, include_deleted=True, for_update=True)
             if resume is None or resume.status is ResumeStatus.DELETED:
+                return
+            artifact = uow.artifacts.get(tenant_id, "resume", resume_id, resume.artifact_id, for_update=True)
+            if artifact is None or artifact.status != ArtifactStatus.AVAILABLE:
                 return
             resume.status = ResumeStatus.FAILED
             resume.error_code = code

@@ -4,14 +4,12 @@ from uuid import uuid4
 
 import pytest
 from alembic import command
-from alembic.config import Config
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.database import Base
-from app.models.identity import Tenant
 from app.models.knowledge import KnowledgeDocument
-from app.models.resumes import Resume, ResumeArtifact
+from tests.support.migrations import isolated_migration_database, seed_legacy_resume
 from app.repositories.artifacts import ArtifactRepository
 
 
@@ -120,33 +118,27 @@ def test_orm_and_migration_have_identical_postgres_artifact_catalog(postgres_eng
         connection.execute(text(f'DROP SCHEMA "{schema}" CASCADE'))
 
 
-def test_revision_12_to_head_preserves_local_sources_without_backfill(postgres_engine):
-    tenant_id = str(uuid4())
-    with Session(postgres_engine) as session:
-        session.add(Tenant(id=tenant_id, name="legacy-preservation"))
-        session.flush()
-        resume = Resume(
-            tenant_id=tenant_id, sha256="c" * 64, original_filename="legacy.txt", media_type="text/plain", size_bytes=6
+@pytest.fixture
+def legacy_database(postgres_engine):
+    with isolated_migration_database(postgres_engine) as pair:
+        yield pair
+
+
+def test_revision_12_to_14_preserves_local_sources_without_backfill(legacy_database):
+    postgres_engine, config = legacy_database
+    tenant_id, _, _, _ = seed_legacy_resume(postgres_engine, anchored=False)
+    with postgres_engine.begin() as connection:
+        connection.execute(
+            text("""
+            INSERT INTO knowledge_documents(id,tenant_id,document_type,original_filename,media_type,size_bytes,
+                checksum,artifact_key,status,active_index_generation,search_index_status,created_at,updated_at)
+            VALUES (:t,:t,'policy','policy.txt','text/plain',6,:sha,:key,'uploaded',0,'pending',now(),now())
+        """),
+            {"t": tenant_id, "sha": "d" * 64, "key": "legacy/" + tenant_id},
         )
-        session.add(resume)
-        session.flush()
-        session.add(ResumeArtifact(resume_id=resume.id, storage_key="legacy/" + resume.id, extracted_text="legacy"))
-        document = KnowledgeDocument(
-            tenant_id=tenant_id,
-            checksum="d" * 64,
-            document_type="policy",
-            original_filename="policy.txt",
-            media_type="text/plain",
-            size_bytes=6,
-            artifact_key="legacy/" + tenant_id,
-            status="uploaded",
-        )
-        session.add(document)
-        session.commit()
-    config = Config("alembic.ini")
     try:
         command.downgrade(config, "20260824_12")
-        command.upgrade(config, "head")
+        command.upgrade(config, "20260911_14")
         with postgres_engine.connect() as connection:
             assert (
                 connection.scalar(
@@ -181,30 +173,16 @@ def test_revision_12_to_head_preserves_local_sources_without_backfill(postgres_e
                 == 0
             )
     finally:
-        command.upgrade(config, "head")
+        command.upgrade(config, "20260911_14")
         with postgres_engine.begin() as connection:
             connection.execute(text("DELETE FROM tenants WHERE id=:tenant"), {"tenant": tenant_id})
 
 
 def _anchored_sources(engine):
-    tenant_id, owner_id = str(uuid4()), str(uuid4())
+    tenant_id, owner_id, resume_artifact_id, _ = seed_legacy_resume(engine)
     with Session(engine) as session:
-        session.add(Tenant(id=tenant_id, name="typed-anchor-upgrade"))
-        session.flush()
         repo = ArtifactRepository(session)
-        resume_artifact = repo.claim_upload(tenant_id, "resume", owner_id, "a" * 64, "text/plain", 10)
         knowledge_artifact = repo.claim_upload(tenant_id, "knowledge_document", owner_id, "a" * 64, "text/plain", 10)
-        session.add(
-            Resume(
-                id=owner_id,
-                tenant_id=tenant_id,
-                sha256="a" * 64,
-                original_filename="resume.txt",
-                media_type="text/plain",
-                size_bytes=10,
-                artifact_id=resume_artifact.id,
-            )
-        )
         session.add(
             KnowledgeDocument(
                 id=owner_id,
@@ -218,17 +196,17 @@ def _anchored_sources(engine):
                 status="uploaded",
             )
         )
-        ids = tenant_id, owner_id, resume_artifact.id, knowledge_artifact.id
+        ids = tenant_id, owner_id, resume_artifact_id, knowledge_artifact.id
         session.commit()
         return ids
 
 
-def test_revision_13_upgrade_preserves_valid_typed_anchors(postgres_engine):
+def test_revision_13_upgrade_preserves_valid_typed_anchors(legacy_database):
+    postgres_engine, config = legacy_database
     tenant_id, owner_id, resume_artifact_id, knowledge_artifact_id = _anchored_sources(postgres_engine)
-    config = Config("alembic.ini")
     try:
         command.downgrade(config, "20260824_13")
-        command.upgrade(config, "head")
+        command.upgrade(config, "20260911_14")
         with postgres_engine.connect() as connection:
             for table, artifact_id, owner_type in (
                 ("resumes", resume_artifact_id, "resume"),
@@ -240,20 +218,20 @@ def test_revision_13_upgrade_preserves_valid_typed_anchors(postgres_engine):
                 ).one()
                 assert tuple(row) == (artifact_id, owner_type)
     finally:
-        command.upgrade(config, "head")
+        command.upgrade(config, "20260911_14")
         with postgres_engine.begin() as connection:
             connection.execute(text("DELETE FROM tenants WHERE id=:tenant"), {"tenant": tenant_id})
 
 
 @pytest.mark.parametrize("table", ["resumes", "knowledge_documents"])
-def test_revision_13_invalid_typed_anchor_fails_without_rebinding(postgres_engine, table):
+def test_revision_13_invalid_typed_anchor_fails_without_rebinding(legacy_database, table):
+    postgres_engine, config = legacy_database
     tenant_id, owner_id, resume_artifact_id, knowledge_artifact_id = _anchored_sources(postgres_engine)
     correct, wrong = (
         (resume_artifact_id, knowledge_artifact_id)
         if table == "resumes"
         else (knowledge_artifact_id, resume_artifact_id)
     )
-    config = Config("alembic.ini")
     try:
         command.downgrade(config, "20260824_13")
         with postgres_engine.begin() as connection:
@@ -262,7 +240,7 @@ def test_revision_13_invalid_typed_anchor_fails_without_rebinding(postgres_engin
                 {"artifact": wrong, "owner": owner_id},
             )
         with pytest.raises(RuntimeError, match="artifact_owner_type_mismatch: " + table):
-            command.upgrade(config, "head")
+            command.upgrade(config, "20260911_14")
         with postgres_engine.connect() as connection:
             assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "20260824_13"
             assert (
@@ -275,6 +253,6 @@ def test_revision_13_invalid_typed_anchor_fails_without_rebinding(postgres_engin
                 text(f"UPDATE {table} SET artifact_id=:artifact WHERE id=:owner"),
                 {"artifact": correct, "owner": owner_id},
             )
-        command.upgrade(config, "head")
+        command.upgrade(config, "20260911_14")
         with postgres_engine.begin() as connection:
             connection.execute(text("DELETE FROM tenants WHERE id=:tenant"), {"tenant": tenant_id})

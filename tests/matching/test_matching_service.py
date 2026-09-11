@@ -123,7 +123,7 @@ class _HybridEngine:
 def _setup(tmp_path):
     from app.database import Base, create_engine_and_session
     from app.domain.enums import JobStatus, ResumeStatus, Role
-    from app.models import Job, JobVersion, Resume, ResumeArtifact, Tenant, User
+    from app.models import Job, JobVersion, Resume, Tenant, User
     from app.resumes.parser import HeuristicResumeParser
     from app.security.tokens import Principal
 
@@ -146,7 +146,7 @@ def _setup(tmp_path):
             size_bytes=len(text.encode()),
             status=ResumeStatus.SUCCEEDED,
             profile=HeuristicResumeParser().parse(text).model_dump(mode="json"),
-            artifact=ResumeArtifact(storage_key="acme/a.txt", extracted_text=text),
+            extracted_text=text,
         )
         definitions = [
             ("AI", JobStatus.ACTIVE, ["Python", "FastAPI"], ["RAG"]),

@@ -60,8 +60,6 @@ class Settings:
 
     # —— 企业业务数据库 ——
     database_url: str = "sqlite:///data/recruitmatch.db"
-    artifact_dir: str = "data/resumes"
-    knowledge_artifact_dir: str = "data/knowledge"
     task_mode: str = "inline"
     celery_broker_url: str = "redis://localhost:6379/0"
 
@@ -91,8 +89,6 @@ class Settings:
             chat_model=os.getenv("OPENAI_MODEL", cls.chat_model).strip(),
             embedding_model=os.getenv("OPENAI_EMBEDDING_MODEL", cls.embedding_model).strip(),
             database_url=os.getenv("DATABASE_URL", cls.database_url).strip(),
-            artifact_dir=os.getenv("ARTIFACT_DIR", cls.artifact_dir).strip(),
-            knowledge_artifact_dir=os.getenv("KNOWLEDGE_ARTIFACT_DIR", cls.knowledge_artifact_dir).strip(),
             task_mode=os.getenv("TASK_MODE", cls.task_mode).strip(),
             celery_broker_url=os.getenv("CELERY_BROKER_URL", cls.celery_broker_url).strip(),
             jwt_secret=os.getenv("JWT_SECRET", cls.jwt_secret).strip(),

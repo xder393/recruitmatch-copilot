@@ -25,7 +25,7 @@ class KnowledgeRepository:
             KnowledgeDocument.tenant_id == tenant_id,
         )
         if for_update:
-            statement = statement.with_for_update()
+            statement = statement.with_for_update().execution_options(populate_existing=True)
         return self.session.scalar(statement)
 
     def by_checksum(self, tenant_id: str, checksum: str, document_type: str) -> KnowledgeDocument | None:

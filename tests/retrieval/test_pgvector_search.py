@@ -194,7 +194,6 @@ def pg_index(postgres_engine):
                 media_type="text/plain",
                 size_bytes=20,
                 checksum=f"knowledge-{suffix}-v1",
-                artifact_key=f"knowledge/{suffix}",
                 status="ready",
                 active_index_generation=1,
                 search_index_status=search_index_status,

@@ -38,7 +38,6 @@ class KnowledgeDocument(Base):
     media_type: Mapped[str] = mapped_column(String(100), nullable=False)
     size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
     checksum: Mapped[str] = mapped_column(String(64), nullable=False)
-    artifact_key: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
     artifact_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
     artifact_owner_type: Mapped[str] = mapped_column(
         String(18), Computed("'knowledge_document'", persisted=True), nullable=False

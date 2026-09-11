@@ -33,8 +33,6 @@ def knowledge_app(tmp_path):
     settings = Settings(
         api_key="",
         database_url=f"sqlite:///{tmp_path / 'api.db'}",
-        artifact_dir=str(tmp_path / "artifacts"),
-        knowledge_artifact_dir=str(tmp_path / "knowledge"),
         jwt_secret="a-test-secret-that-is-at-least-32-bytes",
     )
     prepare_test_database(settings.database_url)
@@ -97,23 +95,25 @@ def test_upload_is_idempotent_and_processed_inline(client):
     assert client.get("/api/v1/knowledge-documents").json()["total"] == 1
 
 
-def test_failed_knowledge_dispatch_is_retryable_by_idempotent_upload(client, knowledge_app):
+def test_failed_knowledge_dispatch_remains_queued_for_recovery(client, knowledge_app):
     class BrokenDispatcher:
         def dispatch_knowledge(self, tenant_id, document_id):
             raise RuntimeError("broker unavailable")
 
-    _login(client, "Acme", "admin@acme.test")
+    tenant_id = _login(client, "Acme", "admin@acme.test")
     working = knowledge_app.state.knowledge_dispatcher
     knowledge_app.state.knowledge_dispatcher = BrokenDispatcher()
     failed = _upload(client, b"retryable policy")
     assert failed.status_code == 202
-    assert failed.json()["status"] == "failed"
+    assert failed.json()["status"] == "uploaded"
     assert failed.json()["error_code"] == "task_dispatch_failed"
 
     knowledge_app.state.knowledge_dispatcher = working
     retried = _upload(client, b"retryable policy")
     assert retried.status_code == 202
-    assert retried.json()["status"] == "ready"
+    assert retried.json()["status"] == "uploaded"
+    knowledge_app.state.knowledge_processor.process(tenant_id, failed.json()["id"])
+    assert client.get(f"/api/v1/knowledge-documents/{failed.json()['id']}").json()["status"] == "ready"
 
 
 def test_cross_tenant_document_is_hidden(client):

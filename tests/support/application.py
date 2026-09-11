@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from app.main import create_app
 from tests.fakes.retrieval import sqlite_retrieval_dependencies
+from tests.fakes.artifacts import FakeArtifactStore
 
 
 class DeterministicEmbeddingAdapter:
@@ -27,4 +28,5 @@ def create_sqlite_test_app(settings, structured_model=None, knowledge_embedder=N
         knowledge_embedder=embedder,
         retrieval_index=retrieval_index,
         source_indexer=source_indexer,
+        artifact_store=FakeArtifactStore(),
     )

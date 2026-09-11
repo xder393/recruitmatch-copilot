@@ -12,7 +12,6 @@ def test_root_serves_recruiter_workflow_and_human_decision_notice(tmp_path):
     settings = Settings(
         api_key="test-key",
         database_url=f"sqlite:///{tmp_path / 'web.db'}",
-        artifact_dir=str(tmp_path / "artifacts"),
         jwt_secret="a-test-secret-that-is-at-least-32-bytes",
     )
     prepare_test_database(settings.database_url)
