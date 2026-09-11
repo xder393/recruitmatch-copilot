@@ -55,6 +55,7 @@ jobs:
       - run: >-
           uv run pytest tests
           --ignore=tests/integration
+          --ignore=tests/artifacts
           --ignore=tests/retrieval/test_citation_lifecycle.py
           --ignore=tests/retrieval/test_generation_switch.py
           --ignore=tests/retrieval/test_pgvector_search.py
@@ -73,6 +74,6 @@ jobs:
       - name: Run PostgreSQL integration and retrieval tests
         run: >-
           docker compose -p recruitmatch-ci-pgvector run --rm test-integration
-          pytest tests/integration tests/retrieval -q
+          pytest tests/integration tests/retrieval tests/artifacts -q
       - if: always()
         run: docker compose -p recruitmatch-ci-pgvector down -v

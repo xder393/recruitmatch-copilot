@@ -89,6 +89,22 @@ def test_processing_activates_embedded_generation(tmp_path):
     assert index._chunks[0].content == "Python interview policy"
 
 
+def test_legacy_processor_reports_missing_key_without_guessing_storage(tmp_path):
+    factory, index, source_indexer = _database(tmp_path)
+    store, tenant_id, document_id = _stored_document(tmp_path, factory)
+    with factory() as session:
+        document = KnowledgeRepository(session).get_document(tenant_id, document_id)
+        document.artifact_key = None
+        session.commit()
+    KnowledgeProcessingService(_uow_factory(factory), store, source_indexer).process(tenant_id, document_id)
+    with factory() as session:
+        document = KnowledgeRepository(session).get_document(tenant_id, document_id)
+        assert document.status == "failed"
+        assert document.error_code == "knowledge_artifact_missing"
+        assert document.active_generation == 0
+    assert not index._chunks
+
+
 def test_duplicate_worker_delivery_does_not_reprocess_ready_document(tmp_path):
     factory, _, source_indexer = _database(tmp_path)
     store, tenant_id, document_id = _stored_document(tmp_path, factory, b"stable policy")

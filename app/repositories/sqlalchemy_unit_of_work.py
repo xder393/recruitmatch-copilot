@@ -8,6 +8,7 @@ from typing import Callable
 from sqlalchemy.exc import IntegrityError
 
 from app.repositories.feedback import FeedbackRepository
+from app.repositories.artifacts import ArtifactRepository
 from app.repositories.identity import IdentityRepository
 from app.repositories.jobs import JobRepository
 from app.repositories.knowledge import KnowledgeRepository
@@ -25,6 +26,7 @@ class SqlAlchemyUnitOfWork(AbstractContextManager["SqlAlchemyUnitOfWork"], Recru
         self._session = session
         self._owns_session = owns_session
         self.identities = IdentityRepository(session)
+        self.artifacts = ArtifactRepository(session)
         self.feedback = FeedbackRepository(session)
         self.jobs = JobRepository(session)
         self.knowledge = KnowledgeRepository(session)

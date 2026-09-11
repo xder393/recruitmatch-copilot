@@ -6,6 +6,7 @@ from contextlib import AbstractContextManager
 from typing import Protocol
 
 from app.repositories.ports import (
+    ArtifactRepository,
     FeedbackRepository,
     IdentityRepository,
     JobRepository,
@@ -22,6 +23,7 @@ class UnitOfWork(Protocol):
 
 
 class RecruitingUnitOfWork(UnitOfWork, Protocol):
+    artifacts: ArtifactRepository
     identities: IdentityRepository
     feedback: FeedbackRepository
     jobs: JobRepository

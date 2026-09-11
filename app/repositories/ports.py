@@ -10,10 +10,58 @@ from datetime import datetime
 from typing import Any, List, Protocol
 
 from app.ai.contracts import ModelRequest, ModelResponse
+from app.artifacts.ports import ArtifactLocation
+from app.domain.artifacts import ArtifactErrorCode, ArtifactOwnerType
 
 
 class RepositoryConflictError(Exception):
     """A persistence uniqueness conflict safe for application handling."""
+
+
+class ArtifactRepository(Protocol):
+    def claim_upload(
+        self,
+        tenant_id: str,
+        owner_type: ArtifactOwnerType | str,
+        owner_id: str,
+        sha256: str,
+        media_type: str,
+        size_bytes: int,
+    ) -> Any: ...
+    def mark_available(
+        self, tenant_id: str, artifact_id: str, *, owner_type: ArtifactOwnerType | str, owner_id: str
+    ) -> Any: ...
+    def mark_failed(
+        self,
+        tenant_id: str,
+        artifact_id: str,
+        error_code: ArtifactErrorCode,
+        *,
+        owner_type: ArtifactOwnerType | str,
+        owner_id: str,
+    ) -> Any: ...
+    def mark_cleanup_pending(
+        self, tenant_id: str, artifact_id: str, *, owner_type: ArtifactOwnerType | str, owner_id: str
+    ) -> Any: ...
+    def mark_cleanup_failed(
+        self,
+        tenant_id: str,
+        artifact_id: str,
+        error_code: ArtifactErrorCode,
+        *,
+        owner_type: ArtifactOwnerType | str,
+        owner_id: str,
+    ) -> Any: ...
+    def mark_deleted(
+        self, tenant_id: str, artifact_id: str, *, owner_type: ArtifactOwnerType | str, owner_id: str
+    ) -> Any: ...
+    def resolve_location(
+        self,
+        tenant_id: str,
+        owner_type: ArtifactOwnerType | str,
+        owner_id: str,
+        artifact_id: str,
+    ) -> ArtifactLocation: ...
 
 
 class IdentityRepository(Protocol):

@@ -40,6 +40,9 @@ class KnowledgeProcessingService:
             uow.commit()
 
         try:
+            if artifact_key is None:
+                self._mark_failed(tenant_id, document_id, "knowledge_artifact_missing", "知识文档文件不存在")
+                return True
             content = self.artifact_store.read(artifact_key)
             text = extract_text(filename, content)
             chunks = chunk_document(text)

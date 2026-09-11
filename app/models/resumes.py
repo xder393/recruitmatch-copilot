@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, JSON, String, Text, UniqueConstraint
+from sqlalchemy import DateTime, Enum, ForeignKey, ForeignKeyConstraint, Integer, JSON, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship, synonym
 
 from app.database import Base
@@ -23,11 +23,19 @@ def _utcnow() -> datetime:
 
 class Resume(Base):
     __tablename__ = "resumes"
-    __table_args__ = (UniqueConstraint("tenant_id", "sha256", name="uq_resume_tenant_hash"),)
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "sha256", name="uq_resume_tenant_hash"),
+        ForeignKeyConstraint(
+            ["tenant_id", "id", "artifact_id"],
+            ["artifacts.tenant_id", "artifacts.owner_id", "artifacts.id"],
+            name="fk_resumes_artifact_owner",
+        ),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), index=True, nullable=False)
     uploaded_by: Mapped[Optional[str]] = mapped_column(ForeignKey("users.id"), nullable=True)
+    artifact_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
     sha256: Mapped[str] = mapped_column(String(64), nullable=False)
     original_filename: Mapped[str] = mapped_column(String(500), nullable=False)
     media_type: Mapped[str] = mapped_column(String(200), nullable=False)
