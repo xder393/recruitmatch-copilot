@@ -1,5 +1,7 @@
 """Data-preserving local-store cutover with pre-DDL refusal of unsupported data."""
 
+import hashlib
+
 from alembic import command
 import pytest
 from sqlalchemy import inspect, text
@@ -101,8 +103,6 @@ def test_inactive_knowledge_without_anchor_is_not_treated_as_privacy_deleted(pos
 
 @pytest.mark.parametrize("sanitized", [True, False])
 def test_anchorless_deleted_legacy_source_requires_sanitization(postgres_engine, sanitized):
-    import hashlib
-
     with isolated_migration_database(postgres_engine) as (engine, config):
         _, owner, _, _ = seed_legacy_resume(engine, anchored=False)
         with engine.begin() as connection:
@@ -123,3 +123,62 @@ def test_anchorless_deleted_legacy_source_requires_sanitization(postgres_engine,
         else:
             with pytest.raises(RuntimeError, match="artifact_cutover_requires_explicit_reset"):
                 command.upgrade(config, "head")
+
+
+@pytest.mark.parametrize("deleted", [True, False])
+@pytest.mark.parametrize("is_active", [True, False])
+def test_null_linked_private_chunks_require_retained_source(postgres_engine, deleted, is_active):
+    with isolated_migration_database(postgres_engine) as (engine, config):
+        tenant, owner, _, _ = seed_legacy_resume(engine, anchored=not deleted)
+        if deleted:
+            with engine.begin() as connection:
+                connection.execute(
+                    text("""
+                    UPDATE resumes SET status='DELETED',sha256=:sha,original_filename='deleted',
+                        size_bytes=0,deleted_at=now() WHERE tenant_id=:t AND id=:o
+                """),
+                    {"sha": hashlib.sha256(("deleted:" + owner).encode()).hexdigest(), "t": tenant, "o": owner},
+                )
+                connection.execute(
+                    text("UPDATE resume_artifacts SET extracted_text=NULL WHERE resume_id=:o"), {"o": owner}
+                )
+        with Session(engine) as session:
+            session.add(
+                RecruitingChunk(
+                    tenant_id=tenant,
+                    source_type="resume",
+                    source_id=owner,
+                    source_version="a" * 64,
+                    document_id=None,
+                    generation=1,
+                    citation_id="synthetic-private-citation",
+                    start_offset=0,
+                    end_offset=20,
+                    content="private legacy text\n",
+                    embedding=[1.0] + [0.0] * 511,
+                    embedding_model="synthetic-512",
+                    is_active=is_active,
+                )
+            )
+            session.commit()
+        with engine.connect() as connection:
+            chunk_before = dict(connection.execute(text("SELECT * FROM recruiting_chunks")).mappings().one())
+            source_before = dict(connection.execute(text("SELECT * FROM resumes")).mappings().one())
+            legacy_before = dict(connection.execute(text("SELECT * FROM resume_artifacts")).mappings().one())
+        if deleted:
+            with pytest.raises(RuntimeError, match="artifact_cutover_requires_explicit_reset"):
+                command.upgrade(config, "head")
+        else:
+            command.upgrade(config, "head")
+        with engine.connect() as connection:
+            assert dict(connection.execute(text("SELECT * FROM recruiting_chunks")).mappings().one()) == chunk_before
+            if deleted:
+                assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "20260911_14"
+                assert "extracted_text" not in {c["name"] for c in inspect(connection).get_columns("resumes")}
+                assert dict(connection.execute(text("SELECT * FROM resumes")).mappings().one()) == source_before
+                assert (
+                    dict(connection.execute(text("SELECT * FROM resume_artifacts")).mappings().one()) == legacy_before
+                )
+            else:
+                assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "20260911_15"
+                assert connection.scalar(text("SELECT extracted_text FROM resumes")) == "legacy"

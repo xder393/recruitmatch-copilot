@@ -24,6 +24,16 @@ def upgrade() -> None:
             OR EXISTS(SELECT 1 FROM knowledge_documents WHERE artifact_id IS NULL)
     """)):
         raise RuntimeError("artifact_cutover_requires_explicit_reset: legacy local content; see artifact cutover ADR")
+    # NULL document linkage is valid for retained Sources, but cannot exempt
+    # private chunks (including inactive generations) from deletion preflight.
+    if connection.scalar(sa.text("""
+        SELECT EXISTS (
+            SELECT 1 FROM recruiting_chunks c
+            JOIN resumes r ON r.id=c.source_id AND r.tenant_id=c.tenant_id
+            WHERE c.source_type='resume' AND r.status='DELETED'
+        )
+    """)):
+        raise RuntimeError("artifact_cutover_requires_explicit_reset: unsanitized legacy deletion")
     deleted = connection.execute(sa.text("""
         SELECT r.id,r.sha256,r.original_filename,r.size_bytes,r.uploaded_by,r.profile,a.extracted_text
         FROM resumes r LEFT JOIN resume_artifacts a ON a.resume_id=r.id WHERE r.status='DELETED'

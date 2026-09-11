@@ -91,3 +91,34 @@ Self-review checked final code against the brief: separate Source/storage author
 No unresolved Task 3 blocker. Full cross-Source privacy redaction, pending/queue reconciliation, repeated fair tombstone sweep, scheduling and later metrics/invariants remain Task 4. Indefinite exact tombstone retention/inspection cost is deliberate; retirement needs a future proven completion/fencing protocol. Unsupported legacy data requires an explicit operator decision; restore a pre-cutover backup for rollback.
 
 No real LLM, user `.env`, default demo reset, global proxy change, controller ledger edit, subagent/reviewer, main mutation, merge or push occurred. Dedicated synthetic services remain for independent review; no user data was removed.
+
+## Independent review fix 1 — deleted Source NULL-linked chunks
+
+Status: DONE, based on `27b999f`. Review verified a gap in revision 15: the existing non-null document lineage guard skipped private chunks with `document_id=NULL` even when their Resume was privacy-deleted. The controller authorized strengthening this unreleased revision's preflight in place; no new revision or successful DDL changes were made.
+
+Added a pre-DDL EXISTS guard joining chunks to Resumes by tenant and Source ID, constrained to `source_type='resume'` and `status='DELETED'`, independent of document linkage and generation activity. It refuses with bounded `artifact_cutover_requires_explicit_reset: unsanitized legacy deletion`, without modifying private data. Live retained Sources keep valid NULL linkage.
+
+Regression fixtures cover active and inactive NULL-linked private chunks, with sanitized anchorless DELETED Resume metadata/NULL legacy extracted text, plus live validly anchored positive controls. On refusal they assert revision remains 20260911_14, no new resumes.extracted_text column, and equality of every chunk, Source and legacy Artifact field before/after, preserving the original private text including its trailing newline. Positive controls reach revision 15 with unchanged NULL-linked chunks and migrated legacy text.
+
+Exact RED and GREEN command (using the previously defined DC prefix):
+
+```sh
+DC run --rm --no-deps -v /Users/xder393/Desktop/agent/.worktrees/recruitmatch-v2/tests:/app/tests:ro -v /Users/xder393/Desktop/agent/.worktrees/recruitmatch-v2/alembic:/app/alembic:ro test-integration pytest tests/artifacts/test_cutover_migration.py -q -k null_linked_private
+```
+
+RED on the prior guard: `2 failed, 2 passed, 7 deselected in 0.85s`, exit 1; both deleted cases failed with `DID NOT RAISE RuntimeError`, while live controls passed. GREEN after the guard: `4 passed, 7 deselected in 0.79s`, exit 0. This focused iteration used read-only current test/migration mounts.
+
+Final bounded verification, after final source edits and without mounts:
+
+```sh
+DC build bootstrap test-integration
+DC run --rm --no-deps test-integration pytest tests/artifacts/test_cutover_migration.py tests/artifacts/test_artifact_catalog.py tests/integration/test_pgvector_migration.py -q
+DC run --rm --no-deps test-unit sh -c 'ruff check tests/artifacts/test_cutover_migration.py && ruff format --check tests/artifacts/test_cutover_migration.py'
+git diff --check
+```
+
+Build exited 0, both images Built, reusing locked dependency cache and copying current migration/tests. Final test image config `sha256:51a8a7e22770fb48e77992c2be786afe243c433df7f558081c211378d45124e9`, manifest list `sha256:4bc44a5d9fed735da38e1a71c5754e277afd502eed7ae094312c4740b40b9aa0`. Covering suite: **22 passed in 5.43s**, exit 0; includes previous preservation/sanitization and historical successful migration paths. Static output: `All checks passed!`, `1 file already formatted`, exit 0. Diff whitespace check clean. The full 225/214 lanes were not repeated for this bounded guard-only fix, as directed.
+
+Self-review: guard is before all DDL, retains tenant/type/Source qualification, rejects both active and inactive deleted-Source chunks without deleting them, and does not reject valid live NULL linkage. Changed files are only revision 15, its cutover test file and this appended report. No extractor or Task 4 changes, ledger edits, additional revision, default/user data changes, merge or push.
+
+Important scope limit: already-applied intermediate revision-15 databases are **not retroactively revalidated** by changing this unreleased preflight. The owned synthetic main instance remains at 15; regression tests use fresh isolated revision-14 databases and leave the owned services for re-review. User/default data is untouched. No unresolved fix blocker.
