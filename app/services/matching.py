@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from app.core.exceptions import ConflictError, ResourceNotFoundError
 from app.domain.enums import MatchStatus
 from app.matching.engine import MatchingEngine
-from app.matching.hybrid import HybridMatchingEngine, HybridTenantContext
+from app.matching.hybrid import HybridMatchingEngine, HybridTenantContext, combine_scores
 from app.matching.schemas import CandidateJob
 from app.models.matching import MatchResult, MatchRun
 from app.repositories.ports import MatchingRepository
@@ -202,37 +202,139 @@ class MatchingService:
                     hits,
                 )
             except Exception:
-                enriched.append(
-                    item.model_copy(
-                        update={
-                            "grounding_status": "rules_fallback",
-                            "fallback_reason": item.fallback_reason or "guidance_retrieval_unavailable",
-                        }
-                    )
-                )
+                explanation = None
+
+            semantic_ids = frozenset(citation for citation in item.citations if isinstance(citation, str))
+            explanation_ids = frozenset(explanation.citations) if explanation is not None else frozenset()
+            requested_ids = semantic_ids | explanation_ids
+            try:
+                resolved = self.source_index.resolve_active_citations(scope, requested_ids) if requested_ids else []
+            except Exception:
+                enriched.append(self._unresolved_guidance_fallback(item))
                 continue
-            used_ids = set(item.citations)
-            used_ids.update(explanation.citations)
-            citations = [self._citation_payload(hit) for hit in hits if hit.citation_id in used_ids]
-            guidance = explanation.model_dump(mode="json", exclude={"citations", "interview_questions"})
+            by_citation = {
+                hit.citation_id: hit
+                for hit in resolved
+                if hit.citation_id in requested_ids
+                and (hit.source_type, hit.source_id, hit.source_version) in scope.authorized_sources
+            }
+            semantic_is_valid = self._semantic_citations_are_current(
+                semantic_ids,
+                by_citation,
+                resume_id,
+                item.job_version_id,
+            )
+            semantic_failed = item.semantic_score is not None and not semantic_is_valid
+            semantic_score = None if semantic_failed else item.semantic_score
+            semantic_payload_ids = semantic_ids if semantic_score is not None else frozenset()
+
+            if explanation is None:
+                guidance = {}
+                questions = []
+                explanation_payload_ids = frozenset()
+                explanation_status = "rules_fallback"
+                explanation_summary = None
+            else:
+                (
+                    guidance,
+                    questions,
+                    explanation_payload_ids,
+                    explanation_status,
+                    explanation_summary,
+                ) = self._resolved_guidance(explanation, frozenset(by_citation) & explanation_ids)
+
+            payload_ids = semantic_payload_ids | explanation_payload_ids
+            citations = [self._citation_payload(by_citation[citation_id]) for citation_id in sorted(payload_ids)]
             update = {
                 "citations": citations,
                 "grounded_explanation": guidance,
-                "interview_questions": [
-                    question.model_dump(mode="json") for question in explanation.interview_questions
-                ],
+                "interview_questions": questions,
+                "semantic_score": semantic_score,
+                "total_score": combine_scores(item.rule_score, semantic_score),
                 "grounding_status": (
-                    "rules_fallback" if getattr(item, "semantic_score", None) is None else explanation.grounding_status
+                    "rules_fallback" if semantic_score is None or explanation is None else explanation_status
                 ),
                 "fallback_reason": (
-                    item.fallback_reason
-                    or (None if explanation.grounding_status == "grounded" else explanation.grounding_status)
+                    "invalid_semantic_citations"
+                    if semantic_failed
+                    else item.fallback_reason
+                    or (
+                        "guidance_retrieval_unavailable"
+                        if explanation is None
+                        else None
+                        if explanation_status == "grounded"
+                        else explanation_status
+                    )
                 ),
             }
-            if explanation.summary is not None:
-                update["summary"] = explanation.summary.text
+            if explanation_summary is not None:
+                update["summary"] = explanation_summary.text
             enriched.append(item.model_copy(update=update))
-        return enriched
+        return sorted(enriched, key=lambda recommendation: (-recommendation.total_score, recommendation.job_id))
+
+    @staticmethod
+    def _semantic_citations_are_current(semantic_ids, by_citation, resume_id, job_version_id):
+        if not semantic_ids or not semantic_ids <= by_citation.keys():
+            return False
+        semantic_hits = [by_citation[citation_id] for citation_id in semantic_ids]
+        return any(hit.source_type == "resume" and hit.source_id == resume_id for hit in semantic_hits) and any(
+            hit.source_type == "job_version" and hit.source_id == job_version_id for hit in semantic_hits
+        )
+
+    @staticmethod
+    def _resolved_guidance(explanation, resolved_ids):
+        rejected = False
+
+        def claim(item):
+            nonlocal rejected
+            if item is None:
+                return None
+            if item.citation_ids and not set(item.citation_ids) <= resolved_ids:
+                rejected = True
+                return None
+            return item
+
+        summary = claim(explanation.summary)
+        strengths = [kept for item in explanation.strengths if (kept := claim(item)) is not None]
+        gaps = [kept for item in explanation.gaps if (kept := claim(item)) is not None]
+        risk_flags = [kept for item in explanation.risk_flags if (kept := claim(item)) is not None]
+        questions = [kept for item in explanation.interview_questions if (kept := claim(item)) is not None]
+        claims = [item for item in [summary, *strengths, *gaps, *risk_flags, *questions] if item is not None]
+        used_ids = frozenset(citation_id for item in claims for citation_id in item.citation_ids)
+        if rejected and not claims:
+            status = "empty_model_output"
+        elif rejected:
+            status = "rejected_unsupported_claims"
+        else:
+            status = explanation.grounding_status
+        guidance = {
+            "summary": summary.model_dump(mode="json") if summary is not None else None,
+            "strengths": [item.model_dump(mode="json") for item in strengths],
+            "gaps": [item.model_dump(mode="json") for item in gaps],
+            "risk_flags": [item.model_dump(mode="json") for item in risk_flags],
+            "grounding_status": status,
+        }
+        return (
+            guidance,
+            [item.model_dump(mode="json") for item in questions],
+            used_ids,
+            status,
+            summary,
+        )
+
+    @staticmethod
+    def _unresolved_guidance_fallback(item):
+        return item.model_copy(
+            update={
+                "semantic_score": None,
+                "total_score": combine_scores(item.rule_score, None),
+                "citations": [],
+                "grounded_explanation": {},
+                "interview_questions": [],
+                "grounding_status": "rules_fallback",
+                "fallback_reason": item.fallback_reason or "guidance_retrieval_unavailable",
+            }
+        )
 
     @staticmethod
     def _citation_payload(hit):

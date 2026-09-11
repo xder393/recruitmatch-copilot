@@ -83,7 +83,7 @@ def test_hybrid_mode_persists_score_components(matching_client):
     from app.ai.semantic_matching import SemanticProjectScore
     from app.matching.engine import MatchingEngine
     from app.matching.hybrid import HybridMatchingEngine
-    from app.ai.explanations import GroundedClaim, GroundedExplanation
+    from app.ai.explanations import Citation, GroundedClaim, GroundedExplanation
     from app.retrieval import RetrievedChunk
 
     class Semantic:
@@ -92,7 +92,7 @@ def test_hybrid_mode_persists_score_components(matching_client):
                 score=75,
                 rationale="项目证据匹配",
                 resume_citation_ids=["resume-citation"],
-                job_citation_ids=["job-citation"],
+                job_citation_ids=["job_version-citation"],
             )
 
     class Explanation:
@@ -101,13 +101,24 @@ def test_hybrid_mode_persists_score_components(matching_client):
         def generate(self, scope, resume_id, job_version_id, rule_result, hits):
             resume_citation = next(hit.citation_id for hit in hits if hit.source_type == "resume")
             job_citation = next(hit.citation_id for hit in hits if hit.source_type == "job_version")
+            by_id = {hit.citation_id: hit for hit in hits}
             return GroundedExplanation(
                 summary=GroundedClaim(text="项目与岗位有可核验证据", citation_ids=[resume_citation, job_citation]),
                 strengths=[GroundedClaim(text="Python 项目匹配", citation_ids=[resume_citation])],
                 interview_questions=[
                     GroundedClaim(text="请说明该项目的职责边界", citation_ids=[resume_citation, job_citation])
                 ],
-                citations={},
+                citations={
+                    citation_id: Citation(
+                        source_type=by_id[citation_id].source_type,
+                        source_id=by_id[citation_id].source_id,
+                        content=by_id[citation_id].content,
+                        start_offset=by_id[citation_id].start_offset,
+                        end_offset=by_id[citation_id].end_offset,
+                        page_number=by_id[citation_id].page_number,
+                    )
+                    for citation_id in [resume_citation, job_citation]
+                },
                 grounding_status="grounded",
             )
 
@@ -132,6 +143,9 @@ def test_hybrid_mode_persists_score_components(matching_client):
                 for source_type, source_id, source_version in scope.authorized_sources
                 if source_type in {"resume", "job_version"}
             ]
+
+        def resolve_active_citations(self, scope, citation_ids):
+            return [hit for hit in self.search(scope) if hit.citation_id in citation_ids]
 
     client, resume_id = matching_client
     client.app.state.hybrid_matching_engine = HybridMatchingEngine(MatchingEngine(), Semantic())
