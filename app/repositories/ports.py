@@ -6,13 +6,31 @@ offer a generic CRUD surface and do not expose an ORM session.
 
 from __future__ import annotations
 
-from datetime import datetime
+from contextlib import AbstractContextManager
+from datetime import datetime, timedelta
 from dataclasses import dataclass
 from typing import Any, List, Protocol
 
 from app.ai.contracts import ModelRequest, ModelResponse
 from app.artifacts.ports import ArtifactLocation
 from app.domain.artifacts import ArtifactErrorCode, ArtifactOwnerType
+from app.processing.outcomes import ClaimedLease, ClaimResult
+
+
+class LeaseRepository(Protocol):
+    def claim(
+        self, tenant_id: str, source_type: ArtifactOwnerType | str, source_id: str, owner: str, *, duration: timedelta
+    ) -> ClaimResult: ...
+    def renew(self, lease: ClaimedLease, *, duration: timedelta) -> bool: ...
+    def finalize(self, lease: ClaimedLease) -> bool: ...
+    def fail(self, lease: ClaimedLease, error_code: str, *, next_retry_at: datetime | None = None) -> bool: ...
+    def finalize_owned(self, lease: ClaimedLease) -> AbstractContextManager[None]:
+        """Guard derived writes and success; commit UoW only AFTER successful exit.
+
+        Raises LeaseOwnershipLost on an entry/exit fence failure, rolling back
+        writes made inside the context. Never commits the caller's transaction.
+        """
+        ...
 
 
 class RepositoryConflictError(Exception):

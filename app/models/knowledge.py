@@ -7,11 +7,13 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from sqlalchemy import (
+    BigInteger,
     CheckConstraint,
     Computed,
     DateTime,
     ForeignKey,
     ForeignKeyConstraint,
+    func,
     Integer,
     String,
     UniqueConstraint,
@@ -62,6 +64,14 @@ class KnowledgeDocument(Base):
     active_generation = synonym("active_index_generation")
     error_code: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     error_message: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    processing_attempts: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
+    processing_lease_epoch: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0", nullable=False)
+    processing_lease_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    processing_lease_owner: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    next_retry_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    queued_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow, server_default=func.now(), nullable=False
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=_utcnow, onupdate=_utcnow, nullable=False

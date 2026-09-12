@@ -11,6 +11,7 @@ from app.repositories.ports import (
     IdentityRepository,
     JobRepository,
     KnowledgeRepository,
+    LeaseRepository,
     MatchingRepository,
     ModelTraceRepository,
     ResumeRepository,
@@ -28,6 +29,7 @@ class RecruitingUnitOfWork(UnitOfWork, Protocol):
     feedback: FeedbackRepository
     jobs: JobRepository
     knowledge: KnowledgeRepository
+    leases: LeaseRepository
     matching: MatchingRepository
     model_traces: ModelTraceRepository
     resumes: ResumeRepository

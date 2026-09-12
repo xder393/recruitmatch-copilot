@@ -6,6 +6,7 @@ from contextlib import AbstractContextManager
 from typing import Callable
 
 from sqlalchemy.exc import IntegrityError
+from app.processing.leases import LeaseRepository
 
 from app.repositories.feedback import FeedbackRepository
 from app.repositories.artifacts import ArtifactRepository
@@ -30,6 +31,7 @@ class SqlAlchemyUnitOfWork(AbstractContextManager["SqlAlchemyUnitOfWork"], Recru
         self.feedback = FeedbackRepository(session)
         self.jobs = JobRepository(session)
         self.knowledge = KnowledgeRepository(session)
+        self.leases = LeaseRepository(session)
         self.matching = MatchingRepository(session)
         self.model_traces = ModelTraceWriter(session)
         self.resumes = ResumeRepository(session)

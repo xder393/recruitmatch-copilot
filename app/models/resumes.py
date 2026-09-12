@@ -7,12 +7,14 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 from sqlalchemy import (
+    BigInteger,
     Computed,
     CheckConstraint,
     DateTime,
     Enum,
     ForeignKey,
     ForeignKeyConstraint,
+    func,
     Integer,
     JSON,
     String,
@@ -61,6 +63,14 @@ class Resume(Base):
     profile: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
     error_code: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     error_message: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    processing_attempts: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
+    processing_lease_epoch: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0", nullable=False)
+    processing_lease_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    processing_lease_owner: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    next_retry_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    queued_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow, server_default=func.now(), nullable=False
+    )
     search_index_status: Mapped[str] = mapped_column(String(30), default="pending", nullable=False)
     search_index_error_code: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     search_indexed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)

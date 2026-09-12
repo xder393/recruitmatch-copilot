@@ -333,7 +333,7 @@ def test_claim_rejects_invalid_metadata_without_partial_write(postgres_engine, t
 
 def test_schema_has_new_head_and_nullable_source_anchors(postgres_engine):
     with postgres_engine.connect() as connection:
-        assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "20260911_17"
+        assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "20260912_18"
         for table in ("resumes", "knowledge_documents"):
             assert (
                 connection.scalar(
