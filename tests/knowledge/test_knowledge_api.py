@@ -239,3 +239,47 @@ def test_reindex_invalidates_old_execution_without_resetting_epoch(client, knowl
         assert row.processing_lease_owner is None and row.processing_lease_expires_at is None
         assert row.next_retry_at is None and row.error_code is None
         assert row.queued_at.replace(tzinfo=timezone.utc) > before
+
+
+@pytest.mark.parametrize("repair_mode", ["invalid_parsed_pair", "no_indexer"])
+def test_source_backfill_reports_failed_repair_and_retains_prior_retrieval(client, knowledge_app, repair_mode):
+    from app.domain.enums import ResumeStatus
+    from app.resumes.parser import HeuristicResumeParser
+    from app.services.resume_processing import ResumeProcessingService
+
+    tenant_id = _login(client, "Repair Tenant", "repair@acme.test")
+    uploaded = client.post("/api/v1/resumes", files={"file": ("resume.txt", b"Python FastAPI", "text/plain")})
+    assert uploaded.status_code == 202
+    resume_id = uploaded.json()["id"]
+    with knowledge_app.state.session_factory() as session:
+        row = session.get(Resume, resume_id)
+        version, old_generation = row.sha256, row.active_index_generation
+        assert row.status == ResumeStatus.SUCCEEDED and old_generation == 1
+        if repair_mode == "invalid_parsed_pair":
+            row.profile = {}
+            session.commit()
+    old_hits = _search(knowledge_app, tenant_id, "resume", resume_id, version, "Python")
+    assert old_hits
+    if repair_mode == "no_indexer":
+        knowledge_app.state.resume_processor = ResumeProcessingService(
+            knowledge_app.state.uow_factory, knowledge_app.state.artifact_store, HeuristicResumeParser()
+        )
+
+    response = client.post("/api/v1/knowledge-documents/rebuild-sources")
+
+    assert response.status_code == 200
+    with knowledge_app.state.session_factory() as session:
+        row = session.get(Resume, resume_id)
+        assert row.active_index_generation == old_generation
+        assert row.search_index_status == "ready" and row.search_index_error_code is None
+        if repair_mode == "invalid_parsed_pair":
+            assert row.status == ResumeStatus.FAILED
+            assert row.error_code == "resume_parsed_state_invalid"
+            assert row.extracted_text == "Python FastAPI" and row.profile == {}
+        else:
+            assert row.status == ResumeStatus.SUCCEEDED
+    retained_hits = _search(knowledge_app, tenant_id, "resume", resume_id, version, "Python")
+    assert [(hit.citation_id, hit.generation) for hit in retained_hits] == [
+        (hit.citation_id, hit.generation) for hit in old_hits
+    ]
+    assert response.json() == {"resumes_indexed": 0, "job_versions_indexed": 0, "failed": 1}

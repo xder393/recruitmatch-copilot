@@ -53,6 +53,7 @@ class SourceIndexBackfillService:
                 self.uow.rollback()
                 result["failed"] += 1
                 continue
+            target_generation = current.active_index_generation + 1
             current.status = ResumeStatus.QUEUED
             current.processing_attempts = 0
             current.processing_lease_owner = current.processing_lease_expires_at = None
@@ -64,6 +65,8 @@ class SourceIndexBackfillService:
             if (
                 outcome == ProcessDisposition.COMPLETED
                 and current is not None
+                and current.status == ResumeStatus.SUCCEEDED
+                and current.active_index_generation >= target_generation
                 and current.search_index_status == "ready"
                 and current.search_index_error_code is None
             ):
