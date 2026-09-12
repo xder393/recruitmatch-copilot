@@ -12,7 +12,7 @@ from collections.abc import Iterator
 
 from sqlalchemy import String, cast, select, update, delete, or_, exists, func
 from sqlalchemy.dialects.postgresql import JSONB, JSONPATH
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError, DisconnectionError, TimeoutError as PoolTimeoutError
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import ColumnElement
 
@@ -24,6 +24,7 @@ from app.models.retrieval import RecruitingChunk
 from app.models.matching import MatchRun, MatchResult
 from app.processing.leases import LeaseRepository
 from app.processing.outcomes import ClaimedLease, LeaseOwnershipLost
+from app.repositories.ports import PersistenceUnavailable
 from app.retrieval.ports import EMBEDDING_DIMENSION, EMBEDDING_NORM_TOLERANCE, RECRUITING_SOURCE_TYPES
 
 
@@ -243,15 +244,18 @@ class GenerationWriter:
     @contextmanager
     def _transaction(self, source: SourceRef, fencing_token: ClaimedLease | None) -> Iterator[Session]:
         self._validate_fencing(source, fencing_token)
-        with self.session_factory() as session, session.begin():
-            if fencing_token is None:
-                yield session
-            else:
-                with LeaseRepository(session).owned(fencing_token):
-                    try:
-                        yield session
-                    except SourceNotFoundError:
-                        raise LeaseOwnershipLost("processing_source_unavailable") from None
+        try:
+            with self.session_factory() as session, session.begin():
+                if fencing_token is None:
+                    yield session
+                else:
+                    with LeaseRepository(session).owned(fencing_token):
+                        try:
+                            yield session
+                        except SourceNotFoundError:
+                            raise LeaseOwnershipLost("processing_source_unavailable") from None
+        except (OperationalError, DisconnectionError, PoolTimeoutError) as exc:
+            raise PersistenceUnavailable("database_unavailable") from exc
 
     def reconcile_staging(self, source: SourceRef, generation: int, *, fencing_token: ClaimedLease) -> int:
         """A new claimant may reclaim bounded, unreferenced, never-published N+1."""

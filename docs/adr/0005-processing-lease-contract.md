@@ -173,3 +173,113 @@ repair that does not reread the object. Resume/Knowledge upload and reconciliati
 deliveries, Knowledge reindex, inline API dispatch and Celery all enter the same
 lease-aware processors. Synchronous JobVersion create/update/backfill stays on
 SourceIndexer.index.
+
+## Task 3: bounded delivery and retry policy
+
+The default processing budget is five successful PostgreSQL claims per operator
+cycle, including claims followed by crashes or lease expiry. Both processors pass
+the configured budget to `leases.claim(..., duration=..., max_attempts=5)`.
+The repository checks that budget under the same Source→Artifact locks as claim.
+A live fifth-attempt duplicate remains an unchanged DUPLICATE_ACTIVE. An eligible
+queued or expired RUNNING row already at the budget becomes FAILED with
+`processing_attempts_exhausted`, no due time, cleared owner/expiry, and unchanged
+attempts/epoch. Claim returns TERMINAL in that case. **Callers must commit even
+non-CLAIMED results**; both processors do so. No ordinary FAILED delivery reopens
+work. An explicit operator reindex may start a new attempt budget as described
+above; automatic retry/recovery must never reset attempts or epoch.
+
+`RetryPolicy(max_attempts=5, short_seconds=30, long_seconds=300)` is injected into
+both API and Worker processors. `leases.schedule_retry(lease, error_code, *,
+short_delay, long_delay, max_attempts)` accepts only `storage_unavailable`,
+`embedding_failed`, and `processing_timeout`. It validates the exact current
+tenant/type/Source/Artifact/owner/epoch, active lifecycle, AVAILABLE Artifact and
+unexpired database lease, using clock_timestamp() after lock acquisition. A lost
+guard returns LEASE_LOST with no mutation. Caller owns commit. When recording an
+index error beforehand in the same UoW, losing the retry fence rolls back that
+entire transaction, including the index error.
+
+The guarded policy has these explicit state edges:
+
+| Failure at claim attempt | Durable transition | Processing outcome / dispatch |
+| --- | --- | --- |
+| 1 or 2, transient, below budget | RUNNING → QUEUED (Knowledge uploaded), bounded error, next_retry_at=DB clock+30s, queued_at=DB clock, cleared lease | RETRY_SHORT; after commit, Celery publishes a 30s countdown |
+| 3 or 4, transient, below budget | RUNNING → FAILED, bounded error, next_retry_at=DB clock+300s, cleared lease | COMPLETED / ACK; Beat later explicitly requeues |
+| At budget, transient | RUNNING → FAILED, original bounded failure code, no due time, cleared lease | COMPLETED / ACK, no automatic retry |
+| Permanent | RUNNING → FAILED, bounded permanent code, no due time, cleared lease | COMPLETED / ACK |
+
+The short transition is a deliberate recovery decision made by the current lease
+owner, atomically recording failure and requeue. It does not make arbitrary
+FAILED deliveries eligible. Its next_retry_at is execution eligibility, not a
+dispatch cooldown: an early duplicate returns DEFERRED, and a due QUEUED delivery
+can claim normally. Every actual claim increments both epoch and attempts. Broker
+request.retries is informational; task max_retries=None deliberately avoids a
+second competing budget. Only the committed RETRY_SHORT outcome creates a bounded
+countdown; no other ProcessDisposition retries. Long waits never use countdown.
+
+Task 4 consumes `leases.requeue_due(tenant_id, source_type, source_id, *,
+expected_epoch, expected_artifact_id, max_attempts) -> bool`. Its bounded scan
+must select active FAILED sources with a known transient error, non-null due
+next_retry_at, and attempts below the configured cap. The transition independently
+relocks Source→exact Artifact and rechecks all of those conditions, the snapshot's
+epoch and Artifact ID, and AVAILABLE owner-linked Artifact state against database
+wall clock. Success consumes the snapshot once: FAILED→QUEUED/uploaded, new
+queued_at, cleared next_retry_at/owner/expiry, preserved error/attempts/epoch. It
+does not process or dispatch. Caller commits first, then dispatches the ordinary
+tenant/Source task; two concurrent consumers cannot both requeue the same snapshot.
+
+Crash and dispatch windows remain recoverable in PostgreSQL:
+
+- Before retry persistence commits, rollback leaves the prior RUNNING lease for
+  expiry recovery. Database inability to record failure must not fabricate FAILED.
+- After a short retry commits but before/during publish, the due QUEUED row remains
+  discoverable by Task 4's stale-queue scanner. Celery's failed retry publish raises
+  Reject; the wrapper ACKs it and records only `processing_dispatch_unavailable`.
+- A long FAILED retry stays terminal until requeue_due commits. Death or publish
+  failure after that commit leaves QUEUED, also recoverable by the stale-queue lane.
+- Worker hard termination leaves the prior lease. Redelivery and recovery claims
+  use the same cap. Beat must not advance RUNNING or reset attempts itself.
+- Beat must exclude future next_retry_at from queued redispatch, and must not
+  refresh queued_at simply to pace repeated publishes. That timestamp measures
+  the real queue cycle. Task 4 owns separate bounded dispatch pacing, scans and
+  stable dispatch-failure recording; this task adds no scheduler or schema.
+
+Ordinary Resume recovery continues to infer index-only repair from the complete
+persisted valid text/profile pair; no message mode flag exists. Resume embedding
+soft failure still atomically preserves deterministic parsing and trace results,
+with an index error for later bounded repair. Knowledge embedding failure records
+the index error and retry decision together while retaining any older retrievable
+generation. Malformed parse state and validation failures remain permanent.
+LLM gateway retries/fallback stay unchanged and do not create business task retries.
+Worker soft timeout types are injected into processors, so services import no
+Celery or billiard implementation. A timeout during embedding is unwrapped from
+the embedding-only exception and handled by the same lease-fenced retry policy.
+
+Only the SQL UoW and independent GenerationWriter transaction boundaries translate
+SQLAlchemy OperationalError, DisconnectionError and pool TimeoutError into
+PersistenceUnavailable, retaining the original exception as cause. This covers
+connection/transaction interruptions, including a real closed PostgreSQL
+connection. ProgrammingError, data/schema/type faults and unknown exceptions are
+not classified as recoverable database outages. Indexing catches only known
+generation/validation failures or EmbeddingFailure from the external embed call;
+database/unknown writer faults therefore cannot become embedding soft success.
+The Celery wrapper ACKs PersistenceUnavailable with the bounded log code
+`processing_database_unavailable`, leaving database recovery authoritative.
+Other unhandled faults produce an actual Celery FAILURE using only
+`ProcessingTaskFailed("processing_task_failed")`; arguments are redacted from
+task log context and free exception text is suppressed. No error result is stored.
+These narrow task protections do not complete CP5's full telemetry privacy work.
+
+Default timing seconds: lease 300, soft limit 540, hard limit 600, Redis visibility
+900, safety margin 30, maximum countdown 30, long durable retry 300. Settings.load
+requires positive finite integers, lease at most 86400, soft<hard,
+visibility>max(hard,short countdown)+margin, and long>short. The strict visibility
+inequality covers countdowns greater than hard limits too. Compose passes all
+eight timing/budget fields to API/Worker and the integration test service.
+
+Actual Celery configuration enables late ACK, reject-on-worker-loss, prefetch 1,
+ignore_result and both worker time limits. The Redis transport and top-level
+visibility setting agree. No result backend is configured, ignored errors are
+not persisted, and nonempty CELERY_RESULT_BACKEND is rejected at startup because
+Celery otherwise lets that environment variable override its explicit config.
+Automatic broker publish retries are disabled; the database recovery paths above
+handle failed publishing. There is no Redis business status or result polling.

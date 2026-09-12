@@ -37,7 +37,7 @@ class FakeLeaseRepository:
     def _running(row):
         return row.status == (ResumeStatus.RUNNING if isinstance(row, Resume) else "processing")
 
-    def claim(self, tenant_id, source_type, source_id, owner, *, duration):
+    def claim(self, tenant_id, source_type, source_id, owner, *, duration, max_attempts=5):
         row = self._source(tenant_id, source_type, source_id)
         if row is None or row.lifecycle_status != "active":
             return ClaimResult(ClaimDisposition.TERMINAL)
@@ -48,6 +48,12 @@ class FakeLeaseRepository:
             return ClaimResult(ClaimDisposition.DUPLICATE_ACTIVE)
         if not self._available(row, source_type) or (row.next_retry_at and aware(row.next_retry_at) > now):
             return ClaimResult(ClaimDisposition.DEFERRED)
+        if row.processing_attempts >= max_attempts:
+            row.status = ResumeStatus.FAILED if isinstance(row, Resume) else "failed"
+            row.error_code = "processing_attempts_exhausted"
+            row.processing_lease_owner = row.processing_lease_expires_at = row.next_retry_at = None
+            self.session.flush()
+            return ClaimResult(ClaimDisposition.TERMINAL)
         row.status = ResumeStatus.RUNNING if isinstance(row, Resume) else "processing"
         row.processing_attempts += 1
         row.processing_lease_epoch += 1
@@ -111,6 +117,23 @@ class FakeLeaseRepository:
 
     def fail(self, lease, error_code, *, next_retry_at=None):
         return self._terminal(lease, error_code, next_retry_at)
+
+    def schedule_retry(self, lease, error_code, *, short_delay, long_delay, max_attempts):
+        from app.processing.outcomes import ProcessDisposition
+
+        row = self._owned(lease)
+        if row is None:
+            return ProcessDisposition.LEASE_LOST
+        attempts = row.processing_attempts
+        now = datetime.now(timezone.utc)
+        retry = now + (short_delay if attempts <= 2 else long_delay) if attempts < max_attempts else None
+        self._terminal(lease, error_code, retry)
+        if retry is not None and attempts <= 2:
+            row.status = ResumeStatus.QUEUED if isinstance(row, Resume) else "uploaded"
+            row.queued_at = now
+            self.session.flush()
+            return ProcessDisposition.RETRY_SHORT
+        return ProcessDisposition.COMPLETED
 
     @contextmanager
     def _guard(self, lease, terminal):

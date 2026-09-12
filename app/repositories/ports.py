@@ -14,13 +14,39 @@ from typing import Any, List, Protocol
 from app.ai.contracts import ModelRequest, ModelResponse
 from app.artifacts.ports import ArtifactLocation
 from app.domain.artifacts import ArtifactErrorCode, ArtifactOwnerType
-from app.processing.outcomes import ClaimedLease, ClaimResult
+from app.processing.outcomes import ClaimedLease, ClaimResult, ProcessDisposition
 
 
 class LeaseRepository(Protocol):
     def claim(
-        self, tenant_id: str, source_type: ArtifactOwnerType | str, source_id: str, owner: str, *, duration: timedelta
+        self,
+        tenant_id: str,
+        source_type: ArtifactOwnerType | str,
+        source_id: str,
+        owner: str,
+        *,
+        duration: timedelta,
+        max_attempts: int = 5,
     ) -> ClaimResult: ...
+    def schedule_retry(
+        self,
+        lease: ClaimedLease,
+        error_code: str,
+        *,
+        short_delay: timedelta,
+        long_delay: timedelta,
+        max_attempts: int,
+    ) -> ProcessDisposition: ...
+    def requeue_due(
+        self,
+        tenant_id: str,
+        source_type: ArtifactOwnerType | str,
+        source_id: str,
+        *,
+        expected_epoch: int,
+        expected_artifact_id: str,
+        max_attempts: int,
+    ) -> bool: ...
     def renew(self, lease: ClaimedLease, *, duration: timedelta) -> bool: ...
     def finalize(self, lease: ClaimedLease) -> bool: ...
     def fail(self, lease: ClaimedLease, error_code: str, *, next_retry_at: datetime | None = None) -> bool: ...
@@ -36,6 +62,10 @@ class LeaseRepository(Protocol):
 
 class RepositoryConflictError(Exception):
     """A persistence uniqueness conflict safe for application handling."""
+
+
+class PersistenceUnavailable(Exception):
+    """A recoverable database connection/transaction failure; original cause retained."""
 
 
 @dataclass(frozen=True)

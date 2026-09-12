@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
-import os
+import logging
 from dataclasses import dataclass
 
 from celery import Celery  # type: ignore[import-untyped]
+from celery.exceptions import Reject  # type: ignore[import-untyped]
+from billiard.exceptions import SoftTimeLimitExceeded  # type: ignore[import-untyped]
 
 from app.config import Settings
 from app.database import create_engine_and_session
@@ -22,6 +24,14 @@ from app.retrieval.generations import GenerationWriter
 from app.retrieval.indexing import EmbeddingAdapter, SourceIndexer
 from app.retrieval.pgvector_index import PgVectorRecruitingIndex
 from app.processing.outcomes import ProcessDisposition
+from app.processing.retry import RetryPolicy
+from app.repositories.ports import PersistenceUnavailable
+
+logger = logging.getLogger(__name__)
+
+
+class ProcessingTaskFailed(Exception):
+    """A task fault safe for the Celery failure log; business recovery stays in PostgreSQL."""
 
 
 @dataclass(frozen=True)
@@ -53,6 +63,9 @@ def build_worker_dependencies(
         else fallback_parser
     )
     uow_factory = SqlAlchemyUnitOfWorkFactory(session_factory)
+    retry_policy = RetryPolicy(
+        settings.processing_max_attempts, settings.retry_short_seconds, settings.retry_long_seconds
+    )
     artifact_store = artifact_store if artifact_store is not None else S3ArtifactStore(S3Settings.from_env().client())
     return WorkerDependencies(
         resume_processor=ResumeProcessingService(
@@ -60,36 +73,68 @@ def build_worker_dependencies(
             artifact_store,
             parser,
             source_indexer=source_indexer,
+            lease_seconds=settings.processing_lease_seconds,
+            retry_policy=retry_policy,
+            timeout_errors=(TimeoutError, SoftTimeLimitExceeded),
         ),
         knowledge_processor=KnowledgeProcessingService(
             uow_factory,
             artifact_store,
             source_indexer,
+            lease_seconds=settings.processing_lease_seconds,
+            retry_policy=retry_policy,
+            timeout_errors=(TimeoutError, SoftTimeLimitExceeded),
         ),
         retrieval_index=retrieval_index,
         source_indexer=source_indexer,
     )
 
 
-celery_app = Celery("recruitmatch", broker=os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0"))
+settings = Settings.load()
+celery_app = Celery("recruitmatch", broker=settings.celery_broker_url, backend=None)
 celery_app.conf.update(
     task_acks_late=True,
     task_reject_on_worker_lost=True,
     worker_prefetch_multiplier=1,
+    task_ignore_result=True,
+    task_store_errors_even_if_ignored=False,
+    result_backend=None,
+    task_soft_time_limit=settings.task_soft_time_limit,
+    task_time_limit=settings.task_hard_time_limit,
+    broker_transport_options={"visibility_timeout": settings.redis_visibility_timeout},
+    visibility_timeout=settings.redis_visibility_timeout,
+    task_publish_retry=False,
 )
 
 
-@celery_app.task(bind=True, name="recruitmatch.process_resume", max_retries=10)
+def _deliver(task, tenant_id: str, source_id: str, kind: str) -> None:
+    task.request.argsrepr = "[redacted]"
+    task.request.kwargsrepr = "[redacted]"
+    try:
+        settings = Settings.load()
+        dependencies = build_worker_dependencies(settings)
+        processor = dependencies.resume_processor if kind == "resume" else dependencies.knowledge_processor
+        outcome = processor.process(tenant_id, source_id)
+    except PersistenceUnavailable:
+        logger.warning("processing_database_unavailable")
+        return
+    except Exception:
+        # Preserve a genuine Celery FAILURE without serializing exception text or arguments.
+        raise ProcessingTaskFailed("processing_task_failed") from None
+    if outcome == ProcessDisposition.RETRY_SHORT:
+        try:
+            raise task.retry(countdown=settings.retry_short_seconds)
+        except Reject:
+            # Celery wraps a failed retry publish in Reject. The committed QUEUED
+            # row remains eligible for bounded Beat recovery after its due time.
+            logger.warning("processing_dispatch_unavailable")
+
+
+@celery_app.task(bind=True, name="recruitmatch.process_resume", max_retries=None, throws=(ProcessingTaskFailed,))
 def process_resume_task(self, tenant_id: str, resume_id: str) -> None:
-    settings = Settings.load()
-    dependencies = build_worker_dependencies(settings)
-    if dependencies.resume_processor.process(tenant_id, resume_id) == ProcessDisposition.RETRY_SHORT:
-        raise self.retry(countdown=60)
+    _deliver(self, tenant_id, resume_id, "resume")
 
 
-@celery_app.task(bind=True, name="recruitmatch.process_knowledge", max_retries=10)
+@celery_app.task(bind=True, name="recruitmatch.process_knowledge", max_retries=None, throws=(ProcessingTaskFailed,))
 def process_knowledge_task(self, tenant_id: str, document_id: str) -> None:
-    settings = Settings.load()
-    dependencies = build_worker_dependencies(settings)
-    if dependencies.knowledge_processor.process(tenant_id, document_id) == ProcessDisposition.RETRY_SHORT:
-        raise self.retry(countdown=60)
+    _deliver(self, tenant_id, document_id, "knowledge_document")

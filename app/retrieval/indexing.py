@@ -38,6 +38,10 @@ class EmbeddingAdapter(Protocol):
     def embed_query(self, text: str) -> list[float]: ...
 
 
+class EmbeddingFailure(RuntimeError):
+    """Only an external embedding call failed, before any persistence operation."""
+
+
 class GenerationPublicationPort(Protocol):
     def activate(
         self,
@@ -94,7 +98,12 @@ class SourceIndexer:
     ) -> int:
         if not chunks:
             raise ValueError("at least one source chunk is required")
-        vectors = self.embedder.embed_documents([chunk.content for chunk in chunks])
+        try:
+            vectors = self.embedder.embed_documents([chunk.content for chunk in chunks])
+        except (ValueError, LeaseOwnershipLost):
+            raise
+        except Exception as exc:
+            raise EmbeddingFailure("embedding_failed") from exc
         if len(vectors) != len(chunks) or any(not vector for vector in vectors):
             raise ValueError("embedding adapter must return one complete vector per chunk")
         staged = [

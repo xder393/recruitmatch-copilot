@@ -91,8 +91,26 @@ def init_recruiting_state(
         source_indexer = SourceIndexer(GenerationWriter(session_factory), embedder)
     uow_factory = uow_factory or SqlAlchemyUnitOfWorkFactory(session_factory)
     app.state.uow_factory = uow_factory
-    processor = ResumeProcessingService(uow_factory, artifact_store, parser, source_indexer=source_indexer)
-    knowledge_processor = KnowledgeProcessingService(uow_factory, artifact_store, source_indexer)
+    from app.processing.retry import RetryPolicy
+
+    retry_policy = RetryPolicy(
+        settings.processing_max_attempts, settings.retry_short_seconds, settings.retry_long_seconds
+    )
+    processor = ResumeProcessingService(
+        uow_factory,
+        artifact_store,
+        parser,
+        source_indexer=source_indexer,
+        lease_seconds=settings.processing_lease_seconds,
+        retry_policy=retry_policy,
+    )
+    knowledge_processor = KnowledgeProcessingService(
+        uow_factory,
+        artifact_store,
+        source_indexer,
+        lease_seconds=settings.processing_lease_seconds,
+        retry_policy=retry_policy,
+    )
     ai_trace_sink = AITraceSink(uow_factory)
     app.state.artifact_store = artifact_store
     app.state.resume_processor = processor

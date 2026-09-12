@@ -14,7 +14,8 @@ from app.domain.enums import ResumeStatus
 from app.models.artifacts import Artifact
 from app.models.knowledge import KnowledgeDocument
 from app.models.resumes import Resume
-from app.processing.outcomes import ClaimedLease, ClaimDisposition, ClaimResult, LeaseOwnershipLost
+from app.processing.outcomes import ClaimedLease, ClaimDisposition, ClaimResult, LeaseOwnershipLost, ProcessDisposition
+from app.processing.retry import TRANSIENT_PROCESSING_CODES
 
 Source = Resume | KnowledgeDocument
 
@@ -87,11 +88,19 @@ class LeaseRepository:
         return row.status == (ResumeStatus.RUNNING if isinstance(row, Resume) else "processing")
 
     def claim(
-        self, tenant_id: str, source_type: ArtifactOwnerType | str, source_id: str, owner: str, *, duration: timedelta
+        self,
+        tenant_id: str,
+        source_type: ArtifactOwnerType | str,
+        source_id: str,
+        owner: str,
+        *,
+        duration: timedelta,
+        max_attempts: int = 5,
     ) -> ClaimResult:
         source_type = self._identity(tenant_id, source_type, source_id)
         self._owner(owner)
         self._duration(duration)
+        self._budget(max_attempts)
         with self._session.no_autoflush:
             row = self._locked(tenant_id, source_type, source_id)
             if row is None or row.lifecycle_status != "active":
@@ -110,6 +119,10 @@ class LeaseRepository:
             now = self._now()
             if not available or (row.next_retry_at is not None and row.next_retry_at > now):
                 return ClaimResult(ClaimDisposition.DEFERRED)
+            if row.processing_attempts >= max_attempts:
+                self._failed_row(row, "processing_attempts_exhausted")
+                self._session.flush([row])
+                return ClaimResult(ClaimDisposition.TERMINAL)
             row.status = ResumeStatus.RUNNING if isinstance(row, Resume) else "processing"
             row.processing_attempts += 1
             row.processing_lease_epoch += 1
@@ -130,6 +143,95 @@ class LeaseRepository:
             )
         self._session.flush([row])
         return ClaimResult(ClaimDisposition.CLAIMED, lease)
+
+    @staticmethod
+    def _budget(max_attempts: int) -> None:
+        if type(max_attempts) is not int or max_attempts <= 0:
+            raise ValueError("processing_attempt_budget_invalid")
+
+    @staticmethod
+    def _failed_row(row: Source, code: str) -> None:
+        row.status = ResumeStatus.FAILED if isinstance(row, Resume) else "failed"
+        row.error_code, row.error_message, row.next_retry_at = code, None, None
+        row.processing_lease_owner = row.processing_lease_expires_at = None
+
+    def schedule_retry(
+        self,
+        lease: ClaimedLease,
+        error_code: str,
+        *,
+        short_delay: timedelta,
+        long_delay: timedelta,
+        max_attempts: int,
+    ) -> ProcessDisposition:
+        """Persist failure and its next eligibility under the current lease; caller commits."""
+        self._validate_lease(lease)
+        self._budget(max_attempts)
+        if (
+            not isinstance(short_delay, timedelta)
+            or not isinstance(long_delay, timedelta)
+            or not timedelta(0) < short_delay < long_delay
+        ):
+            raise ValueError("processing_retry_delay_invalid")
+        if error_code not in TRANSIENT_PROCESSING_CODES:
+            raise ValueError("processing_retry_error_invalid")
+        with self._session.no_autoflush:
+            owned = self._owned(lease)
+            if owned is None:
+                return ProcessDisposition.LEASE_LOST
+            row, now = owned
+            self._failed_row(row, error_code)
+            outcome = ProcessDisposition.COMPLETED
+            if row.processing_attempts < max_attempts:
+                short = row.processing_attempts <= 2
+                row.next_retry_at = now + (short_delay if short else long_delay)
+                if short:
+                    row.status = ResumeStatus.QUEUED if isinstance(row, Resume) else "uploaded"
+                    row.queued_at = now
+                    outcome = ProcessDisposition.RETRY_SHORT
+        self._session.flush([row])
+        return outcome
+
+    def requeue_due(
+        self,
+        tenant_id: str,
+        source_type: ArtifactOwnerType | str,
+        source_id: str,
+        *,
+        expected_epoch: int,
+        expected_artifact_id: str,
+        max_attempts: int,
+    ) -> bool:
+        """Consume a due FAILED scan snapshot once. Commit before ordinary dispatch."""
+        source_type = self._identity(tenant_id, source_type, source_id)
+        self._identity(tenant_id, source_type, expected_artifact_id)
+        self._budget(max_attempts)
+        if type(expected_epoch) is not int or not 0 < expected_epoch <= 9223372036854775807:
+            raise ValueError("processing_lease_epoch_invalid")
+        with self._session.no_autoflush:
+            row = self._locked(tenant_id, source_type, source_id)
+            if (
+                row is None
+                or row.lifecycle_status != "active"
+                or row.status != (ResumeStatus.FAILED if isinstance(row, Resume) else "failed")
+                or row.processing_lease_epoch != expected_epoch
+                or row.artifact_id != expected_artifact_id
+                or row.error_code not in TRANSIENT_PROCESSING_CODES
+                or row.processing_attempts >= max_attempts
+                or row.next_retry_at is None
+            ):
+                return False
+            if not self._available(row, source_type):
+                return False
+            now = self._now()
+            if row.next_retry_at > now:
+                return False
+            row.status = ResumeStatus.QUEUED if isinstance(row, Resume) else "uploaded"
+            row.queued_at = now
+            row.next_retry_at = None
+            row.processing_lease_owner = row.processing_lease_expires_at = None
+        self._session.flush([row])
+        return True
 
     def _owned(self, lease: ClaimedLease) -> tuple[Source, datetime] | None:
         row = self._locked(lease.tenant_id, lease.source_type, lease.source_id)

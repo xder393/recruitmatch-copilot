@@ -68,7 +68,7 @@ def test_processing_persists_text_profile_and_success_status(tmp_path):
         assert resume.profile["experience_years"] == 5
 
 
-def test_processing_failure_records_stable_error_without_raising(tmp_path):
+def test_transient_processing_failure_records_durable_retry_without_exception_text(tmp_path):
     """Catches stuck running tasks and unstable storage exception leakage."""
     from app.domain.enums import ResumeStatus
     from app.models.resumes import Resume
@@ -82,8 +82,9 @@ def test_processing_failure_records_stable_error_without_raising(tmp_path):
 
     with factory() as session:
         resume = session.get(Resume, resume_id)
-        assert resume.status is ResumeStatus.FAILED
+        assert resume.status is ResumeStatus.QUEUED
         assert resume.error_code == "storage_unavailable"
+        assert resume.next_retry_at is not None
         assert "disk secret" not in (resume.error_message or "")
 
 

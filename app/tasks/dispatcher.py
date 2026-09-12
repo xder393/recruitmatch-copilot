@@ -34,12 +34,14 @@ class CeleryTaskDispatcher:
     def dispatch_resume(self, tenant_id: str, resume_id: str) -> None:
         from app.tasks.celery_app import process_resume_task
 
-        process_resume_task.delay(tenant_id, resume_id)
+        process_resume_task.apply_async(args=(tenant_id, resume_id), argsrepr="[redacted]", kwargsrepr="[redacted]")
 
     def dispatch_knowledge(self, tenant_id: str, document_id: str) -> None:
         from app.tasks.celery_app import process_knowledge_task
 
-        process_knowledge_task.delay(tenant_id, document_id)
+        process_knowledge_task.apply_async(
+            args=(tenant_id, document_id), argsrepr="[redacted]", kwargsrepr="[redacted]"
+        )
 
 
 def build_task_dispatcher(task_mode: str, resume_processor, knowledge_processor) -> TaskDispatcher:

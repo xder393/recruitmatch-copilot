@@ -136,7 +136,7 @@ def test_processing_duplicate_is_acked_then_expired_work_is_recovered(tmp_path):
         assert document.active_generation == 1
 
 
-def test_failed_reindex_keeps_previous_generation_active(tmp_path):
+def test_transient_reindex_retry_keeps_previous_generation_active(tmp_path, monkeypatch):
     factory, index, source_indexer = _database(tmp_path)
     store, tenant_id, document_id = _stored_document(tmp_path, factory, b"new policy")
     with factory() as session:
@@ -150,12 +150,20 @@ def test_failed_reindex_keeps_previous_generation_active(tmp_path):
         document = KnowledgeRepository(session).get_document(tenant_id, document_id)
         document.status = "uploaded"
         session.commit()
-    KnowledgeProcessingService(_uow_factory(factory, source_indexer), store, BrokenSourceIndexer()).process(
+
+    def embedding_unavailable(texts):
+        raise RuntimeError("embedding secret")
+
+    monkeypatch.setattr(source_indexer.embedder, "embed_documents", embedding_unavailable)
+    result = KnowledgeProcessingService(_uow_factory(factory, source_indexer), store, source_indexer).process(
         tenant_id, document_id
     )
+    assert result.value == "retry_short"
     with factory() as session:
         document = KnowledgeRepository(session).get_document(tenant_id, document_id)
-        assert document.status == "failed"
+        assert document.status == "uploaded"
+        assert document.next_retry_at is not None
+        assert document.error_code == "embedding_failed"
         assert document.active_generation == 1
         assert document.search_index_status == "ready"
         assert "embedding secret" not in (document.error_message or "")

@@ -12,25 +12,44 @@ from app.artifacts.errors import storage_error_code
 from app.knowledge.chunking import chunk_document
 from app.repositories.unit_of_work import UnitOfWorkFactory
 from app.resumes.extractors import extract_text
-from app.retrieval.generations import SourceRef
-from app.retrieval.indexing import SourceIndexer, classify_index_failure
+from app.retrieval.generations import SourceRef, GenerationWriterError
+from app.retrieval.indexing import SourceIndexer, classify_index_failure, EmbeddingFailure
 from app.processing.outcomes import ClaimDisposition, ClaimedLease, LeaseOwnershipLost, ProcessDisposition
 from app.processing.renewal import LeaseRenewer
+from app.processing.retry import RetryPolicy, TRANSIENT_PROCESSING_CODES
 
 
 class KnowledgeProcessingService:
-    lease_seconds = 300
-
-    def __init__(self, uow_factory: UnitOfWorkFactory, artifact_store: ArtifactStore, source_indexer: SourceIndexer):
+    def __init__(
+        self,
+        uow_factory: UnitOfWorkFactory,
+        artifact_store: ArtifactStore,
+        source_indexer: SourceIndexer,
+        *,
+        lease_seconds: int = 300,
+        retry_policy: RetryPolicy | None = None,
+        timeout_errors: tuple[type[Exception], ...] = (TimeoutError,),
+    ):
         self.uow_factory = uow_factory
         self.artifact_store = artifact_store
         self.source_indexer = source_indexer
+        self.lease_seconds = lease_seconds
+        self.retry_policy = retry_policy or RetryPolicy()
+        self.timeout_errors = timeout_errors
 
     def process(self, tenant_id: str, document_id: str) -> ProcessDisposition:
         duration = timedelta(seconds=self.lease_seconds)
         with self.uow_factory() as uow:
-            claim = uow.leases.claim(tenant_id, "knowledge_document", document_id, uuid4().hex, duration=duration)
+            claim = uow.leases.claim(
+                tenant_id,
+                "knowledge_document",
+                document_id,
+                uuid4().hex,
+                duration=duration,
+                max_attempts=self.retry_policy.max_attempts,
+            )
             if claim.disposition != ClaimDisposition.CLAIMED:
+                uow.commit()
                 return ProcessDisposition(claim.disposition.value)
             lease = claim.lease
             assert lease is not None
@@ -62,6 +81,8 @@ class KnowledgeProcessingService:
                 except AppError as exc:
                     renewer.ensure_owned()
                     return self._mark_failed(lease, exc.code)
+                except self.timeout_errors:
+                    raise
                 except Exception:
                     renewer.ensure_owned()
                     return self._mark_failed(lease, "knowledge_processing_failed")
@@ -84,19 +105,37 @@ class KnowledgeProcessingService:
                         uow.commit()
                 except LeaseOwnershipLost:
                     raise
-                except Exception as exc:
+                except (GenerationWriterError, EmbeddingFailure, ValueError) as exc:
+                    if isinstance(exc.__cause__, self.timeout_errors):
+                        raise exc.__cause__ from None
                     renewer.ensure_owned()
-                    return self._mark_failed(lease, "knowledge_indexing_failed", source, classify_index_failure(exc))
+                    index_error = classify_index_failure(exc)
+                    return self._mark_failed(lease, index_error.value, source, index_error)
             return ProcessDisposition.COMPLETED
         except LeaseOwnershipLost:
             return ProcessDisposition.LEASE_LOST
+        except self.timeout_errors:
+            return self._mark_failed(lease, "processing_timeout")
 
     def _mark_failed(self, lease: ClaimedLease, code: str, source=None, index_error=None) -> ProcessDisposition:
         with self.uow_factory() as uow:
             if index_error is not None:
                 with uow.leases.owned(lease):
                     uow.generations.fail(source, index_error, fencing_token=lease)
-            if not uow.leases.fail(lease, code):
-                raise LeaseOwnershipLost("processing_lease_lost")
+            if code in TRANSIENT_PROCESSING_CODES:
+                outcome = uow.leases.schedule_retry(
+                    lease,
+                    code,
+                    short_delay=timedelta(seconds=self.retry_policy.short_seconds),
+                    long_delay=timedelta(seconds=self.retry_policy.long_seconds),
+                    max_attempts=self.retry_policy.max_attempts,
+                )
+            else:
+                outcome = (
+                    ProcessDisposition.COMPLETED if uow.leases.fail(lease, code) else ProcessDisposition.LEASE_LOST
+                )
+            if outcome == ProcessDisposition.LEASE_LOST:
+                uow.rollback()
+                return outcome
             uow.commit()
-        return ProcessDisposition.COMPLETED
+        return outcome
