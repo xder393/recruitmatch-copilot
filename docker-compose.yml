@@ -129,9 +129,9 @@ services:
     volumes:
       - hf-cache-v2:/home/recruitmatch/.cache/huggingface
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/ready', timeout=2)"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/ready', timeout=8)"]
       interval: 15s
-      timeout: 3s
+      timeout: 9s
       retries: 5
     restart: unless-stopped
 
@@ -151,6 +151,25 @@ services:
       - hf-cache-v2:/home/recruitmatch/.cache/huggingface
     healthcheck:
       disable: true
+    restart: unless-stopped
+
+  beat:
+    image: ${COMPOSE_PROJECT_NAME:-recruitmatch}-app
+    build: *runtime-build
+    environment: *app-environment
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    command: celery -A app.tasks.celery_app.celery_app beat --scheduler app.tasks.beat:RecoveryScheduler --loglevel=WARNING
+    volumes:
+      - hf-cache-v2:/home/recruitmatch/.cache/huggingface
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os; from app.operations.heartbeats import OperationsHeartbeats; assert OperationsHeartbeats(os.environ['CELERY_BROKER_URL']).snapshot()['beat'] == 'fresh'"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
     restart: unless-stopped
 
   test-unit:

@@ -34,14 +34,23 @@ class CeleryTaskDispatcher:
     def dispatch_resume(self, tenant_id: str, resume_id: str) -> None:
         from app.tasks.celery_app import process_resume_task
 
-        process_resume_task.apply_async(args=(tenant_id, resume_id), argsrepr="[redacted]", kwargsrepr="[redacted]")
+        self._publish(process_resume_task, (tenant_id, resume_id))
 
     def dispatch_knowledge(self, tenant_id: str, document_id: str) -> None:
         from app.tasks.celery_app import process_knowledge_task
 
-        process_knowledge_task.apply_async(
-            args=(tenant_id, document_id), argsrepr="[redacted]", kwargsrepr="[redacted]"
-        )
+        self._publish(process_knowledge_task, (tenant_id, document_id))
+
+    @staticmethod
+    def _publish(task, args):
+        from kombu.exceptions import OperationalError  # type: ignore[import-untyped]
+        from redis.exceptions import RedisError
+        from app.processing.recovery import RecoveryDispatchUnavailable
+
+        try:
+            task.apply_async(args=args, argsrepr="[redacted]", kwargsrepr="[redacted]")
+        except (OperationalError, RedisError, OSError):
+            raise RecoveryDispatchUnavailable() from None
 
 
 def build_task_dispatcher(task_mode: str, resume_processor, knowledge_processor) -> TaskDispatcher:

@@ -47,7 +47,71 @@ def test_liveness_and_readiness_do_not_require_model_calls(operations_client):
     assert operations_client.get("/api/v1/health/live").json() == {"status": "alive"}
     ready = operations_client.get("/api/v1/health/ready")
     assert ready.status_code == 200
-    assert ready.json() == {"status": "ready", "database": "ok"}
+    assert ready.json() == {
+        "status": "ready",
+        "database": "ok",
+        "schema": "ok",
+        "vector": "ok",
+        "redis": "ok",
+        "bucket": "ok",
+    }
+
+
+def test_worker_stale_degrades_system_but_not_readiness(operations_client):
+    """Missing Workers must not make the otherwise usable API unready."""
+    _login(operations_client, "Acme", "admin@acme.test", "correct horse battery staple")
+    assert operations_client.get("/api/v1/health/ready").status_code == 200
+    response = operations_client.get("/api/v1/health/system")
+    assert response.status_code == 200
+    assert response.json()["worker"] == "stale"
+    assert response.json()["overall"] == "degraded"
+    assert response.json()["telemetry"] == "not_configured"
+
+
+def test_system_health_requires_authentication(operations_client):
+    assert operations_client.get("/api/v1/health/system").status_code == 401
+
+
+@pytest.mark.parametrize("role", ["recruiter", "lead"])
+def test_system_health_denies_non_admin_before_probes(operations_client, role):
+    from app.domain.enums import Role
+    from app.security.tokens import Principal, issue_access_token
+
+    token = issue_access_token(Principal("user", "tenant", Role(role)), operations_client.app.state.token_settings)
+    response = operations_client.get("/api/v1/health/system", headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 403
+
+
+@pytest.mark.parametrize("dependency", ["database", "schema", "vector", "redis", "bucket"])
+def test_hard_probe_failure_is_finite_unavailable_but_live_survives(operations_client, dependency):
+    health = operations_client.app.state.health
+    if dependency in {"database", "schema", "vector"}:
+        health.database.statuses[dependency] = "unavailable"
+    else:
+        getattr(health, dependency).status = "unavailable"
+    assert operations_client.get("/api/v1/health/live").json() == {"status": "alive"}
+    ready = operations_client.get("/api/v1/health/ready")
+    assert ready.status_code == 503 and ready.json()[dependency] == "unavailable"
+    _login(operations_client, "Acme", "admin@acme.test", "correct horse battery staple")
+    system = operations_client.get("/api/v1/health/system")
+    assert system.status_code == 503 and system.json()["overall"] == "unavailable"
+
+
+def test_disabled_optional_components_do_not_fake_telemetry_or_degrade_live_runtime(operations_client):
+    from tests.fakes.operations import FakeHeartbeats
+
+    class FreshHeartbeats(FakeHeartbeats):
+        def snapshot(self):
+            return {**super().snapshot(), "worker": "fresh", "beat": "fresh", "worker_count": 1}
+
+    health = operations_client.app.state.health
+    health.heartbeats = FreshHeartbeats()
+    assert health.system()["overall"] == "ok"
+    assert health.system()["ai"] == "disabled"
+    assert health.system()["telemetry"] == "not_configured"
+    health.ai_enabled = True
+    health.ai_configured = True
+    assert health.system()["ai"] == "unknown" and health.system()["overall"] == "degraded"
 
 
 def test_ai_status_reports_safe_degradation_without_credentials(operations_client):

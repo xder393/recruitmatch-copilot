@@ -98,7 +98,7 @@ def test_migration_preserves_live_data_and_scrubs_existing_deleted_resume_deriva
                     "FAILED",
                     "CLEANUP_PENDING",
                 ]
-            assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "20260912_18"
+            assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "20260912_19"
 
 
 def test_legacy_knowledge_broad_redaction_requires_operator_resolution_before_ddl(postgres_engine):

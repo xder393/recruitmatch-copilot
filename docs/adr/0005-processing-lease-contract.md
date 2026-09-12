@@ -283,3 +283,13 @@ not persisted, and nonempty CELERY_RESULT_BACKEND is rejected at startup because
 Celery otherwise lets that environment variable override its explicit config.
 Automatic broker publish retries are disabled; the database recovery paths above
 handle failed publishing. There is no Redis business status or result polling.
+
+## Task 4: operational recovery composition
+
+Revision 20260912_19 adds independent dispatch reservation time/token/error metadata
+without changing the processing lease or retry contract. The singleton real Beat
+scheduler, guarded recovery transitions, Worker-only CP3 maintenance, terminal
+generation policy and separate read-only health probes are specified in
+`docs/operations/recovery-and-health.md`. Processing claim eligibility never uses
+dispatch cooldown metadata. Operator queue cycles and current-lease generation
+reconciliation remain the only paths for deliberate terminal index repair.

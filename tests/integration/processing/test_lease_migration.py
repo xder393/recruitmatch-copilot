@@ -66,7 +66,9 @@ def test_lease_upgrade_preserves_data_and_leaves_running_for_explicit_recovery(
                 assert row["queued_at"] == stamp
                 assert (row["processing_attempts"], row["processing_lease_epoch"]) == (0, 0)
                 assert row["processing_lease_expires_at"] is None and row["processing_lease_owner"] is None
-                assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "20260912_18"
+                assert row["recovery_dispatch_at"] is None and row["recovery_dispatch_token"] is None
+                assert row["recovery_dispatch_error_code"] is None
+                assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "20260912_19"
             cols = {col["name"]: col for col in inspect(engine).get_columns(table)}
             assert str(cols["processing_lease_epoch"]["type"]) == "BIGINT"
             assert cols["processing_lease_epoch"]["nullable"] is False

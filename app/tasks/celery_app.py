@@ -26,6 +26,7 @@ from app.retrieval.pgvector_index import PgVectorRecruitingIndex
 from app.processing.outcomes import ProcessDisposition
 from app.processing.retry import RetryPolicy
 from app.repositories.ports import PersistenceUnavailable
+from app.tasks.beat import WorkerHeartbeatStep
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +93,7 @@ def build_worker_dependencies(
 
 settings = Settings.load()
 celery_app = Celery("recruitmatch", broker=settings.celery_broker_url, backend=None)
+celery_app.steps["worker"].add(WorkerHeartbeatStep)
 celery_app.conf.update(
     task_acks_late=True,
     task_reject_on_worker_lost=True,
@@ -101,7 +103,16 @@ celery_app.conf.update(
     result_backend=None,
     task_soft_time_limit=settings.task_soft_time_limit,
     task_time_limit=settings.task_hard_time_limit,
-    broker_transport_options={"visibility_timeout": settings.redis_visibility_timeout},
+    broker_transport_options={
+        "visibility_timeout": settings.redis_visibility_timeout,
+        "socket_connect_timeout": 1,
+        "socket_timeout": 1,
+        "retry_on_timeout": False,
+        "max_retries": 0,
+    },
+    broker_connection_timeout=1,
+    broker_pool_limit=0,
+    beat_scheduler="app.tasks.beat:RecoveryScheduler",
     visibility_timeout=settings.redis_visibility_timeout,
     task_publish_retry=False,
 )
@@ -138,3 +149,15 @@ def process_resume_task(self, tenant_id: str, resume_id: str) -> None:
 @celery_app.task(bind=True, name="recruitmatch.process_knowledge", max_retries=None, throws=(ProcessingTaskFailed,))
 def process_knowledge_task(self, tenant_id: str, document_id: str) -> None:
     _deliver(self, tenant_id, document_id, "knowledge_document")
+
+
+@celery_app.task(name="recruitmatch.reconcile_artifacts", throws=(ProcessingTaskFailed,))
+def reconcile_artifacts_task() -> None:
+    from app.tasks.maintenance import run_artifact_maintenance
+
+    try:
+        run_artifact_maintenance()
+    except PersistenceUnavailable:
+        logger.warning("maintenance_database_unavailable")
+    except Exception:
+        raise ProcessingTaskFailed("maintenance_task_failed") from None

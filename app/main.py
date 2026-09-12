@@ -38,6 +38,7 @@ from app.retrieval.generations import GenerationWriter
 from app.retrieval.indexing import SourceIndexer
 from app.retrieval.pgvector_index import PgVectorRecruitingIndex
 from app.retrieval.ports import RecruitingVectorIndex
+from app.operations.health import HealthService
 
 logger = get_logger(__name__)
 
@@ -54,6 +55,7 @@ def init_recruiting_state(
     source_indexer: SourceIndexer | None = None,
     artifact_store: ArtifactStore | None = None,
     uow_factory: UnitOfWorkFactory | None = None,
+    health: HealthService | None = None,
 ) -> None:
     """Initialize recruiting persistence once per application instance."""
     if getattr(app.state, "_recruiting_initialized", False):
@@ -61,6 +63,13 @@ def init_recruiting_state(
     engine, session_factory = create_engine_and_session(settings.database_url)
     app.state.database_engine = engine
     app.state.session_factory = session_factory
+    if health is None:
+        if engine.dialect.name != "postgresql":
+            raise RuntimeError("SQLite app composition requires an explicit health fake")
+        from app.operations.probes import build_health
+
+        health = build_health(settings)
+    app.state.health = health
     app.state.token_settings = TokenSettings(
         secret_key=settings.jwt_secret,
         access_token_minutes=settings.access_token_minutes,
@@ -153,6 +162,7 @@ def create_app(
     source_indexer: SourceIndexer | None = None,
     artifact_store: ArtifactStore | None = None,
     uow_factory: UnitOfWorkFactory | None = None,
+    health: HealthService | None = None,
 ) -> FastAPI:
     settings = settings or Settings.load()
     setup_logging()
@@ -168,6 +178,7 @@ def create_app(
             source_indexer,
             artifact_store,
             uow_factory,
+            health,
         )
         yield
 

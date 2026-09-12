@@ -1,10 +1,12 @@
 """Model-independent health and tenant-scoped operations summaries."""
 
 from fastapi import APIRouter, Depends, Request
-from sqlalchemy import func, select, text
+from fastapi.responses import JSONResponse
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.api.v1.deps import get_current_principal, get_db
+from app.api.v1.deps import get_current_principal, get_db, get_health, get_admin_principal
+from app.operations.health import HealthService
 from app.domain.enums import JobStatus
 from app.models.jobs import Job, JobVersion
 from app.models.matching import Feedback, MatchRun
@@ -16,14 +18,20 @@ router = APIRouter(tags=["RecruitMatch Operations"])
 
 
 @router.get("/health/live")
-def liveness():
+async def liveness():
     return {"status": "alive"}
 
 
 @router.get("/health/ready")
-def readiness(session: Session = Depends(get_db)):
-    session.execute(text("SELECT 1"))
-    return {"status": "ready", "database": "ok"}
+def readiness(health: HealthService = Depends(get_health)):
+    result = health.readiness()
+    return JSONResponse(result, status_code=200 if result["status"] == "ready" else 503)
+
+
+@router.get("/health/system")
+def system_health(principal: Principal = Depends(get_admin_principal), health: HealthService = Depends(get_health)):
+    result = health.system()
+    return JSONResponse(result, status_code=503 if result["overall"] == "unavailable" else 200)
 
 
 @router.get("/ai/status")

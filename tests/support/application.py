@@ -23,6 +23,7 @@ def create_sqlite_test_app(settings, structured_model=None, knowledge_embedder=N
     embedder = knowledge_embedder or DeterministicEmbeddingAdapter()
     retrieval_index, source_indexer = sqlite_retrieval_dependencies(settings.database_url, embedder)
     from tests.fakes.processing import FakeProcessingUnitOfWorkFactory
+    from tests.fakes.operations import fake_health
 
     return create_app(
         settings,
@@ -32,4 +33,5 @@ def create_sqlite_test_app(settings, structured_model=None, knowledge_embedder=N
         source_indexer=source_indexer,
         artifact_store=FakeArtifactStore(),
         uow_factory=FakeProcessingUnitOfWorkFactory(source_indexer.writer.session_factory, source_indexer.writer),
+        health=fake_health(settings),
     )
