@@ -153,7 +153,22 @@ class KnowledgeDocumentService:
             raise ResourceNotFoundError("招聘知识文档不存在")
         if document.status == "inactive":
             raise UnsupportedFileError("已停用文档不能重新索引")
+        artifact = (
+            self.uow.artifacts.get(
+                principal.tenant_id, "knowledge_document", document.id, document.artifact_id, for_update=True
+            )
+            if document.artifact_id
+            else None
+        )
+        if artifact is None or artifact.status != ArtifactStatus.AVAILABLE:
+            raise ConflictError("原始文件尚不可用", code="artifact_unavailable")
         document.status = "uploaded"
+        document.processing_lease_owner = None
+        document.processing_lease_expires_at = None
+        document.processing_attempts = 0
+        document.next_retry_at = None
+        document.queued_at = datetime.now(timezone.utc)
+        document.error_code = document.error_message = None
         self.uow.commit()
         self._dispatch(principal.tenant_id, document)
         return self._reload(principal, document.id)

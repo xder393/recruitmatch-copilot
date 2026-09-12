@@ -68,3 +68,108 @@ workers when Task 2 is integrated: old workers cannot honor epoch fences.
 Downgrade drops lease metadata only; stop all workers before downgrade and accept
 loss of attempt/ownership history. The migration does not change CP3 privacy,
 Source→Artifact lineage or tombstone recovery policy.
+
+## Task 2: renewal and publication
+
+Processors return ProcessDisposition, never booleans. COMPLETED means processing
+reached a terminal database result (success or failure); DUPLICATE_ACTIVE,
+TERMINAL, DEFERRED and LEASE_LOST are normal ACK/no-side-effect outcomes.
+RETRY_SHORT remains reserved for Task 3 policy; these processors do not emit it.
+A due FAILED row is still terminal until explicitly requeued in PostgreSQL.
+
+LeaseRenewer renews every duration/3 in a newly opened UoW on its own daemon
+thread. No Session crosses threads. A false result or exception marks ownership
+lost; callers stop publication and the database guard independently verifies
+ownership. Shutdown joins for at most one second (injectable in tests); an
+already in-flight renewal may finish using its own UoW, but cannot publish
+derived results. The configured S3 connect/read/retry bounds and model gateway
+timeout/retry bounds remain in force. Task 3 supplies final worker hard/soft and
+broker timing policy; tests use fake models/embeddings only.
+
+Async GenerationWriter.stage/activate/fail/reconcile_staging require the existing
+`fencing_token` keyword containing the complete immutable ClaimedLease, rather
+than a bare epoch integer. Missing, wrong identity, old epoch/owner, expired or
+unavailable exact Artifact tokens cannot write. SourceRef additionally validates
+immutable version and lifecycle, including inactive Knowledge. JobVersion keeps
+the synchronous token-free path and rejects processing tokens.
+
+`SourceIndexer.stage` embeds and commits only inactive staging.
+`UoW.generations` exposes the minimal GenerationPublicationPort (activate/fail).
+Its SQL adapter requires the caller's active lease guard and never opens or
+commits another transaction. Resume publication writes profile, text, model
+traces, index activation/error and success inside finalize_owned; commit follows
+successful context exit. An activation error rolls back that publication before
+a fresh guarded transaction may retain deterministic parsing and record an index
+error. Knowledge indexing failure commits FAILED processing separately from
+retrieval availability: a prior ready active generation remains available.
+Resume retrieval likewise uses the active generation and ready search status,
+not the processing status of a subsequent repair cycle.
+
+The new `leases.owned(lease)` guard has the same clean-session, exact identity,
+Source→Artifact lock, savepoint and entry/exit wall-clock checks, without a
+terminal transition. Standalone generation writes use it; Knowledge failure
+publishes the index error inside it, then calls leases.fail while retaining the
+same locks and outer transaction. No Session or ORM object is exposed by either
+lease guard or the publication port.
+
+## Explicit reconciliation of abandoned staging
+
+Controller-approved Task 2 policy keeps contiguous active N→N+1 and strict exact
+replay within stage. A successful new claimant may call reconcile_staging once
+before embedding/staging. This is explicit current-owner reconciliation, never
+cleanup by a worker that lost ownership. No schema or generation ownership
+column is added.
+
+The operation locks the exact tenant/type/source/version and AVAILABLE Artifact
+under the current ClaimedLease. It requests only active+1, reads at most 2049
+future chunks, and refuses to reclaim more than 2048. Every future row must be
+inactive and exactly active+1; unexpected future generations or active rows
+fail closed. Generations <= the active pointer are never deleted. Reference
+checks are PostgreSQL EXISTS predicates, joining MatchResult through its
+tenant-qualified MatchRun and matching JSON values with jsonb_path_exists.
+Checks include citations, evidence, grounded_explanation, interview_questions,
+dimension_scores, matched_items, missing_items, uncertain_items and risk_flags;
+no tenant-wide JSON is materialized in Python. Checks and the tenant/type/source/
+version-qualified deletion occur inside leases.owned; expiry at guard exit
+rolls back deletion, and the outer transaction commits afterward.
+
+Bounded refusal codes are staging_reconciliation_limit,
+staging_reconciliation_inconsistent and staging_reconciliation_referenced
+(GenerationValidationError; processing maps them to validation_failed). A lost
+lease raises LeaseOwnershipLost, not an index error to persist. Task 4 must use
+this same operation/contract if it later performs staging cleanup.
+
+Normal matching obtains new citations only from the active pointer and resolves
+active citations before publication. A future N+1 can therefore never acquire
+new legal matching references while held under this Source lock. No Tenant lock
+is acquired after the Source lock: the existing Tenant→Source order is unchanged.
+If inconsistent legacy references already exist, reclamation refuses them.
+Historical published generations and citations remain available for authorized
+audit; privacy deletion retains its existing independent cleanup rules.
+
+## Queue cycles and durable index repair
+
+Knowledge operator reindex locks and verifies its exact AVAILABLE Artifact,
+sets uploaded/queued_at, clears owner/expiry/retry/errors, and resets the new
+operator attempt budget to zero. Epoch is never reset; the next claim increments
+it. Artifact reconciliation repair clears owner/expiry/retry and records queued_at
+when requeuing, preserving the recovery attempt history and exact Artifact.
+
+The Resume backfill endpoint also explicitly queues under Source→Artifact locks,
+commits, then invokes the ordinary processor. It never indexes Resume through
+the synchronous JobVersion path. After claim, an already committed parsed pair
+(nonempty extracted_text plus a complete schema-valid 1.0 ResumeProfile whose
+evidence resolves into that text) selects index-only repair. This is inferred
+from PostgreSQL for every delivery; Beat recovery needs no special message
+parameter. Profile/text/traces are preserved during this repair.
+
+Only successful profile publication writes the parsed pair; the Source and
+Artifact content are immutable, and privacy scrubbing clears both. New unparsed
+rows have extracted_text=None/profile={}. Inconsistent legacy pairs fail closed
+with resume_parsed_state_invalid, preserving their contents for deliberate
+repair, rather than assuming one nonempty field proves successful parsing.
+The exact AVAILABLE Artifact and current lease remain required even for index
+repair that does not reread the object. Resume/Knowledge upload and reconciliation
+deliveries, Knowledge reindex, inline API dispatch and Celery all enter the same
+lease-aware processors. Synchronous JobVersion create/update/backfill stays on
+SourceIndexer.index.

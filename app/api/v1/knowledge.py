@@ -121,6 +121,7 @@ def rebuild_sources(
         request.app.state.source_indexer,
         jobs,
         uow=uow,
+        resume_processor=request.app.state.resume_processor,
     ).rebuild(principal)
 
 

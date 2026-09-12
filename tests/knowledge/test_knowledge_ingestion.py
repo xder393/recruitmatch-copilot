@@ -23,17 +23,17 @@ def _database(tmp_path):
 
 
 class BrokenSourceIndexer:
-    def index(self, *args, **kwargs):
+    def reconcile_staging(self, *args, **kwargs):
         raise RuntimeError("embedding secret")
 
     def fail(self, *args, **kwargs):
         return None
 
 
-def _uow_factory(session_factory):
-    from app.repositories.sqlalchemy_unit_of_work import SqlAlchemyUnitOfWorkFactory
+def _uow_factory(session_factory, source_indexer=None):
+    from tests.fakes.processing import FakeProcessingUnitOfWorkFactory
 
-    return SqlAlchemyUnitOfWorkFactory(session_factory)
+    return FakeProcessingUnitOfWorkFactory(session_factory, source_indexer.writer if source_indexer else None)
 
 
 def _stored_document(tmp_path, factory, content=b"policy text"):
@@ -68,7 +68,9 @@ def test_chunk_offsets_resolve_to_normalized_source():
 def test_processing_activates_embedded_generation(tmp_path):
     factory, index, source_indexer = _database(tmp_path)
     store, tenant_id, document_id = _stored_document(tmp_path, factory, b"Python interview policy")
-    KnowledgeProcessingService(_uow_factory(factory), store, source_indexer).process(tenant_id, document_id)
+    KnowledgeProcessingService(_uow_factory(factory, source_indexer), store, source_indexer).process(
+        tenant_id, document_id
+    )
     with factory() as session:
         document = KnowledgeRepository(session).get_document(tenant_id, document_id)
         assert document.status == "ready"
@@ -84,7 +86,9 @@ def test_processor_does_not_process_missing_artifact_anchor(tmp_path):
         document = KnowledgeRepository(session).get_document(tenant_id, document_id)
         document.artifact_id = None
         session.commit()
-    KnowledgeProcessingService(_uow_factory(factory), store, source_indexer).process(tenant_id, document_id)
+    KnowledgeProcessingService(_uow_factory(factory, source_indexer), store, source_indexer).process(
+        tenant_id, document_id
+    )
     with factory() as session:
         document = KnowledgeRepository(session).get_document(tenant_id, document_id)
         assert document.status == "uploaded"
@@ -96,15 +100,19 @@ def test_processor_does_not_process_missing_artifact_anchor(tmp_path):
 def test_duplicate_worker_delivery_does_not_reprocess_ready_document(tmp_path):
     factory, _, source_indexer = _database(tmp_path)
     store, tenant_id, document_id = _stored_document(tmp_path, factory, b"stable policy")
-    KnowledgeProcessingService(_uow_factory(factory), store, source_indexer).process(tenant_id, document_id)
-    KnowledgeProcessingService(_uow_factory(factory), store, BrokenSourceIndexer()).process(tenant_id, document_id)
+    KnowledgeProcessingService(_uow_factory(factory, source_indexer), store, source_indexer).process(
+        tenant_id, document_id
+    )
+    KnowledgeProcessingService(_uow_factory(factory, source_indexer), store, BrokenSourceIndexer()).process(
+        tenant_id, document_id
+    )
     with factory() as session:
         document = KnowledgeRepository(session).get_document(tenant_id, document_id)
         assert document.status == "ready"
         assert document.active_generation == 1
 
 
-def test_processing_lease_is_retried_then_stale_work_is_recovered(tmp_path):
+def test_processing_duplicate_is_acked_then_expired_work_is_recovered(tmp_path):
     from datetime import datetime, timedelta, timezone
 
     factory, _, source_indexer = _database(tmp_path)
@@ -112,16 +120,16 @@ def test_processing_lease_is_retried_then_stale_work_is_recovered(tmp_path):
     with factory() as session:
         document = KnowledgeRepository(session).get_document(tenant_id, document_id)
         document.status = "processing"
-        document.updated_at = datetime.now(timezone.utc)
+        document.processing_lease_expires_at = datetime.now(timezone.utc) + timedelta(minutes=5)
         session.commit()
-    service = KnowledgeProcessingService(_uow_factory(factory), store, source_indexer)
-    assert service.process(tenant_id, document_id) is False
+    service = KnowledgeProcessingService(_uow_factory(factory, source_indexer), store, source_indexer)
+    assert service.process(tenant_id, document_id).value == "duplicate_active"
 
     with factory() as session:
         document = KnowledgeRepository(session).get_document(tenant_id, document_id)
-        document.updated_at = datetime.now(timezone.utc) - timedelta(minutes=10)
+        document.processing_lease_expires_at = datetime.now(timezone.utc) - timedelta(minutes=10)
         session.commit()
-    assert service.process(tenant_id, document_id) is True
+    assert service.process(tenant_id, document_id).value == "completed"
     with factory() as session:
         document = KnowledgeRepository(session).get_document(tenant_id, document_id)
         assert document.status == "ready"
@@ -135,15 +143,20 @@ def test_failed_reindex_keeps_previous_generation_active(tmp_path):
         document = KnowledgeRepository(session).get_document(tenant_id, document_id)
         document.status = "uploaded"
         session.commit()
-    KnowledgeProcessingService(_uow_factory(factory), store, source_indexer).process(tenant_id, document_id)
+    KnowledgeProcessingService(_uow_factory(factory, source_indexer), store, source_indexer).process(
+        tenant_id, document_id
+    )
     with factory() as session:
         document = KnowledgeRepository(session).get_document(tenant_id, document_id)
         document.status = "uploaded"
         session.commit()
-    KnowledgeProcessingService(_uow_factory(factory), store, BrokenSourceIndexer()).process(tenant_id, document_id)
+    KnowledgeProcessingService(_uow_factory(factory, source_indexer), store, BrokenSourceIndexer()).process(
+        tenant_id, document_id
+    )
     with factory() as session:
         document = KnowledgeRepository(session).get_document(tenant_id, document_id)
-        assert document.status == "ready"
+        assert document.status == "failed"
         assert document.active_generation == 1
-        assert "embedding secret" not in document.error_message
+        assert document.search_index_status == "ready"
+        assert "embedding secret" not in (document.error_message or "")
     assert index._chunks[0].is_active is True

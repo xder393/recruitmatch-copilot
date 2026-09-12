@@ -21,6 +21,7 @@ from app.repositories.sqlalchemy_unit_of_work import SqlAlchemyUnitOfWorkFactory
 from app.retrieval.generations import GenerationWriter
 from app.retrieval.indexing import EmbeddingAdapter, SourceIndexer
 from app.retrieval.pgvector_index import PgVectorRecruitingIndex
+from app.processing.outcomes import ProcessDisposition
 
 
 @dataclass(frozen=True)
@@ -82,7 +83,7 @@ celery_app.conf.update(
 def process_resume_task(self, tenant_id: str, resume_id: str) -> None:
     settings = Settings.load()
     dependencies = build_worker_dependencies(settings)
-    if not dependencies.resume_processor.process(tenant_id, resume_id):
+    if dependencies.resume_processor.process(tenant_id, resume_id) == ProcessDisposition.RETRY_SHORT:
         raise self.retry(countdown=60)
 
 
@@ -90,5 +91,5 @@ def process_resume_task(self, tenant_id: str, resume_id: str) -> None:
 def process_knowledge_task(self, tenant_id: str, document_id: str) -> None:
     settings = Settings.load()
     dependencies = build_worker_dependencies(settings)
-    if not dependencies.knowledge_processor.process(tenant_id, document_id):
+    if dependencies.knowledge_processor.process(tenant_id, document_id) == ProcessDisposition.RETRY_SHORT:
         raise self.retry(countdown=60)

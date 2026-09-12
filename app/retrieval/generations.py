@@ -7,8 +7,11 @@ from datetime import datetime, timezone
 from enum import Enum
 import math
 from typing import Callable, TypeAlias
+from contextlib import contextmanager
+from collections.abc import Iterator
 
-from sqlalchemy import String, cast, select, update
+from sqlalchemy import String, cast, select, update, delete, or_, exists, func
+from sqlalchemy.dialects.postgresql import JSONB, JSONPATH
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import ColumnElement
@@ -18,6 +21,9 @@ from app.models.knowledge import KnowledgeDocument
 from app.models.resumes import Resume
 from app.models.artifacts import Artifact
 from app.models.retrieval import RecruitingChunk
+from app.models.matching import MatchRun, MatchResult
+from app.processing.leases import LeaseRepository
+from app.processing.outcomes import ClaimedLease, LeaseOwnershipLost
 from app.retrieval.ports import EMBEDDING_DIMENSION, EMBEDDING_NORM_TOLERANCE, RECRUITING_SOURCE_TYPES
 
 
@@ -41,7 +47,7 @@ class GenerationValidationError(GenerationWriterError):
 
 
 class FencingNotSupportedError(GenerationWriterError):
-    """A fencing token cannot be verified until Checkpoint 4 adds Lease state."""
+    """Synchronous JobVersion indexing does not accept processing leases."""
 
 
 class IndexFailureCode(str, Enum):
@@ -88,6 +94,8 @@ class StagedChunk:
 class GenerationWriter:
     """Stage and atomically switch Source-owned recruiting index generations."""
 
+    MAX_RECONCILE_CHUNKS = 2048
+
     def __init__(
         self,
         session_factory: Callable[[], Session],
@@ -103,14 +111,13 @@ class GenerationWriter:
         generation: int,
         chunks: list[StagedChunk],
         *,
-        fencing_token: int | None = None,
+        fencing_token: ClaimedLease | None = None,
     ) -> int:
-        self._reject_unverifiable_fencing(fencing_token)
         self._validate_generation_number(generation)
         embedding_model = self._validate_chunks(chunks)
 
         try:
-            with self.session_factory() as session, session.begin():
+            with self._transaction(source, fencing_token) as session:
                 source_row = self._lock_source(session, source)
                 self._require_next_generation(source_row, generation)
                 existing = list(
@@ -161,16 +168,15 @@ class GenerationWriter:
         *,
         expected_count: int,
         embedding_model: str,
-        fencing_token: int | None = None,
+        fencing_token: ClaimedLease | None = None,
     ) -> None:
-        self._reject_unverifiable_fencing(fencing_token)
         self._validate_generation_number(generation)
         if isinstance(expected_count, bool) or not isinstance(expected_count, int) or expected_count <= 0:
             raise GenerationValidationError("expected staged count must be a positive integer")
         if not embedding_model.strip():
             raise GenerationValidationError("embedding model identity must be non-empty")
 
-        with self.session_factory() as session, session.begin():
+        with self._transaction(source, fencing_token) as session:
             source_row = self._lock_source(session, source)
             self._require_next_generation(source_row, generation)
             staged = list(
@@ -212,23 +218,107 @@ class GenerationWriter:
         source: SourceRef,
         error_code: IndexFailureCode,
         *,
-        fencing_token: int | None = None,
+        fencing_token: ClaimedLease | None = None,
     ) -> None:
-        self._reject_unverifiable_fencing(fencing_token)
         if not isinstance(error_code, IndexFailureCode):
             raise GenerationValidationError("index failure code must be a stable IndexFailureCode value")
-        with self.session_factory() as session, session.begin():
+        with self._transaction(source, fencing_token) as session:
             source_row = self._lock_source(session, source)
             source_row.search_index_status = "ready" if source_row.active_index_generation > 0 else "failed"
             source_row.search_index_error_code = error_code.value
             session.flush()
 
     @staticmethod
-    def _reject_unverifiable_fencing(fencing_token: int | None) -> None:
-        if fencing_token is not None:
-            raise FencingNotSupportedError(
-                "fencing token verification is unavailable until Checkpoint 4 adds Source Lease state"
+    def _validate_fencing(source: SourceRef, fencing_token: ClaimedLease | None) -> None:
+        if source.source_type == "job_version":
+            if fencing_token is not None:
+                raise FencingNotSupportedError("job versions do not have processing leases")
+        elif not isinstance(fencing_token, ClaimedLease) or (
+            fencing_token.tenant_id,
+            fencing_token.source_type,
+            fencing_token.source_id,
+        ) != (source.tenant_id, source.source_type, source.source_id):
+            raise LeaseOwnershipLost("processing_lease_lost")
+
+    @contextmanager
+    def _transaction(self, source: SourceRef, fencing_token: ClaimedLease | None) -> Iterator[Session]:
+        self._validate_fencing(source, fencing_token)
+        with self.session_factory() as session, session.begin():
+            if fencing_token is None:
+                yield session
+            else:
+                with LeaseRepository(session).owned(fencing_token):
+                    try:
+                        yield session
+                    except SourceNotFoundError:
+                        raise LeaseOwnershipLost("processing_source_unavailable") from None
+
+    def reconcile_staging(self, source: SourceRef, generation: int, *, fencing_token: ClaimedLease) -> int:
+        """A new claimant may reclaim bounded, unreferenced, never-published N+1."""
+        self._validate_generation_number(generation)
+        with self._transaction(source, fencing_token) as session:
+            row = self._lock_source(session, source)
+            self._require_next_generation(row, generation)
+            future = list(
+                session.scalars(
+                    select(RecruitingChunk)
+                    .where(*self._chunk_scope(source), RecruitingChunk.generation > row.active_index_generation)
+                    .limit(self.MAX_RECONCILE_CHUNKS + 1)
+                    .with_for_update()
+                )
             )
+            if len(future) > self.MAX_RECONCILE_CHUNKS:
+                raise GenerationValidationError("staging_reconciliation_limit")
+            if any(chunk.is_active or chunk.generation != generation for chunk in future):
+                raise GenerationValidationError("staging_reconciliation_inconsistent")
+            if not future:
+                return 0
+            # SQL-side EXISTS over JSON values: never materialize a tenant's
+            # matching JSON, or depend on a serializer's escaping/whitespace.
+            fields = (
+                MatchResult.citations,
+                MatchResult.evidence,
+                MatchResult.grounded_explanation,
+                MatchResult.interview_questions,
+                MatchResult.dimension_scores,
+                MatchResult.matched_items,
+                MatchResult.missing_items,
+                MatchResult.uncertain_items,
+                MatchResult.risk_flags,
+            )
+            predicates = [
+                func.jsonb_path_exists(
+                    cast(field, JSONB),
+                    cast("$.** ? (@ == $citation)", JSONPATH),
+                    func.jsonb_build_object("citation", RecruitingChunk.citation_id),
+                )
+                for field in fields
+            ]
+            referenced = session.scalar(
+                select(
+                    exists(
+                        select(MatchResult.id)
+                        .select_from(MatchResult)
+                        .join(MatchRun)
+                        .join(RecruitingChunk, or_(*predicates))
+                        .where(
+                            MatchRun.tenant_id == source.tenant_id,
+                            RecruitingChunk.id.in_([chunk.id for chunk in future]),
+                        )
+                    )
+                )
+            )
+            if referenced:
+                raise GenerationValidationError("staging_reconciliation_referenced")
+            session.execute(
+                delete(RecruitingChunk).where(
+                    *self._chunk_scope(source),
+                    RecruitingChunk.generation == generation,
+                    RecruitingChunk.is_active.is_(False),
+                    RecruitingChunk.id.in_([chunk.id for chunk in future]),
+                )
+            )
+            return len(future)
 
     @staticmethod
     def _validate_generation_number(generation: int) -> None:
@@ -438,6 +528,7 @@ class GenerationWriter:
                     KnowledgeDocument.id == source.source_id,
                     KnowledgeDocument.checksum == source.source_version,
                     KnowledgeDocument.lifecycle_status == "active",
+                    KnowledgeDocument.status != "inactive",
                     KnowledgeDocument.search_index_status != "deleted",
                 )
                 .with_for_update(of=KnowledgeDocument)
@@ -445,3 +536,21 @@ class GenerationWriter:
         if row is None:
             raise SourceNotFoundError("tenant-qualified Source is missing or privacy-deleted")
         return row
+
+
+class TransactionGenerationWriter(GenerationWriter):
+    """UoW publication adapter: uses its caller's guarded transaction, never commits."""
+
+    def __init__(self, session: Session):
+        self._session = session
+        self.activation_checkpoint = None
+
+    @contextmanager
+    def _transaction(self, source: SourceRef, fencing_token: ClaimedLease | None) -> Iterator[Session]:
+        self._validate_fencing(source, fencing_token)
+        if fencing_token is None or self._session.info.get("processing_lease_guard") != fencing_token:
+            raise LeaseOwnershipLost("processing_publication_requires_guard")
+        try:
+            yield self._session
+        except SourceNotFoundError:
+            raise LeaseOwnershipLost("processing_source_unavailable") from None

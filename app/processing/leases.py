@@ -191,6 +191,25 @@ class LeaseRepository:
         return self._terminal(lease, error_code, next_retry_at)
 
     @contextmanager
+    def owned(self, lease: ClaimedLease) -> Iterator[None]:
+        """Guard nonterminal generation writes; caller commits after context exit."""
+        self._validate_lease(lease)
+        if self._session.new or self._session.dirty or self._session.deleted:
+            raise ValueError("processing_publication_requires_clean_session")
+        with self._session.no_autoflush:
+            if self._owned(lease) is None:
+                raise LeaseOwnershipLost("processing_lease_lost")
+        with self._session.begin_nested():
+            self._session.info["processing_lease_guard"] = lease
+            try:
+                yield
+                self._session.flush()
+                if self._owned(lease) is None:
+                    raise LeaseOwnershipLost("processing_lease_lost")
+            finally:
+                self._session.info.pop("processing_lease_guard", None)
+
+    @contextmanager
     def finalize_owned(self, lease: ClaimedLease) -> Iterator[None]:
         """Write derived data inside; commit the caller UoW only after exit.
 
@@ -206,7 +225,11 @@ class LeaseRepository:
             if self._owned(lease) is None:
                 raise LeaseOwnershipLost("processing_lease_lost")
         with self._session.begin_nested():
-            yield
-            self._session.flush()
-            if not self.finalize(lease):
-                raise LeaseOwnershipLost("processing_lease_lost")
+            self._session.info["processing_lease_guard"] = lease
+            try:
+                yield
+                self._session.flush()
+                if not self.finalize(lease):
+                    raise LeaseOwnershipLost("processing_lease_lost")
+            finally:
+                self._session.info.pop("processing_lease_guard", None)

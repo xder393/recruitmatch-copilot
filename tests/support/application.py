@@ -22,6 +22,8 @@ class DeterministicEmbeddingAdapter:
 def create_sqlite_test_app(settings, structured_model=None, knowledge_embedder=None):
     embedder = knowledge_embedder or DeterministicEmbeddingAdapter()
     retrieval_index, source_indexer = sqlite_retrieval_dependencies(settings.database_url, embedder)
+    from tests.fakes.processing import FakeProcessingUnitOfWorkFactory
+
     return create_app(
         settings,
         structured_model=structured_model,
@@ -29,4 +31,5 @@ def create_sqlite_test_app(settings, structured_model=None, knowledge_embedder=N
         retrieval_index=retrieval_index,
         source_indexer=source_indexer,
         artifact_store=FakeArtifactStore(),
+        uow_factory=FakeProcessingUnitOfWorkFactory(source_indexer.writer.session_factory, source_indexer.writer),
     )

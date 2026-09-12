@@ -19,6 +19,8 @@ class ProcessDisposition(str, Enum):
     DUPLICATE_ACTIVE = "duplicate_active"
     TERMINAL = "terminal"
     RETRY_SHORT = "retry_short"
+    DEFERRED = "deferred"
+    LEASE_LOST = "lease_lost"
 
 
 @dataclass(frozen=True)

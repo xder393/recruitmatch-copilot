@@ -7,6 +7,7 @@ from typing import Callable
 
 from sqlalchemy.exc import IntegrityError
 from app.processing.leases import LeaseRepository
+from app.retrieval.generations import TransactionGenerationWriter
 
 from app.repositories.feedback import FeedbackRepository
 from app.repositories.artifacts import ArtifactRepository
@@ -32,6 +33,7 @@ class SqlAlchemyUnitOfWork(AbstractContextManager["SqlAlchemyUnitOfWork"], Recru
         self.jobs = JobRepository(session)
         self.knowledge = KnowledgeRepository(session)
         self.leases = LeaseRepository(session)
+        self.generations = TransactionGenerationWriter(session)
         self.matching = MatchingRepository(session)
         self.model_traces = ModelTraceWriter(session)
         self.resumes = ResumeRepository(session)

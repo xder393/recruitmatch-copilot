@@ -27,6 +27,7 @@ from app.matching.engine import MatchingEngine
 from app.matching.hybrid import HybridMatchingEngine
 from app.models import AuditLog, Job, JobTemplate, JobVersion, ModelTrace, Tenant, User  # noqa: F401
 from app.repositories.sqlalchemy_unit_of_work import SqlAlchemyUnitOfWorkFactory
+from app.repositories.unit_of_work import UnitOfWorkFactory
 from app.resumes.parser import HeuristicResumeParser
 from app.security.tokens import TokenSettings
 from app.services.ai_tracing import AITraceSink
@@ -52,6 +53,7 @@ def init_recruiting_state(
     retrieval_index: RecruitingVectorIndex | None = None,
     source_indexer: SourceIndexer | None = None,
     artifact_store: ArtifactStore | None = None,
+    uow_factory: UnitOfWorkFactory | None = None,
 ) -> None:
     """Initialize recruiting persistence once per application instance."""
     if getattr(app.state, "_recruiting_initialized", False):
@@ -87,7 +89,8 @@ def init_recruiting_state(
         if engine.dialect.name != "postgresql":
             raise RuntimeError("SQLite app composition requires an explicit generation fake")
         source_indexer = SourceIndexer(GenerationWriter(session_factory), embedder)
-    uow_factory = SqlAlchemyUnitOfWorkFactory(session_factory)
+    uow_factory = uow_factory or SqlAlchemyUnitOfWorkFactory(session_factory)
+    app.state.uow_factory = uow_factory
     processor = ResumeProcessingService(uow_factory, artifact_store, parser, source_indexer=source_indexer)
     knowledge_processor = KnowledgeProcessingService(uow_factory, artifact_store, source_indexer)
     ai_trace_sink = AITraceSink(uow_factory)
@@ -131,6 +134,7 @@ def create_app(
     retrieval_index: RecruitingVectorIndex | None = None,
     source_indexer: SourceIndexer | None = None,
     artifact_store: ArtifactStore | None = None,
+    uow_factory: UnitOfWorkFactory | None = None,
 ) -> FastAPI:
     settings = settings or Settings.load()
     setup_logging()
@@ -145,6 +149,7 @@ def create_app(
             retrieval_index,
             source_indexer,
             artifact_store,
+            uow_factory,
         )
         yield
 

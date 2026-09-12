@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from contextlib import AbstractContextManager
 from typing import Protocol
+from app.retrieval.indexing import GenerationPublicationPort
 
 from app.repositories.ports import (
     ArtifactRepository,
@@ -30,6 +31,7 @@ class RecruitingUnitOfWork(UnitOfWork, Protocol):
     jobs: JobRepository
     knowledge: KnowledgeRepository
     leases: LeaseRepository
+    generations: GenerationPublicationPort
     matching: MatchingRepository
     model_traces: ModelTraceRepository
     resumes: ResumeRepository

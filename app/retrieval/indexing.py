@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+from app.processing.outcomes import ClaimedLease, LeaseOwnershipLost
 from typing import Protocol
 
 from app.knowledge.schemas import ChunkInput
@@ -18,6 +19,8 @@ from app.retrieval.generations import (
 
 def classify_index_failure(error: Exception) -> IndexFailureCode:
     """Map internal indexing exceptions to the bounded persisted taxonomy."""
+    if isinstance(error, LeaseOwnershipLost):
+        return IndexFailureCode.LEASE_LOST
     if isinstance(error, GenerationValidationError | ValueError):
         return IndexFailureCode.VALIDATION_FAILED
     if isinstance(error, GenerationConflictError):
@@ -35,9 +38,7 @@ class EmbeddingAdapter(Protocol):
     def embed_query(self, text: str) -> list[float]: ...
 
 
-class GenerationWriterPort(Protocol):
-    def stage(self, source: SourceRef, generation: int, chunks: list[StagedChunk], *, fencing_token=None) -> int: ...
-
+class GenerationPublicationPort(Protocol):
     def activate(
         self,
         source: SourceRef,
@@ -49,6 +50,11 @@ class GenerationWriterPort(Protocol):
     ) -> None: ...
 
     def fail(self, source: SourceRef, error_code: IndexFailureCode, *, fencing_token=None) -> None: ...
+
+
+class GenerationWriterPort(GenerationPublicationPort, Protocol):
+    def reconcile_staging(self, source: SourceRef, generation: int, *, fencing_token: ClaimedLease) -> int: ...
+    def stage(self, source: SourceRef, generation: int, chunks: list[StagedChunk], *, fencing_token=None) -> int: ...
 
 
 class SourceIndexer:
@@ -65,7 +71,26 @@ class SourceIndexer:
         chunks: list[ChunkInput],
         *,
         document_id: str | None = None,
-        fencing_token: int | None = None,
+        fencing_token: ClaimedLease | None = None,
+    ) -> int:
+        count = self.stage(source, generation, chunks, document_id=document_id, fencing_token=fencing_token)
+        self.writer.activate(
+            source,
+            generation,
+            expected_count=count,
+            embedding_model=self.embedder.model_name,
+            fencing_token=fencing_token,
+        )
+        return count
+
+    def stage(
+        self,
+        source: SourceRef,
+        generation: int,
+        chunks: list[ChunkInput],
+        *,
+        document_id: str | None = None,
+        fencing_token: ClaimedLease | None = None,
     ) -> int:
         if not chunks:
             raise ValueError("at least one source chunk is required")
@@ -86,22 +111,17 @@ class SourceIndexer:
             )
             for chunk, vector in zip(chunks, vectors, strict=True)
         ]
-        count = self.writer.stage(source, generation, staged, fencing_token=fencing_token)
-        self.writer.activate(
-            source,
-            generation,
-            expected_count=count,
-            embedding_model=self.embedder.model_name,
-            fencing_token=fencing_token,
-        )
-        return count
+        return self.writer.stage(source, generation, staged, fencing_token=fencing_token)
+
+    def reconcile_staging(self, source: SourceRef, generation: int, *, fencing_token: ClaimedLease) -> int:
+        return self.writer.reconcile_staging(source, generation, fencing_token=fencing_token)
 
     def fail(
         self,
         source: SourceRef,
         error_code: IndexFailureCode,
         *,
-        fencing_token: int | None = None,
+        fencing_token: ClaimedLease | None = None,
     ) -> None:
         self.writer.fail(source, error_code, fencing_token=fencing_token)
 
