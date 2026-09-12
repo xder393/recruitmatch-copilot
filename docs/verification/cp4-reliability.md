@@ -1,6 +1,6 @@
 # CP4 reliability — implementation and verification record
 
-Status: all four task reviews and final-tree tests passed; whole-checkpoint review remains pending. This document is not yet a completion certificate.
+Status: **CP4 complete and independently reviewed.** All four task reviews, one whole-checkpoint review, its single fix wave/scoped re-review, and final-tree verification are complete with no open findings. Final implementation commit: `d3633921199525880f06d4ffe35720e9206a98e2`; later commits archive evidence only. Local merge/push remains the user's decision.
 
 Scope: the approved CP4 reliability plan only. CP5 observability and CP6 security, load testing and final delivery are not implemented by this checkpoint. Baseline: `6ab5e58636ec938422df104569456ac1c073fac1`. Work happens on `codex/recruitmatch-v2` in an isolated existing worktree; main has not been merged and nothing has been pushed during CP4.
 
@@ -24,9 +24,19 @@ Each task had an independent specification/quality review. Implementer self-revi
 | 3: delivery and retry | `945b86a` | Shared failure transaction and artifact-timeout classification fixes reviewed. 268 unit, 434 integration. |
 | 4: recovery and health | `5b769dd` | Recovery-lock contention RED8→GREEN8 and missing frozen health fields RED6→GREEN6. Scoped re-review approved both, no new/out-of-scope findings. Rebuilt 285 unit, 503 integration, static/lock clean. |
 
-The table records per-revision test counts, not additive independent coverage. All quoted acceptance runs used rebuilt unmounted Docker images and real PostgreSQL/pgvector, Redis and MinIO in the isolated synthetic Compose project. Unit tests use SQLite/Fakes where specified. Static checks included Ruff lint/format, mypy and offline dependency-lock validation. Controller-owned final-tree gates follow; whole-checkpoint review remains pending.
+The table records per-revision test counts, not additive independent coverage. All quoted acceptance runs used rebuilt unmounted Docker images and real PostgreSQL/pgvector, Redis and MinIO in the isolated synthetic Compose project. Unit tests use SQLite/Fakes where specified. Static checks included Ruff lint/format, mypy and offline dependency-lock validation. Controller-owned code gates, including the final startup correction, follow.
 
-### Controller final-tree gates at `5b769dd`
+Whole-checkpoint review examined baseline6ab5e58 throughc3d3e12 (9 commits), including targeted unchanged citation and maintenance composition. No Critical or Important findings; sole Minor CP4-ARCH-M1 required Beat to wait for minio-init completion as specified in frozen§3.2. Worker already blocked premature object execution; this was startup-contract alignment, not a fencing defect. [Full independent review](cp4-evidence/final-review.md). The single correction is now [independently verified](cp4-evidence/final-fix-review.md), with no new or out-of-scope findings. Prior task review verdicts and raw reports are preserved in the [evidence directory](cp4-evidence/README.md); no second broad review was performed.
+
+### Final startup correction and controller gates at `d363392`
+
+The sole final finding was corrected in `d3633921199525880f06d4ffe35720e9206a98e2`: Beat now waits for minio-init success, and a parsed-YAML regression checks both initialization dependencies on API, Worker and Beat. Intended RED1 failed/4 passed became GREEN5 passed; rebuilt unmounted unit lane286 passed. Rendered Compose dependency allowlist and source/image configuration hashes matched. Scoped re-review verdict: ADDRESSED, no new breakage or out-of-scope observations.
+
+Root independently reran the amended final tree using its rebuilt, unmounted test image: **286 unit tests in24.65s and503 integration tests in28.22s**, all exit0/pristine. Ruff lint/format211, mypy51, offline lock110 and current CI rule/Fake AI golden comparison also exit0, with no golden difference. All67 changed shipped-file SHA256 values match the container; [final hash manifest](cp4-evidence/final-shipped-sha256.txt). The same full test/static/evaluation commands listed below were rerun. No source or test changes follow these final gates; subsequent commits archive documentation only.
+
+Final controller-used images: runtime remains `sha256:575c5e350aa62494cde3a3caedebd31f9bb3bacdf19c02176bd70594a07dab73` (no runtime code changed in the final correction); rebuilt test image is `sha256:b61c6b52c53d4f427890569ff28de210fcbe7f7c6d86971a8f66a95f1c8bf834`. Timings are correctness-run durations, not load-test results.
+
+### Prior controller code gates at `5b769dd`
 
 Root independently rebuilt current-source images, reran idempotent bootstrap (`seeded_job_templates=0`, no reset) and ran unmounted full test lanes. All exit0: 285 unit tests in23.54s; 503 integration tests in25.11s; Ruff clean,211 files formatted; mypy51 files clean; offline lock110 packages. Current CI rule/Fake AI evaluations completed, with exact golden JSON match and no provider calls. Test counts are correctness checks, not a performance report; the lanes were run concurrently in separate containers.
 
@@ -48,6 +58,14 @@ docker compose --env-file .env.example -p recruitmatch-cp4-sep12 run --rm --no-d
 ```
 
 Controller Fake evaluation at `5a79640`: current rule evaluation completed, and the Fake AI result exactly matched the checked-in golden JSON (`diff` exit0). 150 generated synthetic rule cases reported top1=.9867/top3=1; 150 synthetic Fake AI cases reported top1=.9733/top3=1, citation coverage/validity1 and unsupported-claim rate0. Deliberate fault-injection cases validate fallback/rejection and are not 150 ordinary passing tests. These figures are regression checks, not real-model quality, production hiring outcomes or performance measurements.
+
+## Archive and local teardown
+
+After final review/gates, raw tracked task/fix reports were moved without content changes into `docs/verification/cp4-evidence`; independent verdicts, controller ledger and final hash manifest are now versioned there. The15 chronological decisions below are preserved with their rationale and cost. The active CP4 scratch directory was moved out of the worktree recoverably to `/tmp/recruitmatch-cp4-audit.lk61ti/scratch`; a full pre-move snapshot is `/tmp/recruitmatch-cp4-audit.lk61ti/cp4-sdd.tar.gz`, SHA256 `13a971cbdc45915a3c9543dd50c885d9a32f09ce80e8f63a95687e4c715dd5e8`. The initial force-delete command was rejected before execution; no forced deletion was performed. Temporary OS paths are not durable Git artifacts; the important reports, rulings and verdicts are preserved in Git independently of them.
+
+Exact project/worktree labels were checked before `docker compose --env-file .env.example -p recruitmatch-cp4-sep12 down` (exit0). Only seven owned synthetic containers and their project network were removed. No `-v`, global prune or default-project operation was used. The four named volumes `recruitmatch-cp4-sep12_postgres-data`, `recruitmatch-cp4-sep12_redis-data`, `recruitmatch-cp4-sep12_minio-data` and `recruitmatch-cp4-sep12_hf-cache-v2`, plus images/build cache, are retained. These are synthetic-test resources, not the user's runtime database.
+
+The existing worktree and branch remain intact, including unique ignored user configuration/data and unrelated CP3 records. Main was not merged and no push/PR was performed. Use the finishing decision to choose local merge, push/PR or keep-as-is; CP5/6 still require separate implementation.
 
 ## Physical smoke evidence and limits
 
