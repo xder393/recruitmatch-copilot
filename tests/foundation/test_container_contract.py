@@ -28,6 +28,20 @@ def test_compose_uses_a_versioned_non_root_hf_cache_volume():
     assert "hf-cache" not in compose["volumes"]
 
 
+def test_runtime_services_wait_for_one_shot_initialization():
+    compose = yaml.safe_load(Path("docker-compose.yml").read_text())
+    required_dependencies = {
+        "minio-init": {"condition": "service_completed_successfully"},
+        "bootstrap": {"condition": "service_completed_successfully"},
+    }
+
+    for service_name in ("api", "worker", "beat"):
+        dependencies = compose["services"][service_name]["depends_on"]
+        assert {
+            dependency: dependencies.get(dependency) for dependency in required_dependencies
+        } == required_dependencies
+
+
 def test_image_excludes_removed_legacy_namespaces():
     for namespace in ("agents", "rag", "storage", "tools", "embeddings"):
         assert not Path("app", namespace).exists()
