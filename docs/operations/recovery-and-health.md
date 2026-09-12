@@ -40,6 +40,15 @@ active lifecycle. Before mutation, recovery locks Source then Artifact and
 revalidates the snapshot's epoch, Artifact, status, queue cycle and reservation
 token. PostgreSQL wall clock is sampled after locks. No application clock can
 override this authority; tests change synthetic persisted eligibility times.
+Both row locks use SKIP LOCKED. A held Source or Artifact is skipped without
+rewriting its state or dispatch pacing; its transaction releases any acquired
+Source lock. Other selected candidates, maintenance dispatch and Beat heartbeat
+continue. The same rule applies to late publish-failure recording: under
+contention the optional error annotation may be absent, but the already committed
+reservation remains recoverable after cooldown. Genuine database failures are not
+silently treated as contention. Selection remains bounded; skipped rows are not
+replaced from beyond the selected batch, so this is not a strict fairness or
+latency guarantee under sustained contention.
 An expired run requeues without incrementing epoch/attempts. Eligible expired or
 queued work already at the configured cap becomes FAILED with
 `processing_attempts_exhausted`. A valid fifth-attempt lease stays untouched.
@@ -115,6 +124,14 @@ statuses plus `overall` (`ok|degraded|unavailable`), Worker/Beat freshness and
 bounded heartbeat aggregates. Hard dependency failure yields 503/unavailable.
 Worker or Beat stale/unknown yields 200/degraded while readiness may remain 200.
 No endpoint, credential, bucket/key, Worker identity or exception text is returned.
+Required system fields are `api`, `database`, `redis`, `minio`, `worker`, `beat`,
+`ai`, `telemetry` and `overall`. `api:ok` means this local process is serving the
+request, not that its dependencies or every API feature are available; there is
+no additional HTTP probe. `minio` is the sanitized result of the actual private
+bucket probe using application IAM, also retained as `bucket` for compatibility.
+Existing `schema`, `vector` and heartbeat aggregate diagnostics remain. A failed
+bucket probe yields `minio:unavailable` and overall unavailable while `api` remains
+ok. The `/ready` field set is unchanged.
 
 A Worker timer bootstep renews its random process ID every ten seconds. Stop
 cancels and disables its timer before removing only that process record. Worker

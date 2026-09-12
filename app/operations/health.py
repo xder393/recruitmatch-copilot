@@ -55,6 +55,8 @@ class HealthService:
             overall = "degraded"
         return {
             "overall": overall,
+            "api": "ok",  # This process is serving the request, independently of dependencies.
+            "minio": ready["bucket"],
             **{k: v for k, v in ready.items() if k != "status"},
             **heartbeat,
             "ai": ai,

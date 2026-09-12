@@ -119,11 +119,13 @@ class RecoveryRepository:
 
     @staticmethod
     def _locked(session, candidate):
+        # Contention skips this candidate (including late failure recording),
+        # without hiding connection/schema faults or blocking the bounded cycle.
         model = Resume if candidate.source_type == "resume" else KnowledgeDocument
         row = session.scalar(
             select(model)
             .where(model.tenant_id == candidate.tenant_id, model.id == candidate.source_id)
-            .with_for_update()
+            .with_for_update(skip_locked=True)
             .execution_options(populate_existing=True)
         )
         if (
@@ -144,7 +146,7 @@ class RecoveryRepository:
                 Artifact.owner_id == candidate.source_id,
                 Artifact.id == candidate.artifact_id,
             )
-            .with_for_update()
+            .with_for_update(skip_locked=True)
             .execution_options(populate_existing=True)
         )
         return row if artifact is not None and artifact.status == ArtifactStatus.AVAILABLE else None

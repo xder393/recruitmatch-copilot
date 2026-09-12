@@ -66,6 +66,18 @@ def test_worker_stale_degrades_system_but_not_readiness(operations_client):
     assert response.json()["worker"] == "stale"
     assert response.json()["overall"] == "degraded"
     assert response.json()["telemetry"] == "not_configured"
+    assert {
+        "api",
+        "database",
+        "redis",
+        "minio",
+        "worker",
+        "beat",
+        "ai",
+        "telemetry",
+        "overall",
+    } <= response.json().keys()
+    assert response.json()["api"] == "ok" and response.json()["minio"] == "ok"
 
 
 def test_system_health_requires_authentication(operations_client):
@@ -95,6 +107,8 @@ def test_hard_probe_failure_is_finite_unavailable_but_live_survives(operations_c
     _login(operations_client, "Acme", "admin@acme.test", "correct horse battery staple")
     system = operations_client.get("/api/v1/health/system")
     assert system.status_code == 503 and system.json()["overall"] == "unavailable"
+    assert system.json()["api"] == "ok"
+    assert system.json()["minio"] == ("unavailable" if dependency == "bucket" else "ok")
 
 
 def test_disabled_optional_components_do_not_fake_telemetry_or_degrade_live_runtime(operations_client):

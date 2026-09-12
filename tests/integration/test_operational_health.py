@@ -17,6 +17,8 @@ def test_production_readiness_checks_all_dependencies():
         "redis": "ok",
         "bucket": "ok",
     }
+    system = health.system()
+    assert system["api"] == "ok" and system["minio"] == "ok"
 
 
 def test_bad_database_is_bounded_and_sanitized():
@@ -29,12 +31,19 @@ def test_bad_database_is_bounded_and_sanitized():
 
 
 def test_bucket_probe_uses_app_permissions_and_denied_identity_fails():
+    from app.config import Settings
     from app.artifacts.s3 import S3Settings
-    from app.operations.probes import BucketProbe
+    from app.operations.probes import BucketProbe, build_health
 
     settings = S3Settings.from_env()
     assert BucketProbe(settings).check() == "ok"
-    assert BucketProbe(replace(settings, secret_access_key="invalid-synthetic")).check() == "unavailable"
+    denied = BucketProbe(replace(settings, secret_access_key="invalid-synthetic"))
+    assert denied.check() == "unavailable"
+    health = build_health(Settings.load())
+    health.bucket = denied
+    system = health.system()
+    assert system["minio"] == "unavailable" and system["overall"] == "unavailable"
+    assert system["api"] == "ok"
 
 
 def test_wrong_schema_version_is_not_ready(postgres_engine):
