@@ -16,7 +16,7 @@ from app.retrieval.generations import SourceRef, GenerationWriterError
 from app.retrieval.indexing import SourceIndexer, classify_index_failure, EmbeddingFailure
 from app.processing.outcomes import ClaimDisposition, ClaimedLease, LeaseOwnershipLost, ProcessDisposition
 from app.processing.renewal import LeaseRenewer
-from app.processing.retry import RetryPolicy, TRANSIENT_PROCESSING_CODES
+from app.processing.retry import RetryPolicy, finish_failed_attempt
 
 
 class KnowledgeProcessingService:
@@ -71,6 +71,8 @@ class KnowledgeProcessingService:
                         raise ArtifactLengthMismatch()
                     if hashlib.sha256(content).hexdigest() != expected_sha:
                         raise ArtifactChecksumMismatch()
+                except self.timeout_errors:
+                    raise
                 except Exception as exc:
                     renewer.ensure_owned()
                     return self._mark_failed(lease, storage_error_code(exc).value)
@@ -122,20 +124,4 @@ class KnowledgeProcessingService:
             if index_error is not None:
                 with uow.leases.owned(lease):
                     uow.generations.fail(source, index_error, fencing_token=lease)
-            if code in TRANSIENT_PROCESSING_CODES:
-                outcome = uow.leases.schedule_retry(
-                    lease,
-                    code,
-                    short_delay=timedelta(seconds=self.retry_policy.short_seconds),
-                    long_delay=timedelta(seconds=self.retry_policy.long_seconds),
-                    max_attempts=self.retry_policy.max_attempts,
-                )
-            else:
-                outcome = (
-                    ProcessDisposition.COMPLETED if uow.leases.fail(lease, code) else ProcessDisposition.LEASE_LOST
-                )
-            if outcome == ProcessDisposition.LEASE_LOST:
-                uow.rollback()
-                return outcome
-            uow.commit()
-        return outcome
+            return finish_failed_attempt(uow, lease, code, self.retry_policy)

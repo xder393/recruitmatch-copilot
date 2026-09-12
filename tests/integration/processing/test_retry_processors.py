@@ -82,6 +82,26 @@ def test_database_stage_failure_never_publishes_soft_fallback(processing_source,
             assert row.profile == {} and row.extracted_text is None
 
 
+def test_artifact_read_timeout_uses_processing_timeout(processing_source, monkeypatch):
+    from billiard.exceptions import SoftTimeLimitExceeded
+
+    factory, store, source, model = processing_source
+    service = processor(processing_source)
+    service.timeout_errors = (SoftTimeLimitExceeded,)
+
+    def timeout(*args):
+        raise SoftTimeLimitExceeded()
+
+    monkeypatch.setattr(store, "read_bounded", timeout)
+    assert service.process(source.tenant_id, source.source_id).value == "retry_short"
+    with factory() as session:
+        row = session.get(model, source.source_id)
+        assert row.error_code == "processing_timeout"
+        assert row.next_retry_at > datetime.now(timezone.utc)
+        assert row.processing_attempts == 1 and row.processing_lease_epoch == 1
+        assert row.processing_lease_owner is None and row.active_index_generation == 0
+
+
 def test_soft_time_limit_retries_with_current_lease(processing_source, monkeypatch):
     from billiard.exceptions import SoftTimeLimitExceeded
 
