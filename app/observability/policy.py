@@ -328,8 +328,9 @@ class SafeTracerProvider(trace.TracerProvider):
 
 
 class SafeInstrument:
-    def __init__(self, instrument: Any, policy: TelemetryPolicy, *, signed: bool = False):
+    def __init__(self, instrument: Any, policy: TelemetryPolicy, *, signed: bool = False, maximum: float | None = None):
         self._instrument, self._policy, self._signed = instrument, policy, signed
+        self._maximum = maximum
 
     def add(self, amount, attributes=None, context=None):
         if self._instrument is not None and finite_observation(amount, signed=self._signed):
@@ -337,6 +338,8 @@ class SafeInstrument:
 
     def record(self, amount, attributes=None, context=None):
         if self._instrument is not None and finite_observation(amount):
+            if self._maximum is not None and amount > self._maximum:
+                return
             self._instrument.record(amount, self._policy.attributes(attributes), context)
 
     def set(self, amount, attributes=None, context=None):
@@ -354,7 +357,12 @@ class SafeMeter:
         instrument = None
         if expected is not None and expected[0] == kind:
             instrument = getattr(self._meter, f"create_{kind}")(name, unit=expected[1], **kwargs)
-        return SafeInstrument(instrument, self._policy, signed=kind == "up_down_counter")
+        return SafeInstrument(
+            instrument,
+            self._policy,
+            signed=kind == "up_down_counter",
+            maximum=100 if name == "recruitmatch.match.score" else None,
+        )
 
     def create_counter(self, name, unit="", description=""):
         return self._create(name, "counter", unit)

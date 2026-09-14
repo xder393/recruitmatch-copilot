@@ -109,6 +109,22 @@ def test_unknown_event_and_out_of_range_score_are_dropped(telemetry):
     assert exporter.get_finished_spans() == ()
 
 
+@pytest.mark.parametrize("entry_point", ["recorder", "meter"])
+def test_match_score_bounds_apply_to_both_public_entry_points(telemetry, entry_point):
+    runtime, _, reader = telemetry
+    histogram = runtime.meter_provider.get_meter("application").create_histogram("recruitmatch.match.score")
+    for value in [0, 75, 100, 101, -1, math.nan, math.inf, -math.inf, True]:
+        if entry_point == "recorder":
+            runtime.recorder.record(DomainEvent("match.score", {"match.mode": "rules"}, value=value))
+        else:
+            histogram.record(value, {"match.mode": "rules"})
+    point = metrics(reader)["recruitmatch.match.score"].data.data_points[0]
+    assert point.count == 3
+    assert point.sum == 175
+    assert (point.min, point.max) == (0, 100)
+    assert point.attributes == {"match.mode": "rules"}
+
+
 def test_operation_records_duration_and_preserves_business_exception(telemetry):
     runtime, exporter, reader = telemetry
     with pytest.raises(ValueError, match="private business failure"):
@@ -253,6 +269,85 @@ def test_periodic_metric_export_failure_preserves_business_result(caplog):
     finally:
         runtime.shutdown()
     assert "credential=secret" not in caplog.text
+
+
+def test_real_otlp_failures_are_private_across_runtime_shutdown(monkeypatch, caplog):
+    import logging
+
+    from grpc import RpcError, StatusCode
+    from opentelemetry.exporter.otlp.proto.grpc import metric_exporter, trace_exporter
+
+    sentinel = "synthetic-credential-REVIEW-SENTINEL"
+    requests = {"spans": [], "metrics": []}
+
+    class UnknownRpcError(RpcError):
+        def code(self):
+            return StatusCode.UNKNOWN
+
+        def trailing_metadata(self):
+            return ()
+
+    class FailedRpcStub:
+        def __init__(self, kind):
+            self.kind = kind
+
+        def Export(self, request, metadata, timeout):
+            requests[self.kind].append(request)
+            raise UnknownRpcError(sentinel)
+
+    # Replace only the generated RPC transport constructors. The real OTLP
+    # translation, failure classification and logger all execute without a backend.
+    monkeypatch.setattr(trace_exporter, "TraceServiceStub", lambda channel: FailedRpcStub("spans"))
+    monkeypatch.setattr(metric_exporter, "MetricsServiceStub", lambda channel: FailedRpcStub("metrics"))
+
+    def runtime():
+        return Observability(
+            Settings(telemetry_enabled=True),
+            span_exporter=trace_exporter.OTLPSpanExporter(endpoint="http://127.0.0.1:1", timeout=0.01),
+            metric_exporter=metric_exporter.OTLPMetricExporter(endpoint="http://127.0.0.1:1", timeout=0.01),
+        )
+
+    first, second = runtime(), runtime()
+    try:
+        first.recorder.record(DomainEvent("model.request", {"outcome": "success"}))
+        first.force_flush()
+        first.shutdown()
+        second.recorder.record(DomainEvent("model.request", {"outcome": "success"}))
+        second.force_flush()
+    finally:
+        first.shutdown()
+        second.shutdown()
+
+    spans = [
+        span
+        for request in requests["spans"]
+        for resource in request.resource_spans
+        for scope in resource.scope_spans
+        for span in scope.spans
+    ]
+    metrics = [
+        metric
+        for request in requests["metrics"]
+        for resource in request.resource_metrics
+        for scope in resource.scope_metrics
+        for metric in scope.metrics
+    ]
+    assert len(spans) == 2
+    assert all(span.name == "model.request" for span in spans)
+    assert metrics and all(metric.name == "recruitmatch.model.request" for metric in metrics)
+    assert all(metric.sum.data_points[0].as_int == 1 for metric in metrics)
+
+    # A timed-out shutdown may leave an exporter emitting a late diagnostic;
+    # its logger remains protected even after every owning runtime has closed.
+    logging.getLogger("opentelemetry.exporter.otlp.proto.grpc.exporter").error("late %s", sentinel)
+    logging.getLogger("app.unrelated").warning("application diagnostic %s", "preserved")
+    assert "application diagnostic preserved" in caplog.text
+    assert sentinel not in caplog.text
+    exporter_records = [
+        record for record in caplog.records if record.name == "opentelemetry.exporter.otlp.proto.grpc.exporter"
+    ]
+    assert exporter_records
+    assert all(record.exc_info is None and record.exc_text is None for record in exporter_records)
 
 
 def test_forked_worker_gets_a_new_process_runtime():

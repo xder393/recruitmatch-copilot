@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import logging
 import time
 from contextlib import contextmanager
 from threading import Lock, Thread
@@ -49,6 +50,28 @@ DURATION_EVENTS = {
     "matching.run": "match.duration",
     "model.generate": "model.duration",
 }
+
+
+class _ExporterLogPrivacyFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        # The OTLP delegate logs inside export(), before our exception boundary.
+        # Keep severity but collect neither exception text nor configured endpoints.
+        record.msg = "otel_exporter_diagnostic"
+        record.args = ()
+        record.exc_info = None
+        record.exc_text = None
+        record.stack_info = None
+        return True
+
+
+_exporter_log_filter = _ExporterLogPrivacyFilter()
+
+
+def _configure_exporter_logging() -> None:
+    # Public, exact-logger configuration only. This process-wide privacy rule is
+    # idempotent and deliberately outlives individual runtimes: other owners and
+    # bounded-shutdown background work must never lose protection during teardown.
+    logging.getLogger("opentelemetry.exporter.otlp.proto.grpc.exporter").addFilter(_exporter_log_filter)
 
 
 class _QuietSpanExporter(SpanExporter):
@@ -187,6 +210,7 @@ class Observability:
         if not settings.telemetry_enabled:
             return
         settings.validate()
+        _configure_exporter_logging()
         os.environ["OTEL_SEMCONV_STABILITY_OPT_IN"] = "http"
         # Never enable header/body/SQL capture based on ambient instrumentation env.
         os.environ["OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST"] = ""
