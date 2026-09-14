@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 
-from celery import Celery  # type: ignore[import-untyped]
+from celery import Celery, signals  # type: ignore[import-untyped]
 from celery.exceptions import Reject  # type: ignore[import-untyped]
 from billiard.exceptions import SoftTimeLimitExceeded  # type: ignore[import-untyped]
 
@@ -27,8 +27,44 @@ from app.processing.outcomes import ProcessDisposition
 from app.processing.retry import RetryPolicy
 from app.repositories.ports import PersistenceUnavailable
 from app.tasks.beat import WorkerHeartbeatStep
+from app.observability.otel import configure_observability, shutdown_observability
+from app.observability.instrumentation import activate, instrument_frameworks
+from app.observability.adapters import ObservedArtifactStore
+from app.core.logging import setup_logging
+from app.observability.context import validated_headers
 
 logger = logging.getLogger(__name__)
+_worker_scope = None
+
+
+@signals.setup_logging.connect
+def worker_logging(**kwargs):
+    setup_logging()
+
+
+@signals.celeryd_after_setup.connect
+def worker_control_logging(**kwargs):
+    from app.core.celery_logging import install_worker_control_logging
+
+    install_worker_control_logging()
+
+
+@signals.worker_process_init.connect
+def start_worker_telemetry(**kwargs):
+    global _worker_scope
+    instrument_frameworks()
+    runtime = configure_observability(Settings.load())
+    _worker_scope = activate(runtime)
+    _worker_scope.__enter__()
+
+
+@signals.worker_process_shutdown.connect
+def stop_worker_telemetry(**kwargs):
+    global _worker_scope
+    if _worker_scope is not None:
+        _worker_scope.__exit__(None, None, None)
+        _worker_scope = None
+    shutdown_observability()
 
 
 class ProcessingTaskFailed(Exception):
@@ -68,6 +104,7 @@ def build_worker_dependencies(
         settings.processing_max_attempts, settings.retry_short_seconds, settings.retry_long_seconds
     )
     artifact_store = artifact_store if artifact_store is not None else S3ArtifactStore(S3Settings.from_env().client())
+    artifact_store = ObservedArtifactStore(artifact_store)
     return WorkerDependencies(
         resume_processor=ResumeProcessingService(
             uow_factory,
@@ -92,6 +129,7 @@ def build_worker_dependencies(
 
 
 settings = Settings.load()
+instrument_frameworks()
 celery_app = Celery("recruitmatch", broker=settings.celery_broker_url, backend=None)
 celery_app.steps["worker"].add(WorkerHeartbeatStep)
 celery_app.conf.update(
@@ -121,6 +159,7 @@ celery_app.conf.update(
 def _deliver(task, tenant_id: str, source_id: str, kind: str) -> None:
     task.request.argsrepr = "[redacted]"
     task.request.kwargsrepr = "[redacted]"
+    task.request.headers = validated_headers(getattr(task.request, "headers", None))
     try:
         settings = Settings.load()
         dependencies = build_worker_dependencies(settings)

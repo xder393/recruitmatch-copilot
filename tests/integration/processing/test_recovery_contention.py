@@ -98,7 +98,7 @@ def test_held_row_does_not_abort_other_candidates_or_beat_observations(
             assert maintenance == [
                 (
                     "recruitmatch.reconcile_artifacts",
-                    {"args": (), "expires": 60, "argsrepr": "[redacted]", "kwargsrepr": "[redacted]"},
+                    {"args": (), "expires": 60, "argsrepr": "[redacted]", "kwargsrepr": "[redacted]", "headers": {}},
                 )
             ]
             assert heartbeats.snapshot()["beat"] == "fresh"

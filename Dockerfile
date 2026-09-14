@@ -52,11 +52,15 @@ FROM app-base AS test
 COPY --from=test-node /usr/local/bin/node /usr/local/bin/node
 COPY --from=test-builder --chown=recruitmatch:recruitmatch /app/.venv /app/.venv
 COPY --from=builder /usr/local/bin/uv /usr/local/bin/uv
-COPY --chown=recruitmatch:recruitmatch pyproject.toml uv.lock .python-version Dockerfile docker-compose.yml ./
+COPY --chown=recruitmatch:recruitmatch pyproject.toml uv.lock .python-version pytest.ini Dockerfile docker-compose.yml ./
 COPY --chown=recruitmatch:recruitmatch scripts/ scripts/
 COPY --chown=recruitmatch:recruitmatch tests/ tests/
 COPY --chown=recruitmatch:recruitmatch evaluation/ evaluation/
 COPY --chown=recruitmatch:recruitmatch ops/minio/ ops/minio/
+COPY --chown=recruitmatch:recruitmatch ops/otel/ ops/otel/
+COPY --chown=recruitmatch:recruitmatch ops/prometheus/ ops/prometheus/
+COPY --chown=recruitmatch:recruitmatch ops/tempo/ ops/tempo/
+COPY --chown=recruitmatch:recruitmatch ops/grafana/ ops/grafana/
 COPY --from=minio-client /usr/bin/mc /usr/local/bin/mc
 
 USER recruitmatch

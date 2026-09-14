@@ -13,6 +13,7 @@ from app.ai.contracts import ModelRequest, StructuredModel
 from app.ai.gateway import ModelGatewayError
 from app.retrieval.indexing import EmbeddingAdapter
 from app.retrieval.ports import RecruitingVectorIndex, SearchScope
+from app.observability.events import observed, record
 
 
 class SemanticProjectScore(BaseModel):
@@ -22,6 +23,7 @@ class SemanticProjectScore(BaseModel):
     job_citation_ids: List[str] = Field(default_factory=list)
 
 
+@observed("citation.validate", {"operation": "semantic_project_match"})
 def validate_semantic_score(
     score: SemanticProjectScore,
     authorized_sources: Dict[str, str],
@@ -79,6 +81,7 @@ class SemanticMatcher:
             item for item in scope.authorized_sources if item[0] == "job_version" and item[1] == job_version_id
         )
         if not resume_sources or not job_sources:
+            self._fallback("insufficient_evidence")
             return None
         pair_scope = SearchScope(
             scope.tenant_id,
@@ -103,8 +106,10 @@ class SemanticMatcher:
                 self.min_score,
             )
         except Exception:
+            self._fallback("retrieval_unavailable")
             return None
         if not resume_hits or not job_hits:
+            self._fallback("insufficient_evidence")
             return None
         hits = resume_hits + job_hits
         evidence, prompt_citation_ids = format_evidence_with_citation_ids(
@@ -147,6 +152,9 @@ class SemanticMatcher:
                 if hit.citation_id in prompt_citation_ids and hit.citation_id in requested_ids
             },
         )
+        if validated is None:
+            record("citation.rejection", {"operation": "semantic_project_match", "error.code": "invalid_citation"})
+            self._fallback("invalid_citation")
         if self.trace_sink is not None:
             try:
                 self.trace_sink.succeeded(
@@ -163,6 +171,7 @@ class SemanticMatcher:
         return validated
 
     def _trace_failed(self, tenant_id, resume_id, job_version_id, request, error, started):
+        self._fallback(error.code)
         if self.trace_sink is not None:
             try:
                 self.trace_sink.failed(
@@ -176,3 +185,7 @@ class SemanticMatcher:
                 )
             except Exception:
                 pass
+
+    @staticmethod
+    def _fallback(code):
+        record("model.fallback", {"operation": "semantic_project_match", "outcome": "fallback", "error.code": code})

@@ -39,6 +39,9 @@ from app.retrieval.indexing import SourceIndexer
 from app.retrieval.pgvector_index import PgVectorRecruitingIndex
 from app.retrieval.ports import RecruitingVectorIndex
 from app.operations.health import HealthService
+from app.observability.otel import configure_observability, shutdown_observability
+from app.observability.instrumentation import instrument_app, route_templates, activate
+from app.observability.adapters import ObservedArtifactStore, ObservedVectorIndex, ObservedEmbeddingQueries
 
 logger = get_logger(__name__)
 
@@ -75,6 +78,7 @@ def init_recruiting_state(
         access_token_minutes=settings.access_token_minutes,
     )
     artifact_store = artifact_store if artifact_store is not None else S3ArtifactStore(S3Settings.from_env().client())
+    artifact_store = ObservedArtifactStore(artifact_store)
     fallback_parser = HeuristicResumeParser()
     recruiting_model = structured_model
     if recruiting_model is None and settings.ai_enabled:
@@ -89,11 +93,12 @@ def init_recruiting_state(
         if settings.ai_enabled
         else fallback_parser
     )
-    embedder = knowledge_embedder or BGEEmbedder(settings.embedding_model)
+    embedder = ObservedEmbeddingQueries(knowledge_embedder or BGEEmbedder(settings.embedding_model))
     if retrieval_index is None:
         if engine.dialect.name != "postgresql":
             raise RuntimeError("SQLite app composition requires an explicit retrieval fake")
         retrieval_index = PgVectorRecruitingIndex(session_factory)
+    retrieval_index = ObservedVectorIndex(retrieval_index)
     if source_indexer is None:
         if engine.dialect.name != "postgresql":
             raise RuntimeError("SQLite app composition requires an explicit generation fake")
@@ -169,18 +174,32 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        init_recruiting_state(
-            app,
+        telemetry = configure_observability(
             settings,
-            structured_model,
-            knowledge_embedder,
-            retrieval_index,
-            source_indexer,
-            artifact_store,
-            uow_factory,
-            health,
+            owner=app,
+            route_templates=route_templates(app),
         )
-        yield
+        app.state.observability = telemetry
+        app.state.event_recorder = telemetry.recorder
+        try:
+            with activate(telemetry):
+                init_recruiting_state(
+                    app,
+                    settings,
+                    structured_model,
+                    knowledge_embedder,
+                    retrieval_index,
+                    source_indexer,
+                    artifact_store,
+                    uow_factory,
+                    health,
+                )
+                app.state.health.telemetry_status = (
+                    "disabled" if not settings.telemetry_enabled else "unavailable" if telemetry._closed else "unknown"
+                )
+            yield
+        finally:
+            shutdown_observability(owner=app)
 
     app = FastAPI(
         title="RecruitMatch Copilot",
@@ -205,7 +224,7 @@ def create_app(
             status = getattr(response, "status_code", "-")
             if response is not None:
                 response.headers["X-Request-ID"] = request_id
-            logger.info("%s %s -> %s (%.1fms)", request.method, request.url.path, status, latency_ms)
+            logger.info("http_access", extra={"status_code": status})
             if response is not None and not request.url.path.startswith("/api/v1/health/"):
                 principal = getattr(request.state, "principal", None)
                 try:
@@ -223,7 +242,7 @@ def create_app(
                         )
                         audit_session.commit()
                 except Exception:
-                    logger.warning("审计日志写入失败 request_id=%s", request_id)
+                    logger.warning("audit_write_failed")
             request_id_var.reset(token)
 
     # ---- 异常处理 ----
@@ -243,7 +262,7 @@ def create_app(
 
     @app.exception_handler(Exception)
     async def unhandled_handler(request: Request, exc: Exception):
-        logger.exception("未处理异常: %s", exc)
+        logger.error("internal_error")
         return JSONResponse(
             {"ok": False, "error": {"code": "internal_error", "message": "服务器内部错误"}},
             status_code=500,
@@ -259,6 +278,7 @@ def create_app(
                 return f.read()
         return "<h3>前端页面缺失（web/index.html）</h3>"
 
+    instrument_app(app)
     return app
 
 

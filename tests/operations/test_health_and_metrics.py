@@ -65,7 +65,7 @@ def test_worker_stale_degrades_system_but_not_readiness(operations_client):
     assert response.status_code == 200
     assert response.json()["worker"] == "stale"
     assert response.json()["overall"] == "degraded"
-    assert response.json()["telemetry"] == "not_configured"
+    assert response.json()["telemetry"] == "disabled"
     assert {
         "api",
         "database",
@@ -122,7 +122,7 @@ def test_disabled_optional_components_do_not_fake_telemetry_or_degrade_live_runt
     health.heartbeats = FreshHeartbeats()
     assert health.system()["overall"] == "ok"
     assert health.system()["ai"] == "disabled"
-    assert health.system()["telemetry"] == "not_configured"
+    assert health.system()["telemetry"] == "disabled"
     health.ai_enabled = True
     health.ai_configured = True
     assert health.system()["ai"] == "unknown" and health.system()["overall"] == "degraded"

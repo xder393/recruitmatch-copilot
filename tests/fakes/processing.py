@@ -19,6 +19,7 @@ def aware(value):
 class FakeLeaseRepository:
     def __init__(self, session):
         self.session = session
+        self.retry_scheduled = False
 
     def _source(self, tenant_id, source_type, source_id):
         row = self.session.get(Resume if source_type == "resume" else KnowledgeDocument, source_id)
@@ -121,12 +122,14 @@ class FakeLeaseRepository:
     def schedule_retry(self, lease, error_code, *, short_delay, long_delay, max_attempts):
         from app.processing.outcomes import ProcessDisposition
 
+        self.retry_scheduled = False
         row = self._owned(lease)
         if row is None:
             return ProcessDisposition.LEASE_LOST
         attempts = row.processing_attempts
         now = datetime.now(timezone.utc)
         retry = now + (short_delay if attempts <= 2 else long_delay) if attempts < max_attempts else None
+        self.retry_scheduled = retry is not None
         self._terminal(lease, error_code, retry)
         if retry is not None and attempts <= 2:
             row.status = ResumeStatus.QUEUED if isinstance(row, Resume) else "uploaded"

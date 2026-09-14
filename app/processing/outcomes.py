@@ -38,6 +38,7 @@ class ClaimedLease:
 class ClaimResult:
     disposition: ClaimDisposition
     lease: ClaimedLease | None = None
+    takeover: bool = False
 
 
 class LeaseOwnershipLost(Exception):

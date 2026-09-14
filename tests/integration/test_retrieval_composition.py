@@ -91,7 +91,10 @@ def test_fastapi_and_worker_use_real_pgvector_generation_composition(composition
     app = create_app(settings, structured_model=CompositionModel(), knowledge_embedder=embedder)
 
     with TestClient(app) as client:
-        assert isinstance(app.state.retrieval_index, PgVectorRecruitingIndex)
+        from app.observability.adapters import ObservedVectorIndex
+
+        assert isinstance(app.state.retrieval_index, ObservedVectorIndex)
+        assert isinstance(app.state.retrieval_index.index, PgVectorRecruitingIndex)
         assert isinstance(app.state.source_indexer, SourceIndexer)
         assert isinstance(app.state.source_indexer.writer, GenerationWriter)
         created = client.post(

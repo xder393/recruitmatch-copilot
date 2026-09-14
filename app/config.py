@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import math
 from dataclasses import dataclass
 
 from dotenv import load_dotenv
@@ -89,6 +90,13 @@ class Settings:
     retrieval_min_score: float = 0.35
     max_evidence_characters: int = 8000
 
+    # Explicit opt-in; Compose enables telemetry separately from business readiness.
+    telemetry_enabled: bool = False
+    trace_sample_ratio: float = 1.0
+    otel_exporter_otlp_endpoint: str = "http://otel-collector:4317"
+    telemetry_service_name: str = "recruitmatch-api"
+    telemetry_environment: str = "development"
+
     @classmethod
     def load(cls) -> "Settings":
         settings = cls(
@@ -123,11 +131,22 @@ class Settings:
             retrieval_top_k=_get_int("RETRIEVAL_TOP_K", cls.retrieval_top_k),
             retrieval_min_score=_get_float("RETRIEVAL_MIN_SCORE", cls.retrieval_min_score),
             max_evidence_characters=_get_int("MAX_EVIDENCE_CHARACTERS", cls.max_evidence_characters),
+            telemetry_enabled=_get_bool("TELEMETRY_ENABLED", cls.telemetry_enabled),
+            trace_sample_ratio=_get_float("TRACE_SAMPLE_RATIO", cls.trace_sample_ratio),
+            otel_exporter_otlp_endpoint=os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", cls.otel_exporter_otlp_endpoint),
+            telemetry_service_name=os.getenv("OTEL_SERVICE_NAME", cls.telemetry_service_name),
+            telemetry_environment=os.getenv("DEPLOYMENT_ENVIRONMENT", cls.telemetry_environment),
         )
         settings.validate()
         return settings
 
     def validate(self) -> None:
+        if not math.isfinite(self.trace_sample_ratio) or not 0 <= self.trace_sample_ratio <= 1:
+            raise ConfigError("trace sample ratio must be finite and between zero and one")
+        if self.telemetry_service_name not in {"recruitmatch-api", "recruitmatch-worker", "recruitmatch-beat"}:
+            raise ConfigError("telemetry service name must be a fixed API, Worker or Beat role")
+        if self.telemetry_environment not in {"development", "test", "staging", "production"}:
+            raise ConfigError("telemetry environment must be a fixed deployment environment")
         if os.getenv("CELERY_RESULT_BACKEND"):
             raise ConfigError("Celery result backend is disabled")
         timings = (

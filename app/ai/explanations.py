@@ -15,6 +15,7 @@ from app.ai.citations import (
 from app.ai.contracts import ModelRequest, StructuredModel
 from app.ai.gateway import ModelGatewayError
 from app.retrieval import RetrievedChunk, SearchScope
+from app.observability.events import observed, record
 
 
 class GroundedClaim(BaseModel):
@@ -87,6 +88,10 @@ class GroundedExplanationService:
             self.max_evidence_characters,
         )
         if not evidence:
+            record(
+                "model.fallback",
+                {"operation": "match_explanation", "error.code": "insufficient_evidence", "outcome": "fallback"},
+            )
             return self._fallback(rule_result, "insufficient_evidence")
         permitted = [hit for hit in permitted if hit.citation_id in prompt_citation_ids]
 
@@ -140,6 +145,10 @@ class GroundedExplanationService:
                 explanation.interview_questions,
             ]
         ):
+            record(
+                "model.fallback",
+                {"operation": "match_explanation", "error.code": "empty_model_output", "outcome": "fallback"},
+            )
             explanation = self._fallback(rule_result, "empty_model_output")
         if self.trace_sink is not None:
             try:
@@ -159,6 +168,7 @@ class GroundedExplanationService:
         return explanation
 
     def _trace_failed(self, tenant_id, resume_id, source_ids, request, error, started):
+        record("model.fallback", {"operation": "match_explanation", "error.code": error.code, "outcome": "fallback"})
         if self.trace_sink is not None:
             try:
                 self.trace_sink.failed(
@@ -174,6 +184,7 @@ class GroundedExplanationService:
                 pass
 
     @staticmethod
+    @observed("citation.validate", {"operation": "match_explanation"})
     def _validate(output: GroundedModelOutput, hits: List[RetrievedChunk]) -> GroundedExplanation:
         known_ids = {hit.citation_id for hit in hits}
         rejected = False
@@ -213,6 +224,8 @@ class GroundedExplanationService:
             )
             for citation_id in used_ids
         }
+        if rejected:
+            record("citation.rejection", {"operation": "match_explanation", "error.code": "citation_rejected"})
         return GroundedExplanation(
             summary=summary,
             strengths=strengths,

@@ -7,6 +7,7 @@ from datetime import timedelta
 from typing import TYPE_CHECKING
 
 from app.processing.outcomes import ClaimedLease, ProcessDisposition
+from app.observability.events import record
 
 if TYPE_CHECKING:
     from app.repositories.unit_of_work import RecruitingUnitOfWork
@@ -53,5 +54,14 @@ def finish_failed_attempt(
     if outcome == ProcessDisposition.LEASE_LOST:
         uow.rollback()
         return outcome
+    # Capture the decision while its guarded transaction still owns the row.
+    # Retry is an overlapping subset of committed failed attempts, not delivery.
+    retry_scheduled = code in TRANSIENT_PROCESSING_CODES and (
+        outcome == ProcessDisposition.RETRY_SHORT or uow.leases.retry_scheduled
+    )
     uow.commit()
+    attributes = {"task.type": str(lease.source_type.value), "error.code": code, "outcome": "failure"}
+    record("task.failed", attributes)
+    if retry_scheduled:
+        record("task.retry", {**attributes, "outcome": "retry"})
     return outcome

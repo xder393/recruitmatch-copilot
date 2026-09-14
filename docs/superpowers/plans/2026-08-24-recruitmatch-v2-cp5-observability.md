@@ -17,6 +17,7 @@
 - Automatic sensitive attributes are denied by default.
 - Telemetry queues are bounded and non-blocking; backend failure may drop telemetry, not business work.
 - Compose trace sampling is 1.0; load-test sampling is 0.1; metrics are unsampled.
+- User approved the telemetry-only `service.instance.id` Resource exception on 2026-09-14 (spec9.4). Task2 must generate isolated writer identities, including after prefork; Task3 preserves them through OTLP/Prometheus, and Task4 verifies multi-writer/restart behavior. All business-ID and Baggage restrictions remain unchanged.
 
 ---
 

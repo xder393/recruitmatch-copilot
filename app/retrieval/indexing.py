@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+from app.observability.events import observed, operation, record
 from app.processing.outcomes import ClaimedLease, LeaseOwnershipLost
 from typing import Protocol
 
@@ -85,8 +86,10 @@ class SourceIndexer:
             embedding_model=self.embedder.model_name,
             fencing_token=fencing_token,
         )
+        record("vector.indexed_chunks", {"source.type": source.source_type, "outcome": "success"}, count)
         return count
 
+    @observed("vector.index")
     def stage(
         self,
         source: SourceRef,
@@ -99,7 +102,8 @@ class SourceIndexer:
         if not chunks:
             raise ValueError("at least one source chunk is required")
         try:
-            vectors = self.embedder.embed_documents([chunk.content for chunk in chunks])
+            with operation("embedding.generate", {"model.name": self.embedder.model_name}):
+                vectors = self.embedder.embed_documents([chunk.content for chunk in chunks])
         except (ValueError, LeaseOwnershipLost):
             raise
         except Exception as exc:

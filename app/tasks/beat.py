@@ -9,7 +9,7 @@ from celery import bootsteps  # type: ignore[import-untyped]
 from celery.beat import Scheduler  # type: ignore[import-untyped]
 from kombu.exceptions import OperationalError as BrokerError  # type: ignore[import-untyped]
 import redis
-from sqlalchemy import create_engine
+import sqlalchemy
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool
 
@@ -19,6 +19,11 @@ from app.processing.recovery import RecoveryScanner, RecoveryDispatchUnavailable
 from app.processing.recovery_repository import RecoveryRepository
 from app.repositories.ports import PersistenceUnavailable
 from app.tasks.dispatcher import CeleryTaskDispatcher
+from app.observability.otel import configure_observability, shutdown_observability
+from app.observability.instrumentation import activate, instrument_frameworks
+from app.observability.operations import OperationalMetrics
+from app.observability.events import continuation, operation
+from app.observability.context import trace_headers
 
 logger = logging.getLogger(__name__)
 
@@ -33,12 +38,17 @@ class RecoveryScheduler(Scheduler):
         self.clock = clock
         self.next_maintenance = 0.0
         self.engine = None
+        self.telemetry = None
+        self.operational_metrics = None
         super().__init__(*args, **kwargs)
 
     def _compose(self):
         settings = Settings.load()
+        if self.telemetry is None:
+            instrument_frameworks()
+            self.telemetry = configure_observability(settings, owner=self)
         if self.scanner is None:
-            self.engine = create_engine(
+            self.engine = sqlalchemy.create_engine(
                 settings.database_url,
                 poolclass=NullPool,
                 connect_args={
@@ -58,17 +68,33 @@ class RecoveryScheduler(Scheduler):
             self.heartbeats = OperationsHeartbeats(settings.celery_broker_url)
         if self.maintenance_dispatch is None:
             self.maintenance_dispatch = self._dispatch_maintenance
+        if self.operational_metrics is None and self.engine is not None:
+            self.operational_metrics = OperationalMetrics(self.telemetry, sessionmaker(self.engine), self.heartbeats)
 
     def _dispatch_maintenance(self):
         try:
-            self.app.send_task(
-                "recruitmatch.reconcile_artifacts", args=(), expires=60, argsrepr="[redacted]", kwargsrepr="[redacted]"
-            )
+            with continuation(fresh=True)(), operation("beat.recover", {"recovery.reason": "cleanup_pending"}):
+                self.app.send_task(
+                    "recruitmatch.reconcile_artifacts",
+                    args=(),
+                    expires=60,
+                    argsrepr="[redacted]",
+                    kwargsrepr="[redacted]",
+                    headers=trace_headers(),
+                )
         except (BrokerError, redis.RedisError, OSError):
             raise RecoveryDispatchUnavailable() from None
 
     def tick(self, **kwargs):
         self._compose()
+        with activate(self.telemetry):
+            try:
+                return self._tick()
+            finally:
+                if self.operational_metrics is not None:
+                    self.operational_metrics.poll()
+
+    def _tick(self):
         try:
             self.scanner.run_once()
         except PersistenceUnavailable:
@@ -88,6 +114,7 @@ class RecoveryScheduler(Scheduler):
         return 10
 
     def close(self):
+        shutdown_observability(owner=self)
         if self.engine is not None:
             self.engine.dispose()
         super().close()

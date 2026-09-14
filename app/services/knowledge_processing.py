@@ -5,6 +5,8 @@ from __future__ import annotations
 from datetime import timedelta
 from uuid import uuid4
 import hashlib
+import time
+from app.observability.events import observed, operation, record
 
 from app.core.exceptions import AppError
 from app.artifacts.ports import ArtifactStore, ArtifactChecksumMismatch, ArtifactLengthMismatch, MAX_ARTIFACT_BYTES
@@ -37,9 +39,10 @@ class KnowledgeProcessingService:
         self.retry_policy = retry_policy or RetryPolicy()
         self.timeout_errors = timeout_errors
 
+    @observed("knowledge.process", {"task.type": "knowledge_document"})
     def process(self, tenant_id: str, document_id: str) -> ProcessDisposition:
         duration = timedelta(seconds=self.lease_seconds)
-        with self.uow_factory() as uow:
+        with operation("lease.claim", {"source.type": "knowledge_document"}), self.uow_factory() as uow:
             claim = uow.leases.claim(
                 tenant_id,
                 "knowledge_document",
@@ -62,7 +65,10 @@ class KnowledgeProcessingService:
             source = SourceRef(tenant_id, "knowledge_document", document_id, document.checksum)
             generation = document.active_index_generation + 1
             uow.commit()
-
+        record("task.started", {"task.type": "knowledge_document", "outcome": "claimed"})
+        if claim.takeover:
+            record("lease.takeover", {"source.type": "knowledge_document", "recovery.reason": "lease_expired"})
+        started = time.perf_counter()
         try:
             with LeaseRenewer(self.uow_factory, lease, duration=duration) as renewer:
                 try:
@@ -95,7 +101,7 @@ class KnowledgeProcessingService:
                         source, generation, chunks, document_id=document_id, fencing_token=lease
                     )
                     renewer.ensure_owned()
-                    with self.uow_factory() as uow:
+                    with operation("lease.finalize", {"source.type": "knowledge_document"}), self.uow_factory() as uow:
                         with uow.leases.finalize_owned(lease):
                             uow.generations.activate(
                                 source,
@@ -105,6 +111,8 @@ class KnowledgeProcessingService:
                                 fencing_token=lease,
                             )
                         uow.commit()
+                    record("task.completed", {"task.type": "knowledge_document", "outcome": "success"})
+                    record("vector.indexed_chunks", {"source.type": "knowledge_document", "outcome": "success"}, count)
                 except LeaseOwnershipLost:
                     raise
                 except (GenerationWriterError, EmbeddingFailure, ValueError) as exc:
@@ -118,6 +126,8 @@ class KnowledgeProcessingService:
             return ProcessDisposition.LEASE_LOST
         except self.timeout_errors:
             return self._mark_failed(lease, "processing_timeout")
+        finally:
+            record("task.duration", {"task.type": "knowledge_document"}, time.perf_counter() - started)
 
     def _mark_failed(self, lease: ClaimedLease, code: str, source=None, index_error=None) -> ProcessDisposition:
         with self.uow_factory() as uow:

@@ -16,6 +16,7 @@ from app.resumes.schemas import ResumeProfile
 from app.security.tokens import Principal
 from app.retrieval.indexing import EmbeddingAdapter
 from app.retrieval.ports import RecruitingVectorIndex, SearchScope
+from app.observability.events import observed, operation, record
 
 
 class MatchingService:
@@ -43,6 +44,10 @@ class MatchingService:
         self.retrieval_min_score = retrieval_min_score
 
     def run(self, principal: Principal, resume_id: str, mode: str = "rules-v1") -> MatchRun:
+        with operation("matching.run", {"match.mode": "hybrid" if mode == "hybrid-v1" else "rules"}):
+            return self._run(principal, resume_id, mode)
+
+    def _run(self, principal: Principal, resume_id: str, mode: str) -> MatchRun:
         if mode not in {"rules-v1", "hybrid-v1"}:
             raise ConflictError("不支持的匹配算法")
         if mode == "hybrid-v1" and self.hybrid_engine is None:
@@ -128,6 +133,11 @@ class MatchingService:
         run.status = MatchStatus.SUCCEEDED
         run.completed_at = datetime.now(timezone.utc)
         self.uow.commit()
+        attributes = {"match.mode": "hybrid" if mode == "hybrid-v1" else "rules", "outcome": "success"}
+        record("match.completed", attributes)
+        for recommendation in recommendations:
+            # Stored scores are fractions; the telemetry contract is 0..100.
+            record("match.score", attributes, recommendation.total_score * 100)
         loaded = self.repository.get_run(principal.tenant_id, run.id)
         if loaded is None:
             raise RuntimeError("match run disappeared after commit")
@@ -203,6 +213,10 @@ class MatchingService:
                     hits,
                 )
             except Exception:
+                record(
+                    "model.fallback",
+                    {"operation": "match_explanation", "outcome": "fallback", "error.code": "retrieval_unavailable"},
+                )
                 explanation = None
 
             semantic_ids = frozenset(citation for citation in item.citations if isinstance(citation, str))
@@ -211,6 +225,10 @@ class MatchingService:
             try:
                 resolved = self.source_index.resolve_active_citations(scope, requested_ids) if requested_ids else []
             except Exception:
+                record(
+                    "model.fallback",
+                    {"operation": "matching.run", "outcome": "fallback", "error.code": "retrieval_unavailable"},
+                )
                 enriched.append(self._unresolved_guidance_fallback(item))
                 continue
             by_citation = {
@@ -226,6 +244,12 @@ class MatchingService:
                 item.job_version_id,
             )
             semantic_failed = item.semantic_score is not None and not semantic_is_valid
+            if semantic_failed:
+                record("citation.rejection", {"operation": "matching.run", "error.code": "invalid_citation"})
+                record(
+                    "model.fallback",
+                    {"operation": "matching.run", "outcome": "fallback", "error.code": "invalid_citation"},
+                )
             semantic_score = None if semantic_failed else item.semantic_score
             semantic_payload_ids = semantic_ids if semantic_score is not None else frozenset()
 
@@ -274,6 +298,7 @@ class MatchingService:
         return sorted(enriched, key=lambda recommendation: (-recommendation.total_score, recommendation.job_id))
 
     @staticmethod
+    @observed("citation.validate", {"operation": "matching.run"})
     def _semantic_citations_are_current(semantic_ids, by_citation, resume_id, job_version_id):
         if not semantic_ids or not semantic_ids <= by_citation.keys():
             return False
@@ -283,6 +308,7 @@ class MatchingService:
         )
 
     @staticmethod
+    @observed("citation.validate", {"operation": "match_explanation"})
     def _resolved_guidance(explanation, resolved_ids):
         rejected = False
 
@@ -302,7 +328,15 @@ class MatchingService:
         questions = [kept for item in explanation.interview_questions if (kept := claim(item)) is not None]
         claims = [item for item in [summary, *strengths, *gaps, *risk_flags, *questions] if item is not None]
         used_ids = frozenset(citation_id for item in claims for citation_id in item.citation_ids)
+        # Count only new rejection at this final active-source validation, not
+        # the status of claims already rejected by the explanation generator.
+        if rejected:
+            record("citation.rejection", {"operation": "match_explanation", "error.code": "invalid_citation"})
         if rejected and not claims:
+            record(
+                "model.fallback",
+                {"operation": "match_explanation", "outcome": "fallback", "error.code": "invalid_citation"},
+            )
             status = "empty_model_output"
         elif rejected:
             status = "rejected_unsupported_claims"

@@ -23,6 +23,7 @@ Source = Resume | KnowledgeDocument
 class LeaseRepository:
     def __init__(self, session: Session):
         self._session = session
+        self.retry_scheduled = False
 
     @staticmethod
     def _identity(tenant_id: str, source_type: ArtifactOwnerType | str, source_id: str) -> ArtifactOwnerType:
@@ -123,6 +124,7 @@ class LeaseRepository:
                 self._failed_row(row, "processing_attempts_exhausted")
                 self._session.flush([row])
                 return ClaimResult(ClaimDisposition.TERMINAL)
+            takeover = self._running(row)
             row.status = ResumeStatus.RUNNING if isinstance(row, Resume) else "processing"
             row.processing_attempts += 1
             row.processing_lease_epoch += 1
@@ -142,7 +144,7 @@ class LeaseRepository:
                 row.processing_lease_expires_at,
             )
         self._session.flush([row])
-        return ClaimResult(ClaimDisposition.CLAIMED, lease)
+        return ClaimResult(ClaimDisposition.CLAIMED, lease, takeover=takeover)
 
     @staticmethod
     def _budget(max_attempts: int) -> None:
@@ -165,6 +167,7 @@ class LeaseRepository:
         max_attempts: int,
     ) -> ProcessDisposition:
         """Persist failure and its next eligibility under the current lease; caller commits."""
+        self.retry_scheduled = False
         self._validate_lease(lease)
         self._budget(max_attempts)
         if (
@@ -183,6 +186,7 @@ class LeaseRepository:
             self._failed_row(row, error_code)
             outcome = ProcessDisposition.COMPLETED
             if row.processing_attempts < max_attempts:
+                self.retry_scheduled = True
                 short = row.processing_attempts <= 2
                 row.next_retry_at = now + (short_delay if short else long_delay)
                 if short:

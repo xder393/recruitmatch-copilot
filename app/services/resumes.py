@@ -18,6 +18,7 @@ from app.repositories.unit_of_work import RecruitingUnitOfWork
 from app.resumes.extractors import FilePolicy, PreparedUpload
 from app.security.tokens import Principal
 from app.tasks.dispatcher import TaskDispatcher
+from app.observability.events import observed
 
 
 class ResumeService:
@@ -36,6 +37,7 @@ class ResumeService:
         self.dispatcher = dispatcher
         self.file_policy = file_policy or FilePolicy()
 
+    @observed("resume.upload", {"source.type": "resume"})
     def upload(
         self,
         principal: Principal,

@@ -1,0 +1,174 @@
+rule_files: [/etc/prometheus/rules.yml]
+evaluation_interval: 5s
+tests:
+  - name: simultaneous exporter failure families preserve alert and summed rate
+    interval: 5s
+    input_series:
+      - series: 'otelcol_exporter_send_failed_spans{exporter="synthetic"}'
+        values: '0+5x24'
+      - series: 'otelcol_exporter_enqueue_failed_spans{exporter="synthetic"}'
+        values: '0+0x24'
+      - series: 'otelcol_exporter_enqueue_failed_metric_points{exporter="synthetic"}'
+        values: '0+10x24'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: CollectorExportFailure
+        exp_alerts:
+          - exp_labels: {exporter: synthetic, severity: warning}
+            exp_annotations: {summary: Collector cannot send or enqueue telemetry}
+  - name: simultaneous zero exporter families remain inactive
+    interval: 5s
+    input_series:
+      - series: 'otelcol_exporter_send_failed_spans{exporter="synthetic"}'
+        values: '0+0x24'
+      - series: 'otelcol_exporter_enqueue_failed_spans{exporter="synthetic"}'
+        values: '0+0x24'
+      - series: 'otelcol_exporter_send_failed_metric_points{exporter="synthetic"}'
+        values: '0+0x24'
+      - series: 'otelcol_exporter_enqueue_failed_metric_points{exporter="synthetic"}'
+        values: '0+0x24'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: CollectorExportFailure
+        exp_alerts: []
+  - name: newest Beat zero replaces old positive and expires to unknown
+    interval: 5s
+    input_series:
+      - series: 'recruitmatch_queue_depth{job="recruitmatch-beat",instance="old",source_type="resume",deployment_environment_name="test"}'
+        values: '4 4 4 _ _ _ _ _ _ _ _ _ _'
+      - series: 'recruitmatch_queue_depth{job="recruitmatch-beat",instance="new",source_type="resume",deployment_environment_name="test"}'
+        values: '_ _ _ 0 0 _ _ _ _ _ _ _ _'
+      - series: 'recruitmatch_queue_depth{job="recruitmatch-beat",instance="new",source_type="knowledge_document",deployment_environment_name="test"}'
+        values: '_ _ _ 7 7 _ _ _ _ _ _ _ _'
+    promql_expr_test:
+      - expr: 'recruitmatch:queue_depth:latest'
+        eval_time: 10s
+        exp_samples:
+          - labels: 'recruitmatch:queue_depth:latest{source_type="resume",deployment_environment_name="test"}'
+            value: 4
+      - expr: 'recruitmatch:queue_depth:latest'
+        eval_time: 20s
+        exp_samples:
+          - labels: 'recruitmatch:queue_depth:latest{source_type="resume",deployment_environment_name="test"}'
+            value: 0
+          - labels: 'recruitmatch:queue_depth:latest{source_type="knowledge_document",deployment_environment_name="test"}'
+            value: 7
+      - expr: 'recruitmatch:queue_depth:latest'
+        eval_time: 50s
+        exp_samples: []
+  - name: exporter send failure must alert even without enqueue-failure series
+    interval: 5s
+    input_series:
+      - series: 'otelcol_exporter_send_failed_spans{exporter="otlp_grpc/tempo"}'
+        values: '0+5x24'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: CollectorExportFailure
+        exp_alerts:
+          - exp_labels: {exporter: otlp_grpc/tempo, severity: warning}
+            exp_annotations: {summary: Collector cannot send or enqueue telemetry}
+  - name: "HTTP 5xx ratio"
+    interval: 5s
+    input_series:
+      - series: 'http_server_request_duration_seconds_count{http_response_status_code="500",deployment_environment_name="test"}'
+        values: '0+1x72'
+      - series: 'http_server_request_duration_seconds_count{http_response_status_code="200",deployment_environment_name="test"}'
+        values: '0+9x72'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: Http5xx
+        exp_alerts:
+          - exp_labels: {"deployment_environment_name":"test","severity":"warning"}
+            exp_annotations: {"summary":"HTTP server 5xx ratio exceeds 5%"}
+  - name: "API P95 seconds"
+    interval: 5s
+    input_series:
+      - series: 'http_server_request_duration_seconds_bucket{job="recruitmatch-api",deployment_environment_name="test",le="1"}'
+        values: '0+5x72'
+      - series: 'http_server_request_duration_seconds_bucket{job="recruitmatch-api",deployment_environment_name="test",le="5"}'
+        values: '0+9x72'
+      - series: 'http_server_request_duration_seconds_bucket{job="recruitmatch-api",deployment_environment_name="test",le="+Inf"}'
+        values: '0+10x72'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: ApiP95
+        exp_alerts:
+          - exp_labels: {"deployment_environment_name":"test","severity":"warning"}
+            exp_annotations: {"summary":"API P95 exceeds one second"}
+  - name: "PostgreSQL queue age"
+    interval: 5s
+    input_series:
+      - series: 'recruitmatch_queue_oldest_age_seconds{job="recruitmatch-beat",instance="writer",source_type="resume",deployment_environment_name="test"}'
+        values: '200+0x72'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: QueueOldestAge
+        exp_alerts:
+          - exp_labels: {"source_type":"resume","deployment_environment_name":"test","severity":"warning"}
+            exp_annotations: {"summary":"PostgreSQL queued source age exceeds two minutes"}
+  - name: "Fresh zero workers"
+    interval: 5s
+    input_series:
+      - series: 'recruitmatch_worker_live{job="recruitmatch-beat",instance="writer",deployment_environment_name="test"}'
+        values: '0+0x72'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: WorkerZero
+        exp_alerts:
+          - exp_labels: {"deployment_environment_name":"test","severity":"critical"}
+            exp_annotations: {"summary":"Fresh Redis snapshot reports zero live workers"}
+  - name: "Absent Beat means unknown"
+    interval: 5s
+    input_series: []
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: BeatStale
+        exp_alerts:
+          - exp_labels: {"severity":"warning"}
+            exp_annotations: {"summary":"Beat snapshot is stale or unavailable; absence is unknown"}
+  - name: "Pending cleanup"
+    interval: 5s
+    input_series:
+      - series: 'recruitmatch_artifact_cleanup_pending{job="recruitmatch-beat",instance="writer",deployment_environment_name="test"}'
+        values: '2+0x80'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: ArtifactCleanup
+        exp_alerts:
+          - exp_labels: {"deployment_environment_name":"test","severity":"warning"}
+            exp_annotations: {"summary":"Artifacts remain pending cleanup"}
+  - name: "Logical AI fallback"
+    interval: 5s
+    input_series:
+      - series: 'recruitmatch_model_fallback_total{instance="writer",operation="matching.run",deployment_environment_name="test"}'
+        values: '0+1x24'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: AiFallback
+        exp_alerts:
+          - exp_labels: {"operation":"matching.run","deployment_environment_name":"test","severity":"warning"}
+            exp_annotations: {"summary":"AI pipeline degraded by logical fallback; not system down"}
+  - name: "Queue pressure"
+    interval: 5s
+    input_series:
+      - series: 'otelcol_exporter_queue_size{exporter="otlp_grpc/tempo"}'
+        values: '240+0x24'
+      - series: 'otelcol_exporter_queue_capacity{exporter="otlp_grpc/tempo"}'
+        values: '256+0x24'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: CollectorQueuePressure
+        exp_alerts:
+          - exp_labels: {"exporter":"otlp_grpc/tempo","severity":"warning"}
+            exp_annotations: {"summary":"Collector bounded queue exceeds 80%"}
+  - name: "Lease takeover"
+    interval: 5s
+    input_series:
+      - series: 'recruitmatch_lease_takeover_total{instance="writer",source_type="resume",deployment_environment_name="test"}'
+        values: '0+1x24'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: LeaseTakeover
+        exp_alerts:
+          - exp_labels: {"source_type":"resume","deployment_environment_name":"test","severity":"warning"}
+            exp_annotations: {"summary":"An expired lease was taken over"}

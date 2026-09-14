@@ -7,6 +7,11 @@ x-test-build: &test-build
   target: test
 
 x-app-environment: &app-environment
+  TELEMETRY_ENABLED: ${TELEMETRY_ENABLED:-true}
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+  OTEL_SEMCONV_STABILITY_OPT_IN: http
+  DEPLOYMENT_ENVIRONMENT: ${DEPLOYMENT_ENVIRONMENT:-development}
+  TRACE_SAMPLE_RATIO: "1.0"
   DATABASE_URL: postgresql+psycopg://recruitmatch:recruitmatch@postgres:5432/recruitmatch
   CELERY_BROKER_URL: redis://redis:6379/0
   PROCESSING_LEASE_SECONDS: ${PROCESSING_LEASE_SECONDS:-300}
@@ -115,10 +120,11 @@ services:
     image: ${COMPOSE_PROJECT_NAME:-recruitmatch}-app
     build: *runtime-build
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     environment:
       <<: *app-environment
       TASK_MODE: celery
+      OTEL_SERVICE_NAME: recruitmatch-api
     depends_on:
       minio-init:
         condition: service_completed_successfully
@@ -138,7 +144,9 @@ services:
   worker:
     image: ${COMPOSE_PROJECT_NAME:-recruitmatch}-app
     build: *runtime-build
-    environment: *app-environment
+    environment:
+      <<: *app-environment
+      OTEL_SERVICE_NAME: recruitmatch-worker
     depends_on:
       minio-init:
         condition: service_completed_successfully
@@ -146,7 +154,7 @@ services:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
-    command: celery -A app.tasks.celery_app.celery_app worker --loglevel=INFO
+    command: celery --quiet -A app.tasks.celery_app.celery_app worker --loglevel=INFO
     volumes:
       - hf-cache-v2:/home/recruitmatch/.cache/huggingface
     healthcheck:
@@ -156,7 +164,9 @@ services:
   beat:
     image: ${COMPOSE_PROJECT_NAME:-recruitmatch}-app
     build: *runtime-build
-    environment: *app-environment
+    environment:
+      <<: *app-environment
+      OTEL_SERVICE_NAME: recruitmatch-beat
     depends_on:
       minio-init:
         condition: service_completed_successfully
@@ -164,7 +174,7 @@ services:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
-    command: celery -A app.tasks.celery_app.celery_app beat --scheduler app.tasks.beat:RecoveryScheduler --loglevel=WARNING
+    command: celery --quiet -A app.tasks.celery_app.celery_app beat --scheduler app.tasks.beat:RecoveryScheduler --loglevel=WARNING
     volumes:
       - hf-cache-v2:/home/recruitmatch/.cache/huggingface
     healthcheck:
@@ -179,6 +189,7 @@ services:
     build: *test-build
     profiles: ["test"]
     environment:
+      TELEMETRY_ENABLED: "false"
       DATABASE_URL: sqlite:////tmp/recruitmatch-test.db
       TASK_MODE: inline
       AI_ENABLED: "false"
@@ -197,6 +208,7 @@ services:
     profiles: ["test"]
     environment:
       <<: *app-environment
+      TELEMETRY_ENABLED: "false"
       TASK_MODE: celery
       AI_ENABLED: "false"
       OPENAI_API_KEY: ""
@@ -225,8 +237,86 @@ services:
       - ./ops/minio:/init:ro
     restart: "no"
 
+  test-telemetry:
+    image: ${COMPOSE_PROJECT_NAME:-recruitmatch}-app-test
+    build: *test-build
+    profiles: ["test"]
+    environment:
+      TELEMETRY_ENABLED: "false"
+      TELEMETRY_E2E: "1"
+      TELEMETRY_HOST_EVIDENCE: /evidence/host.json
+    command: pytest tests/observability -q
+    healthcheck:
+      disable: true
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.160.0@sha256:799dc6cf12c96192af37b5bdba804da8c10b3bc563b43cb90c3f3c58d9572ad6
+    command: ["--config=/etc/otelcol-contrib/config.yaml", "--feature-gates=ottl.set.allowNil"]
+    volumes:
+      - ./ops/otel/collector.yaml:/etc/otelcol-contrib/config.yaml:ro
+    # Official scratch image has no health client. Probe :13133 from the runner.
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.14.0@sha256:5ce7540c3c00ef4ab0c9d2c995c6a5b9c421f44b4a115d97a2c7af3b1c21cbb0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-otlp-receiver
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=7d
+    volumes:
+      - ./ops/prometheus:/etc/prometheus:ro
+      - prometheus-data:/prometheus
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:9090/-/ready"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  tempo:
+    image: grafana/tempo:3.0.3@sha256:0296560ac66f8a3600d7fb3014a52c189d4d9c3549ad6ff441bf2409855d68d5
+    command: ["-config.file=/etc/tempo/tempo.yaml"]
+    volumes:
+      - ./ops/tempo/tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - tempo-data:/var/tempo
+    healthcheck:
+      test: ["CMD", "/tempo", "-health", "-health.url=http://localhost:3200/ready"]
+      interval: 10s
+      timeout: 3s
+      retries: 15
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:13.2.1@sha256:f772d434e8fab0049deb2b1b30abd43342bcfca1537614aa8d36080232cf4283
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD in your environment file}
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
+      GF_PLUGINS_PREINSTALL_DISABLED: "true"
+      GF_SERVER_HTTP_ADDR: 0.0.0.0
+    volumes:
+      - ./ops/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./ops/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000/api/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 15
+    restart: unless-stopped
+
 volumes:
   minio-data:
   postgres-data:
   redis-data:
   hf-cache-v2:
+  prometheus-data:
+  tempo-data:
+  grafana-data:

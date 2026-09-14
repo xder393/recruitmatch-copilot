@@ -9,6 +9,7 @@ from app.ai.contracts import ModelRequest, ModelResponse, StructuredModel
 from app.ai.evidence import contains_sensitive_trait, evidence_resolves
 from app.ai.gateway import ModelGatewayError
 from app.resumes.schemas import ResumeProfile, SkillEvidence
+from app.observability.events import operation, record
 
 
 @dataclass(frozen=True)
@@ -61,7 +62,10 @@ class LLMResumeParser:
                 response = self.model.generate(request)
             except ModelGatewayError as repair_error:
                 return self._fallback_result(text, request, repair_error, started)
-        validated, invalid_count = self._ground(response.value, bounded)
+        with operation("citation.validate", {"operation": "resume.parse"}):
+            validated, invalid_count = self._ground(response.value, bounded)
+            if invalid_count:
+                record("citation.rejection", {"operation": "resume.parse", "error.code": "citation_rejected"})
         merged = self._merge(validated, self.fallback.parse(text))
         self.last_outcome = ParseOutcome(
             mode="llm_repaired" if repaired else "llm",
@@ -98,6 +102,7 @@ class LLMResumeParser:
         started: float,
     ) -> ResumeParseResult:
         self.last_outcome = ParseOutcome(mode="rules_fallback", fallback_reason=error.code)
+        record("model.fallback", {"operation": "resume.parse", "error.code": error.code, "outcome": "fallback"})
         return ResumeParseResult(
             profile=self.fallback.parse(text),
             outcome=self.last_outcome,

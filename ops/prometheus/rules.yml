@@ -1,0 +1,149 @@
+{
+  "groups": [
+    {
+      "name": "recruitmatch-snapshots",
+      "interval": "5s",
+      "rules": [
+        {
+          "record": "recruitmatch:queue_depth:latest",
+          "expr": "max by (source_type,deployment_environment_name) ((recruitmatch_queue_depth{job=\"recruitmatch-beat\"} and on (job,instance,source_type,deployment_environment_name) topk by (job,source_type,deployment_environment_name) (1,timestamp(recruitmatch_queue_depth{job=\"recruitmatch-beat\"}))) and on (job,instance,source_type,deployment_environment_name) (time() - timestamp(recruitmatch_queue_depth{job=\"recruitmatch-beat\"}) < 30))"
+        },
+        {
+          "record": "recruitmatch:queue_oldest_age_seconds:latest",
+          "expr": "max by (source_type,deployment_environment_name) ((recruitmatch_queue_oldest_age_seconds{job=\"recruitmatch-beat\"} and on (job,instance,source_type,deployment_environment_name) topk by (job,source_type,deployment_environment_name) (1,timestamp(recruitmatch_queue_oldest_age_seconds{job=\"recruitmatch-beat\"}))) and on (job,instance,source_type,deployment_environment_name) (time() - timestamp(recruitmatch_queue_oldest_age_seconds{job=\"recruitmatch-beat\"}) < 30))"
+        },
+        {
+          "record": "recruitmatch:worker_live:latest",
+          "expr": "max by (source_type,deployment_environment_name) ((recruitmatch_worker_live{job=\"recruitmatch-beat\"} and on (job,instance,source_type,deployment_environment_name) topk by (job,source_type,deployment_environment_name) (1,timestamp(recruitmatch_worker_live{job=\"recruitmatch-beat\"}))) and on (job,instance,source_type,deployment_environment_name) (time() - timestamp(recruitmatch_worker_live{job=\"recruitmatch-beat\"}) < 30))"
+        },
+        {
+          "record": "recruitmatch:worker_oldest_heartbeat_age_seconds:latest",
+          "expr": "max by (source_type,deployment_environment_name) ((recruitmatch_worker_oldest_heartbeat_age_seconds{job=\"recruitmatch-beat\"} and on (job,instance,source_type,deployment_environment_name) topk by (job,source_type,deployment_environment_name) (1,timestamp(recruitmatch_worker_oldest_heartbeat_age_seconds{job=\"recruitmatch-beat\"}))) and on (job,instance,source_type,deployment_environment_name) (time() - timestamp(recruitmatch_worker_oldest_heartbeat_age_seconds{job=\"recruitmatch-beat\"}) < 30))"
+        },
+        {
+          "record": "recruitmatch:beat_tick_age_seconds:latest",
+          "expr": "max by (source_type,deployment_environment_name) ((recruitmatch_beat_tick_age_seconds{job=\"recruitmatch-beat\"} and on (job,instance,source_type,deployment_environment_name) topk by (job,source_type,deployment_environment_name) (1,timestamp(recruitmatch_beat_tick_age_seconds{job=\"recruitmatch-beat\"}))) and on (job,instance,source_type,deployment_environment_name) (time() - timestamp(recruitmatch_beat_tick_age_seconds{job=\"recruitmatch-beat\"}) < 30))"
+        },
+        {
+          "record": "recruitmatch:artifact_cleanup_pending:latest",
+          "expr": "max by (source_type,deployment_environment_name) ((recruitmatch_artifact_cleanup_pending{job=\"recruitmatch-beat\"} and on (job,instance,source_type,deployment_environment_name) topk by (job,source_type,deployment_environment_name) (1,timestamp(recruitmatch_artifact_cleanup_pending{job=\"recruitmatch-beat\"}))) and on (job,instance,source_type,deployment_environment_name) (time() - timestamp(recruitmatch_artifact_cleanup_pending{job=\"recruitmatch-beat\"}) < 30))"
+        }
+      ]
+    },
+    {
+      "name": "recruitmatch-alerts",
+      "rules": [
+        {
+          "alert": "Http5xx",
+          "expr": "sum by(deployment_environment_name) (rate(http_server_request_duration_seconds_count{http_response_status_code=~\"5..\"}[5m])) / sum by(deployment_environment_name) (rate(http_server_request_duration_seconds_count[5m])) > 0.05",
+          "for": "2m",
+          "labels": {
+            "severity": "warning"
+          },
+          "annotations": {
+            "summary": "HTTP server 5xx ratio exceeds 5%"
+          }
+        },
+        {
+          "alert": "ApiP95",
+          "expr": "histogram_quantile(0.95,sum by(le,deployment_environment_name) (rate(http_server_request_duration_seconds_bucket{job=\"recruitmatch-api\"}[5m]))) > 1",
+          "for": "2m",
+          "labels": {
+            "severity": "warning"
+          },
+          "annotations": {
+            "summary": "API P95 exceeds one second"
+          }
+        },
+        {
+          "alert": "QueueOldestAge",
+          "expr": "recruitmatch:queue_oldest_age_seconds:latest > 120",
+          "for": "1m",
+          "labels": {
+            "severity": "warning"
+          },
+          "annotations": {
+            "summary": "PostgreSQL queued source age exceeds two minutes"
+          }
+        },
+        {
+          "alert": "WorkerZero",
+          "expr": "recruitmatch:worker_live:latest == 0",
+          "for": "1m",
+          "labels": {
+            "severity": "critical"
+          },
+          "annotations": {
+            "summary": "Fresh Redis snapshot reports zero live workers"
+          }
+        },
+        {
+          "alert": "BeatStale",
+          "expr": "recruitmatch:beat_tick_age_seconds:latest > 30 or absent(recruitmatch:beat_tick_age_seconds:latest)",
+          "for": "1m",
+          "labels": {
+            "severity": "warning"
+          },
+          "annotations": {
+            "summary": "Beat snapshot is stale or unavailable; absence is unknown"
+          }
+        },
+        {
+          "alert": "ArtifactCleanup",
+          "expr": "recruitmatch:artifact_cleanup_pending:latest > 0",
+          "for": "5m",
+          "labels": {
+            "severity": "warning"
+          },
+          "annotations": {
+            "summary": "Artifacts remain pending cleanup"
+          }
+        },
+        {
+          "alert": "AiFallback",
+          "expr": "sum by(operation,deployment_environment_name) (increase(recruitmatch_model_fallback_total[5m])) > 0",
+          "for": "0s",
+          "labels": {
+            "severity": "warning"
+          },
+          "annotations": {
+            "summary": "AI pipeline degraded by logical fallback; not system down"
+          }
+        },
+        {
+          "alert": "CollectorExportFailure",
+          "expr": "sum by(exporter) (rate(otelcol_exporter_send_failed_spans[1m])) > 0 or sum by(exporter) (rate(otelcol_exporter_send_failed_metric_points[1m])) > 0 or sum by(exporter) (rate(otelcol_exporter_enqueue_failed_spans[1m])) > 0 or sum by(exporter) (rate(otelcol_exporter_enqueue_failed_metric_points[1m])) > 0",
+          "for": "30s",
+          "labels": {
+            "severity": "warning"
+          },
+          "annotations": {
+            "summary": "Collector cannot send or enqueue telemetry"
+          }
+        },
+        {
+          "alert": "CollectorQueuePressure",
+          "expr": "otelcol_exporter_queue_size / otelcol_exporter_queue_capacity > 0.8",
+          "for": "30s",
+          "labels": {
+            "severity": "warning"
+          },
+          "annotations": {
+            "summary": "Collector bounded queue exceeds 80%"
+          }
+        },
+        {
+          "alert": "LeaseTakeover",
+          "expr": "sum by(source_type,deployment_environment_name) (increase(recruitmatch_lease_takeover_total[5m])) > 0",
+          "for": "0s",
+          "labels": {
+            "severity": "warning"
+          },
+          "annotations": {
+            "summary": "An expired lease was taken over"
+          }
+        }
+      ]
+    }
+  ]
+}

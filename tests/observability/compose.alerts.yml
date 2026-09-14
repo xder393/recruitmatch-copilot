@@ -1,0 +1,26 @@
+# R14: isolated rule-engine stimuli, not the business metrics pipeline.
+services:
+  prometheus:
+    image: prom/prometheus:v3.14.0@sha256:5ce7540c3c00ef4ab0c9d2c995c6a5b9c421f44b4a115d97a2c7af3b1c21cbb0
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/prometheus"]
+    tmpfs: ["/prometheus:uid=65534,gid=65534"]
+    volumes:
+      - ./prometheus.alerts.yml:/etc/prometheus/prometheus.yml:ro
+      - ../../ops/prometheus/rules.yml:/etc/prometheus/rules.yml:ro
+  stimulus:
+    image: recruitmatch-cp5-sep14-app-test
+    command: python -m tests.observability.alert_probe serve
+    environment:
+      TELEMETRY_ENABLED: "false"
+      TELEMETRY_E2E: "1"
+    healthcheck:
+      disable: true
+  verify:
+    image: recruitmatch-cp5-sep14-app-test
+    profiles: [test]
+    command: python -m tests.observability.alert_probe verify
+    environment:
+      TELEMETRY_ENABLED: "false"
+      TELEMETRY_E2E: "1"
+    healthcheck:
+      disable: true
