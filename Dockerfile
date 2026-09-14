@@ -52,7 +52,7 @@ FROM app-base AS test
 COPY --from=test-node /usr/local/bin/node /usr/local/bin/node
 COPY --from=test-builder --chown=recruitmatch:recruitmatch /app/.venv /app/.venv
 COPY --from=builder /usr/local/bin/uv /usr/local/bin/uv
-COPY --chown=recruitmatch:recruitmatch pyproject.toml uv.lock .python-version Dockerfile docker-compose.yml ./
+COPY --chown=recruitmatch:recruitmatch pyproject.toml uv.lock .python-version pytest.ini Dockerfile docker-compose.yml ./
 COPY --chown=recruitmatch:recruitmatch scripts/ scripts/
 COPY --chown=recruitmatch:recruitmatch tests/ tests/
 COPY --chown=recruitmatch:recruitmatch evaluation/ evaluation/

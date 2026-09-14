@@ -2,6 +2,8 @@
 
 更新：2026-09-14。**CP5 已验收；保留 1 项非阻塞图例待办（R19）。**
 
+后续 CI 跟进：初次推送成功，但远程单元测试暴露了 Docker/checkout 的 pytest 配置差异和收集输出断言问题。[CI collection 修复记录](ci-collection-fix.md)记录根因、回归和新镜像的 439 项本地单元测试；远程结果以 [PR #2](https://github.com/xder393/recruitmatch-copilot/pull/2) 当前 HEAD 检查为准。下方 435/520/153 数字属于初始验收，不与后续结果混用。
+
 用户已批准遥测专用 `service.instance.id` 例外。Task 1–4、一次整体审查、一次集中修复和一次定向复核均已完成。整体审查无 Critical/Important；最终复核确认 4 项完整解决，1 项图例问题部分解决并按 R19 保留。以下分阶段记录保留当时的“待确认”、失败及后续修复状态，应以本页最终验收及最终裁决为准。
 
 ## 已完成：OTel 适配器与隐私策略
@@ -89,7 +91,7 @@ docker compose --env-file .env.example -p recruitmatch-cp5-sep14 run --rm --no-d
 ## CP5 最终验收与本地提交
 
 - 最终修复提交：`01513c2efb5bd85fd91c1082dba46c5eb91b40ed`，15 个仪表盘/脚本/测试文件；未修改业务代码、指标注册表、隐私策略、Gauge TTL、依赖或告警阈值。
-- 分支：`codex/recruitmatch-cp5-observability`。本地已提交；未推送、未创建 PR、未合并 `main`。
+- 分支：`codex/recruitmatch-cp5-observability`。CP5 初始实现已推送并创建 [PR #2](https://github.com/xder393/recruitmatch-copilot/pull/2)，未合并 `main`；本节镜像和用例数字对应初始验收，CI 后续修复见上方跟进记录。
 - 5 项最终审查意见中，HTTP 5xx 已知成功流量的零值、按写入实例的本轮指标增量、Tempo 部分结果重试、fork 隔离/超时/回收已完整解决。图例大部分已修正，剩余 `severity` 展示缺口明确保留，见下方待办。
 - 原实施报告的“all five addressed”是实施端自审结论，已被[最终定向复核](final-fix-review.md)及 R19 覆盖；不得引用为零问题审查。
 

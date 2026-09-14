@@ -50,18 +50,40 @@ def test_host_evidence_from_a_different_source_image_is_rejected(monkeypatch, tm
         verify_host_evidence()
 
 
-def test_ordinary_collection_omits_live_gate_but_explicit_runner_collects_it():
+@pytest.mark.parametrize("pytest_addopts", ["", "-q", "-qq", "-v"])
+def test_ordinary_collection_omits_live_gate_but_explicit_runner_collects_it(pytest_addopts, tmp_path):
+    probe = """
+import json, sys, pytest
+from pathlib import Path
+
+class CollectionManifest:
+    def pytest_collection_finish(self, session):
+        Path(sys.argv[1]).write_text(json.dumps([item.nodeid for item in session.items]))
+
+raise SystemExit(pytest.main(
+    ['tests/observability', '--collect-only', '-q'], plugins=[CollectionManifest()]))
+"""
     for enabled in (False, True):
-        environment = {**os.environ, "TELEMETRY_E2E": "1" if enabled else "0"}
+        manifest = tmp_path / f"collected-{enabled}.json"
+        environment = {
+            **os.environ,
+            "TELEMETRY_E2E": "1" if enabled else "0",
+            "PYTEST_ADDOPTS": pytest_addopts,
+        }
         collected = subprocess.run(
-            [sys.executable, "-m", "pytest", "tests/observability", "--collect-only", "-q"],
+            [sys.executable, "-c", probe, str(manifest)],
             env=environment,
             capture_output=True,
             text=True,
             timeout=20,
         )
         assert collected.returncode == 0, "observability_collection_failed"
-        assert ("test_telemetry_e2e.py::" in collected.stdout) is enabled
+        nodeids = json.loads(manifest.read_text())
+        assert (
+            "tests/observability/test_telemetry_acceptance.py::test_private_payload_is_rejected_even_in_nonempty_nested_output"
+            in nodeids
+        ), "ordinary_observability_tests_missing"
+        assert any(nodeid.startswith("tests/observability/test_telemetry_e2e.py::") for nodeid in nodeids) is enabled
 
 
 def test_structured_logging_tests_restore_handlers_before_capture_closes():
