@@ -1,8 +1,8 @@
 # CP5 分阶段验收记录
 
-更新：2026-09-14。**Task 1、Task 2 已验收；CP5 尚未完成。**
+更新：2026-09-14。**Task 1–3 已验收；CP5 尚未完成。**
 
-后续确认：用户已批准遥测专用 `service.instance.id` 例外，Task 2 已实现，现在继续 Task 3。首次验收报告与控制记录保留当时“待确认”的历史状态，不表示批准被撤回。
+后续确认：用户已批准遥测专用 `service.instance.id` 例外，Task 2 已实现、Task 3 后端已接入，现在继续 Task 4。首次验收报告与控制记录保留当时“待确认”的历史状态，不表示批准被撤回。
 
 ## 已完成：OTel 适配器与隐私策略
 
@@ -62,12 +62,24 @@ docker compose --env-file .env.example -p recruitmatch-cp5-sep14 run --rm --no-d
 
 指标含义和边界见 [指标语义](../../observability-metrics.md)：失败尝试与安排重试可重叠；成功完成只计持久化发布；Gauge 未知不等于零。此处没有新的远程 CI 通过声明。
 
+## 已完成：Task 3 监控后端与仪表盘
+
+- 基线：`26f9d9b50fe9449c888db46ba6095544e9c27409`。
+- 实现：`863a4ffa25e806c956608742ee47eda3dee3b0c6`，独立审查通过，无 Critical/Important。
+
+实际启动 Collector、Prometheus、Tempo 和 Grafana，验证四张仪表盘、两个数据源、匿名访问被拒绝、27 个业务指标及 3 个标准 HTTP 指标、正向 Trace/Metric 数据和隐私过滤。十条告警的 promtool 测试通过，但不等同于真实运行时 Firing。
+
+最终镜像检查：399 单元测试、520 集成测试、7 项配置/实际服务测试；Ruff/format 225 个文件、CI mypy 41 个文件、离线依赖锁检查通过。15 个配置/测试/构建文件与最终镜像 SHA256 相同。测试镜像为 `sha256:ed4049093c1aef27ed4ad77e3997a32b5235d7385b57ace0d954543f1c4857f0`。
+
+运行和验证命令见 [监控栈说明](../../observability-stack.md)。测试只注入合成遥测，不调用真实模型。后端仍保留这些测试序列，Task 4 必须按本次真实运行的数据核验，不能把已有非零值当作业务埋点成功。
+
 ## 未完成项与既有边界
 
-1. **多进程指标身份已实现，真实后端验证仍待完成。** 系统生成的 Resource-only `service.instance.id` 不关联任何业务身份；不能以强制单 Worker 替代 N Worker 能力。Task 3/4 要验证保留写入者身份、重启聚合和 Gauge 新鲜度。
+1. **多进程指标身份及后端保留已验证，真实生命周期仍待完成。** 系统生成的 Resource-only `service.instance.id` 不关联任何业务身份；不能以强制单 Worker 替代 N Worker 能力。Task 4 要验证真实 Worker/Beat 重启、聚合和 Gauge 新鲜度。
 2. Task 1 的 Histogram advisory Minor 已在 Task 2 修复并覆盖亚秒 Bucket 测试；真实后端 P95 查询仍待验收。
-3. Task 3/4：真实后端、四张 Dashboard、告警 Firing、PII 查询、跨 Broker/prefork Trace 与 Collector 停止后的业务隔离测试。
+3. Task 4：真实运行时告警 Firing、端到端 PII、跨 Broker/prefork Trace 与 Collector 停止后的业务隔离测试。
 4. 额外扩大 mypy 检查范围发现两个既有类型问题：`app/api/v1/resumes.py:30`、`app/api/v1/knowledge.py:54` 中可空文件名传给非空响应字段。在 CP4 基线镜像中已复现相同问题；本轮未修改这些文件。当前 CI 范围通过不等于整个仓库全量类型检查无问题。
+5. Task 3 两项非阻塞展示问题待最终审查处理：图例需匹配各查询保留的维度；有成功流量但无 5xx 序列时，错误率应显示零而不误显未知，真正无观测时仍保留未知。
 
 ## 记录索引
 
@@ -80,5 +92,8 @@ docker compose --env-file .env.example -p recruitmatch-cp5-sep14 run --rm --no-d
 - [Task 2 首次独立审查](task-2-review.md)
 - [Task 2 修复后定向复核](task-2-fix-1-review.md)
 - [截至 Task 2 的控制记录与裁决](controller-task-2-ledger.md)
+- [Task 3 实现和实际后端验证](task-3-report.md)
+- [Task 3 独立审查](task-3-review.md)
+- [截至 Task 3 的控制记录与裁决](controller-task-3-ledger.md)
 
 仍须完成后续任务和整个 CP5 的最终审查，才能进入集成选择。此目录保留分阶段证据，不代表企业生产 SLA 或真实业务性能成果。
