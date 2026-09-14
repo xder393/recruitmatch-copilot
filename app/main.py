@@ -39,6 +39,7 @@ from app.retrieval.indexing import SourceIndexer
 from app.retrieval.pgvector_index import PgVectorRecruitingIndex
 from app.retrieval.ports import RecruitingVectorIndex
 from app.operations.health import HealthService
+from app.observability.otel import configure_observability, shutdown_observability
 
 logger = get_logger(__name__)
 
@@ -169,18 +170,28 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        init_recruiting_state(
-            app,
+        telemetry = configure_observability(
             settings,
-            structured_model,
-            knowledge_embedder,
-            retrieval_index,
-            source_indexer,
-            artifact_store,
-            uow_factory,
-            health,
+            owner=app,
+            route_templates=frozenset(route.path for route in app.routes if hasattr(route, "path")),
         )
-        yield
+        app.state.observability = telemetry
+        app.state.event_recorder = telemetry.recorder
+        try:
+            init_recruiting_state(
+                app,
+                settings,
+                structured_model,
+                knowledge_embedder,
+                retrieval_index,
+                source_indexer,
+                artifact_store,
+                uow_factory,
+                health,
+            )
+            yield
+        finally:
+            shutdown_observability(owner=app)
 
     app = FastAPI(
         title="RecruitMatch Copilot",
