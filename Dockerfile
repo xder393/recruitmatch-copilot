@@ -57,6 +57,10 @@ COPY --chown=recruitmatch:recruitmatch scripts/ scripts/
 COPY --chown=recruitmatch:recruitmatch tests/ tests/
 COPY --chown=recruitmatch:recruitmatch evaluation/ evaluation/
 COPY --chown=recruitmatch:recruitmatch ops/minio/ ops/minio/
+COPY --chown=recruitmatch:recruitmatch ops/otel/ ops/otel/
+COPY --chown=recruitmatch:recruitmatch ops/prometheus/ ops/prometheus/
+COPY --chown=recruitmatch:recruitmatch ops/tempo/ ops/tempo/
+COPY --chown=recruitmatch:recruitmatch ops/grafana/ ops/grafana/
 COPY --from=minio-client /usr/bin/mc /usr/local/bin/mc
 
 USER recruitmatch
