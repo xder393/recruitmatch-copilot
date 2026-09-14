@@ -6,6 +6,8 @@ from typing import Protocol
 from datetime import timedelta
 from uuid import uuid4
 import hashlib
+import time
+from app.observability.events import observed, operation, record
 
 from app.core.exceptions import AppError
 from app.artifacts.ports import ArtifactStore, ArtifactChecksumMismatch, ArtifactLengthMismatch, MAX_ARTIFACT_BYTES
@@ -45,9 +47,10 @@ class ResumeProcessingService:
         self.retry_policy = retry_policy or RetryPolicy()
         self.timeout_errors = timeout_errors
 
+    @observed("resume.process", {"task.type": "resume"})
     def process(self, tenant_id: str, resume_id: str) -> ProcessDisposition:
         duration = timedelta(seconds=self.lease_seconds)
-        with self.uow_factory() as uow:
+        with operation("lease.claim", {"source.type": "resume"}), self.uow_factory() as uow:
             claim = uow.leases.claim(
                 tenant_id,
                 "resume",
@@ -72,7 +75,10 @@ class ResumeProcessingService:
             stored_text = resume.extracted_text
             stored_profile = resume.profile
             uow.commit()
-
+        record("task.started", {"task.type": "resume", "outcome": "claimed"})
+        if claim.takeover:
+            record("lease.takeover", {"source.type": "resume", "recovery.reason": "lease_expired"})
+        started = time.perf_counter()
         try:
             with LeaseRenewer(self.uow_factory, lease, duration=duration) as renewer:
                 try:
@@ -96,11 +102,14 @@ class ResumeProcessingService:
                     return self._mark_failed(lease, storage_error_code(exc).value)
                 renewer.ensure_owned()
                 try:
-                    text = extract_text(filename, content)
-                    parse_result = (
-                        self.parser.parse_with_metadata(text) if hasattr(self.parser, "parse_with_metadata") else None
-                    )
-                    profile = parse_result.profile if parse_result is not None else self.parser.parse(text)
+                    with operation("resume.parse", {"source.type": "resume"}):
+                        text = extract_text(filename, content)
+                        parse_result = (
+                            self.parser.parse_with_metadata(text)
+                            if hasattr(self.parser, "parse_with_metadata")
+                            else None
+                        )
+                        profile = parse_result.profile if parse_result is not None else self.parser.parse(text)
                 except AppError as exc:
                     renewer.ensure_owned()
                     return self._mark_failed(lease, exc.code)
@@ -116,6 +125,8 @@ class ResumeProcessingService:
             return ProcessDisposition.LEASE_LOST
         except self.timeout_errors:
             return self._mark_failed(lease, "processing_timeout")
+        finally:
+            record("task.duration", {"task.type": "resume"}, time.perf_counter() - started)
 
     @staticmethod
     def _has_parsed_state(text, profile) -> bool:
@@ -172,7 +183,7 @@ class ResumeProcessingService:
             self._publish(lease, source, generation, None, classify_index_failure(exc), text, profile, parse_result)
 
     def _publish(self, lease, source, generation, count, index_error, text, profile, parse_result):
-        with self.uow_factory() as uow:
+        with operation("lease.finalize", {"source.type": "resume"}), self.uow_factory() as uow:
             with uow.leases.finalize_owned(lease):
                 resume = uow.resumes.get(lease.tenant_id, lease.source_id)
                 if resume is None or resume.sha256 != source.source_version:
@@ -212,6 +223,13 @@ class ResumeProcessingService:
                             parse_result.latency_ms,
                         )
             uow.commit()
+        record("task.completed", {"task.type": "resume", "outcome": "success"})
+        if count is not None:
+            record("vector.indexed_chunks", {"source.type": "resume", "outcome": "success"}, count)
+        if index_error is not None:
+            record(
+                "model.fallback", {"operation": "vector.index", "outcome": "fallback", "error.code": index_error.value}
+            )
 
     def _mark_failed(self, lease: ClaimedLease, code: str) -> ProcessDisposition:
         with self.uow_factory() as uow:

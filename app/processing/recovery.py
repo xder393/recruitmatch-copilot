@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from app.tasks.dispatcher import TaskDispatcher
+from app.observability.events import continuation, operation, record
 
 
 class RecoveryDispatchUnavailable(Exception):
@@ -33,18 +34,29 @@ class RecoveryScanner:
         candidates = self.repository.candidates()
         report = RecoveryReport(selected=len(candidates))
         for candidate in candidates:
-            reservation = self.repository.reserve(candidate)
-            if reservation is None:
-                continue
-            try:
-                dispatch = (
-                    self.dispatcher.dispatch_resume
-                    if reservation.source_type == "resume"
-                    else self.dispatcher.dispatch_knowledge
-                )
-                dispatch(reservation.tenant_id, reservation.source_id)
-                report.dispatched += 1
-            except RecoveryDispatchUnavailable:
-                self.repository.dispatch_failed(reservation)
-                report.dispatch_failures += 1
+            reason = (
+                "lease_expired"
+                if candidate.status in {"running", "processing"}
+                else "retry_due"
+                if candidate.status == "failed"
+                else "queued_stale"
+            )
+            attributes = {"recovery.reason": reason, "source.type": candidate.source_type}
+            with continuation(fresh=True)(), operation("beat.recover", attributes):
+                reservation = self.repository.reserve(candidate)
+                if reservation is None:
+                    continue
+                if reason == "lease_expired":
+                    record("lease.takeover", attributes)
+                try:
+                    dispatch = (
+                        self.dispatcher.dispatch_resume
+                        if reservation.source_type == "resume"
+                        else self.dispatcher.dispatch_knowledge
+                    )
+                    dispatch(reservation.tenant_id, reservation.source_id)
+                    report.dispatched += 1
+                except RecoveryDispatchUnavailable:
+                    self.repository.dispatch_failed(reservation)
+                    report.dispatch_failures += 1
         return report

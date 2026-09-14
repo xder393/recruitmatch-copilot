@@ -18,6 +18,9 @@ from app.processing.outcomes import ClaimedLease, ClaimResult, ProcessDispositio
 
 
 class LeaseRepository(Protocol):
+    # Set by schedule_retry while holding the decision's row lock; read before commit.
+    retry_scheduled: bool
+
     def claim(
         self,
         tenant_id: str,

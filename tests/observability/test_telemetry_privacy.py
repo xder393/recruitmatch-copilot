@@ -109,13 +109,39 @@ def test_resources_ignore_environment_detectors(telemetry, monkeypatch):
         runtime.recorder.record(DomainEvent("model.request", {}))
         runtime.force_flush()
         resource = exporter.get_finished_spans()[0].resource
-        assert dict(resource.attributes) == {
+        from uuid import UUID
+
+        attributes = dict(resource.attributes)
+        assert UUID(attributes.pop("service.instance.id")).version == 4
+        assert attributes == {
             "service.name": "recruitmatch-api",
             "deployment.environment.name": "development",
         }
         assert "secret" not in repr(reader.get_metrics_data())
     finally:
         runtime.shutdown()
+
+
+def test_allowed_observable_callback_failure_never_reaches_sdk_diagnostics(caplog):
+    from opentelemetry import metrics
+    from opentelemetry.sdk.metrics import MeterProvider
+    from app.observability.policy import SafeMeterProvider, TelemetryPolicy
+
+    reader = InMemoryMetricReader()
+    provider = MeterProvider(metric_readers=[reader], shutdown_on_exit=False)
+
+    def fail(options):
+        raise RuntimeError("PRIVATE-CALLBACK-SENTINEL")
+
+    try:
+        SafeMeterProvider(provider, TelemetryPolicy(Settings())).get_meter("untrusted").create_observable_gauge(
+            "recruitmatch.worker.live", callbacks=[fail, lambda options: [metrics.Observation(3)]]
+        )
+        data = reader.get_metrics_data()
+        assert "PRIVATE-CALLBACK-SENTINEL" not in caplog.text
+        assert data.resource_metrics[0].scope_metrics[0].metrics[0].data.data_points[0].value == 3
+    finally:
+        provider.shutdown()
 
 
 def test_automatic_metric_labels_and_instrument_names_are_bounded(telemetry):

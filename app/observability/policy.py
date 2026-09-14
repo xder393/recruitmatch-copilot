@@ -25,6 +25,7 @@ OPERATIONS = frozenset(
         "artifact.get",
         "artifact.delete",
         "resume.process",
+        "knowledge.process",
         "resume.parse",
         "embedding.generate",
         "vector.index",
@@ -111,6 +112,24 @@ ERROR_CODES = frozenset(
         "forbidden",
         "not_found",
         "conflict",
+        "object_not_found",
+        "checksum_mismatch",
+        "size_mismatch",
+        "size_exceeded",
+        "access_denied",
+        "insufficient_evidence",
+        "retrieval_unavailable",
+        "unexpected_model_error",
+        "empty_model_output",
+        "resume_parsed_state_invalid",
+        "resume_processing_failed",
+        "knowledge_processing_failed",
+        "validation_failed",
+        "activation_failed",
+        "source_unavailable",
+        "document_resource_limit",
+        "resume_extraction_failed",
+        "resume_empty_text",
     }
 )
 STANDARD_INSTRUMENTS = {
@@ -141,9 +160,29 @@ class TelemetryPolicy:
             "deployment.environment.name": {settings.telemetry_environment},
             "http.route": route_templates,
             "http.request.method": HTTP_METHODS,
-            "task.type": {"resume", "knowledge", "resume.process", "knowledge.process", "recovery", "cleanup"},
-            "source.type": {"resume", "knowledge", "knowledge_document"},
-            "operation": OPERATIONS | {"put", "get", "delete", "head", "list", "claim", "renew", "finalize"},
+            "task.type": {
+                "resume",
+                "knowledge",
+                "knowledge_document",
+                "resume.process",
+                "knowledge.process",
+                "recovery",
+                "cleanup",
+            },
+            "source.type": {"resume", "knowledge", "knowledge_document", "job_version"},
+            "operation": OPERATIONS
+            | {
+                "put",
+                "get",
+                "delete",
+                "head",
+                "list",
+                "claim",
+                "renew",
+                "finalize",
+                "semantic_project_match",
+                "match_explanation",
+            },
             "outcome": {
                 "success",
                 "failure",
@@ -164,7 +203,13 @@ class TelemetryPolicy:
             "model.name": {name for name in configured_models if re.fullmatch(r"[A-Za-z0-9_./-]{1,100}", name)},
             "match.mode": {"rules", "semantic", "hybrid", "rules_fallback"},
             "retrieval.strategy": {"pgvector", "semantic", "hybrid", "cosine", "exact"},
-            "recovery.reason": {"queued_stale", "lease_expired", "cleanup_pending", "generation_inconsistent"},
+            "recovery.reason": {
+                "queued_stale",
+                "lease_expired",
+                "retry_due",
+                "cleanup_pending",
+                "generation_inconsistent",
+            },
         }
 
     def attributes(self, attributes: Mapping[str, Any] | None) -> dict[str, Any]:
@@ -189,6 +234,14 @@ class TelemetryPolicy:
 class SafeSpan(trace.Span):
     def __init__(self, span: trace.Span, policy: TelemetryPolicy):
         self._span, self._policy = span, policy
+
+    @property
+    def kind(self):
+        return getattr(self._span, "kind", trace.SpanKind.INTERNAL)
+
+    @property
+    def name(self):
+        return getattr(self._span, "name", "internal.operation")
 
     def end(self, end_time=None):
         self._span.end(end_time)
@@ -371,7 +424,15 @@ class SafeMeter:
         return self._create(name, "up_down_counter", unit)
 
     def create_histogram(self, name, unit="", description="", *, explicit_bucket_boundaries_advisory=None):
-        return self._create(name, "histogram", unit)
+        boundaries = explicit_bucket_boundaries_advisory
+        if not (
+            isinstance(boundaries, (tuple, list))
+            and 1 <= len(boundaries) <= 32
+            and all(finite_observation(value) and value <= 100000 for value in boundaries)
+            and all(a < b for a, b in zip(boundaries, boundaries[1:], strict=False))
+        ):
+            boundaries = None
+        return self._create(name, "histogram", unit, explicit_bucket_boundaries_advisory=boundaries)
 
     def create_gauge(self, name, unit="", description=""):
         return self._create(name, "gauge", unit)
@@ -385,7 +446,25 @@ class SafeMeter:
         return None
 
     def create_observable_gauge(self, name, callbacks=None, unit="", description=""):
-        return None
+        domain_name = name.removeprefix("recruitmatch.")
+        expected = INSTRUMENTS.get(domain_name) if name.startswith("recruitmatch.") else None
+        if expected is None or expected[0] != "gauge":
+            return None
+
+        def safe_callback(options):
+            for callback in callbacks or ():
+                try:
+                    for observation in callback(options):
+                        if finite_observation(observation.value):
+                            yield metrics.Observation(
+                                observation.value, self._policy.attributes(observation.attributes)
+                            )
+                except Exception:
+                    # The SDK logs callback exceptions with their full text/stack.
+                    # Contain failures here, before its diagnostic logger sees them.
+                    continue
+
+        return self._meter.create_observable_gauge(name, callbacks=[safe_callback], unit=expected[1])
 
 
 class SafeMeterProvider(metrics.MeterProvider):

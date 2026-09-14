@@ -46,9 +46,10 @@ class CeleryTaskDispatcher:
         from kombu.exceptions import OperationalError  # type: ignore[import-untyped]
         from redis.exceptions import RedisError
         from app.processing.recovery import RecoveryDispatchUnavailable
+        from app.observability.context import trace_headers
 
         try:
-            task.apply_async(args=args, argsrepr="[redacted]", kwargsrepr="[redacted]")
+            task.apply_async(args=args, argsrepr="[redacted]", kwargsrepr="[redacted]", headers=trace_headers())
         except (OperationalError, RedisError, OSError):
             raise RecoveryDispatchUnavailable() from None
 

@@ -8,6 +8,8 @@ import time
 from contextlib import contextmanager
 from threading import Lock, Thread
 from typing import Any
+from uuid import uuid4
+from functools import partial
 
 from opentelemetry import metrics, trace
 from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
@@ -42,7 +44,6 @@ MAX_QUEUE_SIZE = 2048
 MAX_BATCH_SIZE = 256
 
 DURATION_EVENTS = {
-    "resume.process": "task.duration",
     "artifact.put": "artifact.operation.duration",
     "artifact.get": "artifact.operation.duration",
     "artifact.delete": "artifact.operation.duration",
@@ -127,11 +128,45 @@ class OtelDomainEventRecorder:
     ):
         self._tracer = tracer_provider.get_tracer("recruitmatch")
         self._policy = policy or TelemetryPolicy(Settings())
+        self._gauge_lock = Lock()
+        self._gauges: dict[str, dict[tuple, tuple[float, int | float]]] = {}
         meter = meter_provider.get_meter("recruitmatch")
         self._instruments: dict[str, Any] = {
             name: getattr(meter, f"create_{kind}")(f"recruitmatch.{name}", unit=unit)
             for name, (kind, unit) in INSTRUMENTS.items()
+            if kind != "gauge"
         }
+        for name, (kind, unit) in INSTRUMENTS.items():
+            if kind == "gauge":
+                self._instruments[name] = meter.create_observable_gauge(
+                    f"recruitmatch.{name}", callbacks=[partial(self._observe_gauge, name)], unit=unit
+                )
+
+    def _observe_gauge(self, name, options=None):
+        now = time.monotonic()
+        with self._gauge_lock:
+            return [
+                metrics.Observation(value, dict(attributes))
+                for attributes, (expires, value) in self._gauges.get(name, {}).items()
+                if expires > now
+            ]
+
+    def replace_gauges(self, names, events):
+        """Atomically replace one dependency family's fixed snapshots; no callback I/O."""
+        replacement = {}
+        expires = time.monotonic() + 25
+        for event in events:
+            if (
+                event.name in names
+                and INSTRUMENTS.get(event.name, (None,))[0] == "gauge"
+                and finite_observation(event.value)
+            ):
+                attributes = tuple(sorted(self._policy.attributes(event.attributes).items()))
+                replacement.setdefault(event.name, {})[attributes] = (expires, event.value)
+        with self._gauge_lock:
+            for name in names:
+                self._gauges.pop(name, None)
+            self._gauges.update(replacement)
 
     def record(self, event: DomainEvent) -> None:
         name = EVENT_ALIASES.get(event.name, event.name)
@@ -143,9 +178,14 @@ class OtelDomainEventRecorder:
             attributes = self._policy.attributes(event.attributes)
             instrument = self._instruments[name]
             kind = INSTRUMENTS[name][0]
-            getattr(instrument, {"counter": "add", "histogram": "record", "gauge": "set"}[kind])(
-                event.value, attributes
-            )
+            if kind == "gauge":
+                key = tuple(sorted(attributes.items()))
+                with self._gauge_lock:
+                    values = self._gauges.setdefault(name, {})
+                    if key in values or len(values) < 32:
+                        values[key] = (time.monotonic() + 25, event.value)
+                return
+            getattr(instrument, {"counter": "add", "histogram": "record"}[kind])(event.value, attributes)
             current = trace.get_current_span()
             if current.is_recording():
                 current.add_event(event.name, attributes)
@@ -215,7 +255,7 @@ class Observability:
         # Never enable header/body/SQL capture based on ambient instrumentation env.
         os.environ["OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST"] = ""
         os.environ["OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE"] = ""
-        resource = Resource(self.policy.resource_attributes)
+        resource = Resource({**self.policy.resource_attributes, "service.instance.id": str(uuid4())})
         try:
             self._trace_sdk = TracerProvider(
                 resource=resource,

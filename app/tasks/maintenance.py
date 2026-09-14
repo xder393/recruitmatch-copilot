@@ -6,6 +6,7 @@ from app.database import create_engine_and_session
 from app.repositories.sqlalchemy_unit_of_work import SqlAlchemyUnitOfWorkFactory
 from app.services.artifact_reconciliation import ArtifactReconciliationService
 from app.tasks.dispatcher import CeleryTaskDispatcher
+from app.observability.adapters import ObservedArtifactStore
 
 
 def run_artifact_maintenance():
@@ -13,7 +14,7 @@ def run_artifact_maintenance():
     engine, sessions = create_engine_and_session(settings.database_url)
     client = S3Settings.from_env().client()
     try:
-        store = S3ArtifactStore(client)
+        store = ObservedArtifactStore(S3ArtifactStore(client))
         return ArtifactReconciliationService(
             SqlAlchemyUnitOfWorkFactory(sessions), store, store, CeleryTaskDispatcher()
         ).run_once(batch_size=25)

@@ -25,6 +25,7 @@ class HealthService:
         *,
         ai_enabled: bool = False,
         ai_configured: bool = False,
+        telemetry_status: str = "not_configured",
     ):
         self.database = database
         self.redis = redis
@@ -32,6 +33,7 @@ class HealthService:
         self.heartbeats = heartbeats
         self.ai_enabled = ai_enabled
         self.ai_configured = ai_configured
+        self.telemetry_status = telemetry_status
 
     def readiness(self) -> dict[str, str]:
         database = self.database.check()
@@ -60,5 +62,7 @@ class HealthService:
             **{k: v for k, v in ready.items() if k != "status"},
             **heartbeat,
             "ai": ai,
-            "telemetry": "not_configured",
+            "telemetry": self.telemetry_status
+            if self.telemetry_status in {"not_configured", "disabled", "unknown", "unavailable"}
+            else "unknown",
         }

@@ -19,6 +19,7 @@ from openai import (
 
 from app.ai.contracts import ModelRequest, ModelResponse, T
 from app.config import Settings
+from app.observability.events import operation, record
 
 
 class StructuredCompletionsClient(Protocol):
@@ -72,35 +73,7 @@ class OpenAICompatibleGateway:
         for attempt in range(attempts):
             started = time.perf_counter()
             try:
-                completion = self.client.beta.chat.completions.parse(
-                    model=self.settings.chat_model,
-                    messages=[
-                        {"role": "system", "content": request.system},
-                        {"role": "user", "content": request.user},
-                    ],
-                    temperature=self.settings.llm_temperature,
-                    response_format=request.schema,
-                )
-                parsed = completion.choices[0].message.parsed
-                if parsed is None:
-                    raise ModelGatewayError("invalid_output", retryable=False)
-                usage = completion.usage
-                input_tokens = int(getattr(usage, "prompt_tokens", 0) or 0)
-                output_tokens = int(getattr(usage, "completion_tokens", 0) or 0)
-                cost = (
-                    input_tokens * self.settings.model_input_cost_per_million
-                    + output_tokens * self.settings.model_output_cost_per_million
-                ) / 1_000_000
-                return ModelResponse(
-                    value=request.schema.model_validate(parsed),
-                    provider=self.settings.model_provider,
-                    model=self.settings.chat_model,
-                    input_tokens=input_tokens,
-                    output_tokens=output_tokens,
-                    estimated_cost=cost,
-                    latency_ms=(time.perf_counter() - started) * 1000,
-                    attempts=attempt + 1,
-                )
+                return self._completion(request, started, attempt)
             except ModelGatewayError as exc:
                 exc.attempts = attempt + 1
                 raise
@@ -132,3 +105,75 @@ class OpenAICompatibleGateway:
                 error.attempts = attempt + 1
                 raise error from cause
         raise RuntimeError("unreachable")
+
+    def _completion(self, request: ModelRequest[T], started: float, attempt: int) -> ModelResponse[T]:
+        attributes = {"model.provider": self.settings.model_provider, "model.name": self.settings.chat_model}
+        with operation("model.generate", attributes):
+            try:
+                completion = self.client.beta.chat.completions.parse(
+                    model=self.settings.chat_model,
+                    messages=[{"role": "system", "content": request.system}, {"role": "user", "content": request.user}],
+                    temperature=self.settings.llm_temperature,
+                    response_format=request.schema,
+                )
+                parsed = completion.choices[0].message.parsed
+                if parsed is None:
+                    raise ModelGatewayError("invalid_output", retryable=False)
+                usage = completion.usage
+                input_tokens = int(getattr(usage, "prompt_tokens", 0) or 0)
+                output_tokens = int(getattr(usage, "completion_tokens", 0) or 0)
+                result = ModelResponse(
+                    value=request.schema.model_validate(parsed),
+                    provider=self.settings.model_provider,
+                    model=self.settings.chat_model,
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    estimated_cost=(
+                        input_tokens * self.settings.model_input_cost_per_million
+                        + output_tokens * self.settings.model_output_cost_per_million
+                    )
+                    / 1_000_000,
+                    latency_ms=(time.perf_counter() - started) * 1000,
+                    attempts=attempt + 1,
+                )
+            except Exception as exc:
+                code = self._telemetry_error(exc)
+                record("model.request", {**attributes, "outcome": "failure", "error.code": code})
+                if code == "invalid_output":
+                    record("model.schema_failure", {**attributes, "error.code": code})
+                raise
+            record("model.request", {**attributes, "outcome": "success"})
+            record("model.tokens", attributes, input_tokens + output_tokens)
+            return result
+
+    @staticmethod
+    def _telemetry_error(exc: Exception) -> str:
+        if isinstance(exc, ModelGatewayError):
+            return exc.code
+        if isinstance(exc, AuthenticationError):
+            return "authentication_failed"
+        if isinstance(exc, RateLimitError):
+            return "rate_limited"
+        if isinstance(exc, (APITimeoutError, TimeoutError)):
+            return "timeout"
+        if isinstance(exc, APIConnectionError):
+            return "transport_error"
+        if isinstance(exc, APIStatusError):
+            return (
+                "provider_unavailable"
+                if exc.status_code >= 500 or exc.status_code in {408, 429}
+                else "provider_rejected"
+            )
+        if isinstance(
+            exc,
+            (
+                LengthFinishReasonError,
+                ContentFilterFinishReasonError,
+                ValueError,
+                TypeError,
+                IndexError,
+                AttributeError,
+            ),
+        ):
+            return "invalid_output"
+        return "provider_error"
