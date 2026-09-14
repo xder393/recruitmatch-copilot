@@ -240,3 +240,123 @@ Implementation status: DONE for Task2, with the explicit Task3/4 acceptance
 boundaries above. TDD drove missing-behavior and privacy regressions; systematic
 debugging isolated suite compatibility failures; verification-before-completion
 required the final rebuilt-image suites and typing before this handoff/commit.
+
+## Review fix round1 (base9bca50c5b76e54070f10c00b40102456440092e3)
+
+Addressed both Important Issues in task-2-review.md. Receiving-code-review,
+systematic-debugging and TDD skills required verifying actual installed behavior
+and failing tests before production edits; verification-before-completion requires
+the rebuilt-image checks below before committing this fix.
+
+### Startup privacy boundary
+
+Inspected installed public Celery Worker.on_start/emit_banner and Beat.run/
+start_scheduler: Worker prints to sys.__stdout__, Beat prints before setup_logging,
+and both paths respect the supported global quiet option. Added `--quiet` to the
+two actual Compose commands without changing concurrency, scheduler, loglevel,
+delivery, lease or retry settings. Handler formatting alone cannot contain these
+startup writes.
+
+New parametrized test reads Compose commands and executes them through the actual
+Celery CLI in separate Python subprocesses. Worker runs real prefork startup;
+Beat runs real service startup. The test uses a memory broker, one child solely
+inside the test, synthetic queue metadata, disabled telemetry/AI and empty model
+credentials. Only unrelated Redis worker-heartbeat pulse/removal I/O is replaced;
+no banner, logging or startup method is mocked. Worker-ready/Beat-init signals
+emit a positive stable diagnostic and stop cleanly. Both stdout's every nonempty
+line must parse as JSON, no sentinel may appear, stderr must be empty, exit must
+be0. The test therefore exercises startup output rather than checking source text
+or handlers alone. This is startup-boundary proof, not real broker delivery proof.
+
+RED command (test-only source mount, pre-fix Compose from base image):
+
+```sh
+docker compose --env-file .env.example -p recruitmatch-cp5-sep14 run --rm --no-deps -v /Users/xder393/Desktop/agent/.worktrees/recruitmatch-v2/tests:/app/tests:ro test-unit pytest tests/observability/test_structured_logging.py -k compose_celery_startup -q --tb=short
+```
+
+Observed2failed2deselected4.63s: Worker raw queue banner included
+PRIVATE-STARTUP-SENTINEL; Beat raw startup lines raised JSONDecodeError.
+An earlier harness attempt left Celery's environment broker overriding its
+in-memory configuration and timed out; corrected the test environment and isolated
+heartbeat I/O before counting the meaningful RED above.
+
+GREEN command (mounted final source AND final Compose command):
+
+```sh
+docker compose --env-file .env.example -p recruitmatch-cp5-sep14 run --rm --no-deps -v /Users/xder393/Desktop/agent/.worktrees/recruitmatch-v2/app:/app/app:ro -v /Users/xder393/Desktop/agent/.worktrees/recruitmatch-v2/tests:/app/tests:ro -v /Users/xder393/Desktop/agent/.worktrees/recruitmatch-v2/docker-compose.yml:/app/docker-compose.yml:ro test-unit pytest tests/observability/test_structured_logging.py -q --tb=short
+```
+
+Observed4passed6.53s, including both CLI startups and existing handler/HTTP tests.
+
+### Final explanation-only citation invalidation
+
+Final guidance validation now has a citation.validate span and records only a
+newly rejected set of claims: citation.rejection once with
+operation=match_explanation/error.code=invalid_citation. When all remaining
+guidance disappears it additionally records model.fallback once with the same
+operation/error and outcome=fallback. Partial survivors do not count as fallback.
+An existing rejected grounding_status alone does not emit again. Semantic-score
+validation at operation=matching.run remains a separate boundary. This implements
+the controller-confirmed per-validation-event/logical-degradation contract without
+changing claim authorization, return values, status calculation or ranking.
+
+Added3 real-SDK cases through actual final matching guidance and initial explanation
+validation with synthetic retrieval: semantic citations remain valid while (1) an
+explanation-only citation vanishes and another claim survives, (2) all explanation
+guidance vanishes, (3) an earlier rejected claim leaves no new final rejection.
+Each asserts semantic_score80, exact surviving citation payloads, unchanged business
+grounding status, total rejection1, fallback only for all-lost, and3 validation
+spans. The prior-rejection case exercises actual earlier validator metrics and
+proves they are not recounted at final validation.
+
+RED command:
+
+```sh
+docker compose --env-file .env.example -p recruitmatch-cp5-sep14 run --rm --no-deps -v /Users/xder393/Desktop/agent/.worktrees/recruitmatch-v2/tests:/app/tests:ro test-unit pytest tests/observability/test_domain_metrics.py -k final_explanation_only -q --tb=short
+```
+
+Observed3failed13deselected1.09s: partial/all branches had no rejection metric,
+and final validation lacked its span (2instead of3). Existing business assertions
+already passed, isolating the missing observability behavior.
+
+GREEN command:
+
+```sh
+docker compose --env-file .env.example -p recruitmatch-cp5-sep14 run --rm --no-deps -v /Users/xder393/Desktop/agent/.worktrees/recruitmatch-v2/app:/app/app:ro -v /Users/xder393/Desktop/agent/.worktrees/recruitmatch-v2/tests:/app/tests:ro test-unit pytest tests/observability/test_domain_metrics.py tests/matching/test_matching_service.py -q --tb=short
+```
+
+Observed26passed1.72s. Operator semantics doc now describes final guidance
+rejection/fallback and the supported quiet startup requirement.
+
+### Exact-source final evidence and self-review
+
+Rebuilt with `docker compose --env-file .env.example -p recruitmatch-cp5-sep14 build test-unit`,
+exit0. Final app/tests/Compose image:
+`sha256:328c13f7092a9b9a09cb876a68840f049624e211e5b3ef3ed2ba35d845ee202a`.
+Full final commands (no source mounts):
+
+```sh
+docker compose --env-file .env.example -p recruitmatch-cp5-sep14 run --rm --no-deps test-unit
+# 395 passed in 36.44s; exit0
+docker compose --env-file .env.example -p recruitmatch-cp5-sep14 run --rm --no-deps test-integration
+# 520 passed in 26.20s; exit0
+docker compose --env-file .env.example -p recruitmatch-cp5-sep14 run --rm --no-deps test-unit sh -c 'ruff check app tests scripts && ruff format --check app tests scripts && mypy app/models app/retrieval app/services app/ai app/tasks && mypy --follow-imports=silent app/observability app/core/logging.py app/main.py app/operations/health.py app/processing'
+```
+
+Ruff reports All checks passed and223files already formatted; CI mypy reports
+no issues in41source files; scoped mypy reports no issues in18source files.
+Combined quality command exit0. All final suites completed without warnings.
+`docker compose --env-file .env.example -p recruitmatch-cp5-sep14 config --quiet`
+and `git diff --check` both exit0.
+
+Self-review inspected the complete fix diff. Production changes are only9lines
+of final guidance instrumentation and2Compose command options; no policy registry
+or semantic/broker/lease behavior expansion. Removing either quiet option restores
+the demonstrated startup failure. Removing new rejection/fallback or emitting from
+old grounding status fails the literal metric assertions. Prior Task3/4 acceptance
+boundaries and known global typing debt remain unchanged. No external services
+outside the owned synthetic Compose project were touched; no model calls/downloads.
+
+Round1 status: DONE, both review findings addressed. The local fix commit containing
+this appendix is titled `fix: contain Celery startup and final citation telemetry`;
+the controller handoff includes its resolved SHA. No push/merge performed.

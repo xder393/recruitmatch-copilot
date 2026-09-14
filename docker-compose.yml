@@ -146,7 +146,7 @@ services:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
-    command: celery -A app.tasks.celery_app.celery_app worker --loglevel=INFO
+    command: celery --quiet -A app.tasks.celery_app.celery_app worker --loglevel=INFO
     volumes:
       - hf-cache-v2:/home/recruitmatch/.cache/huggingface
     healthcheck:
@@ -164,7 +164,7 @@ services:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
-    command: celery -A app.tasks.celery_app.celery_app beat --scheduler app.tasks.beat:RecoveryScheduler --loglevel=WARNING
+    command: celery --quiet -A app.tasks.celery_app.celery_app beat --scheduler app.tasks.beat:RecoveryScheduler --loglevel=WARNING
     volumes:
       - hf-cache-v2:/home/recruitmatch/.cache/huggingface
     healthcheck:

@@ -2,8 +2,61 @@
 
 import json
 import logging
+import pytest
 
 from app.core.logging import setup_logging
+
+
+@pytest.mark.parametrize("service", ["worker", "beat"])
+def test_compose_celery_startup_has_no_raw_banner(service):
+    """Removing quiet startup must leak a banner through the real CLI, not a logger."""
+    import os
+    from pathlib import Path
+    import shlex
+    import subprocess
+    import sys
+    import yaml
+
+    command = shlex.split(yaml.safe_load(Path("docker-compose.yml").read_text())["services"][service]["command"])
+    # Real CLI/Worker prefork startup and Beat service startup; memory broker and
+    # startup signals bound the subprocess without consuming work or calling models.
+    probe = """
+import logging
+import sys
+from celery import signals
+from app.tasks.celery_app import celery_app
+from app.operations.heartbeats import OperationsHeartbeats
+# Only unrelated Redis heartbeat I/O is substituted in this offline startup test.
+OperationsHeartbeats.pulse_worker = lambda *args: None
+OperationsHeartbeats.remove_worker = lambda *args: None
+celery_app.conf.worker_concurrency = 1
+celery_app.conf.task_default_queue = 'PRIVATE-STARTUP-SENTINEL'
+celery_app.conf.beat_schedule_filename = 'PRIVATE-STARTUP-SENTINEL'
+def ready(**kwargs):
+    logging.getLogger('startup').warning('heartbeat_unavailable')
+    raise SystemExit(0)
+signals.worker_ready.connect(ready, weak=False)
+signals.beat_init.connect(ready, weak=False)
+celery_app.start(sys.argv[1:])
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", probe, *command[1:]],
+        env={
+            **os.environ,
+            "CELERY_BROKER_URL": "memory://PRIVATE-STARTUP-SENTINEL//",
+            "AI_ENABLED": "false",
+            "TELEMETRY_ENABLED": "false",
+            "OPENAI_API_KEY": "",
+        },
+        capture_output=True,
+        text=True,
+        timeout=20,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "PRIVATE-STARTUP-SENTINEL" not in result.stdout + result.stderr
+    records = [json.loads(line) for line in result.stdout.splitlines() if line]
+    assert any(record["event"] == "heartbeat_unavailable" for record in records)
+    assert result.stderr == ""
 
 
 def test_uvicorn_and_celery_handlers_emit_only_stable_diagnostics(capsys):

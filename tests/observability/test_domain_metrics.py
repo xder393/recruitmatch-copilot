@@ -239,6 +239,87 @@ def test_final_citation_invalidation_records_degradation(telemetry):
     assert data["recruitmatch.model.fallback"].data.data_points[0].attributes["error.code"] == "invalid_citation"
 
 
+@pytest.mark.parametrize("boundary", ["partial", "all", "prior_rejection"])
+def test_final_explanation_only_invalidation_is_counted_without_recounting_prior_rejection(telemetry, boundary):
+    from types import SimpleNamespace
+    from app.ai.explanations import GroundedExplanationService, GroundedModelOutput, GroundedClaim
+    from app.services.matching import MatchingService
+    from app.retrieval import SearchScope
+    from tests.matching.test_matching_service import (
+        _FinalResolutionIndex,
+        _Embedder,
+        _hybrid_recommendation,
+        _retrieved_chunk,
+    )
+
+    runtime, exporter, reader = telemetry
+    scope = SearchScope(
+        "tenant-1",
+        frozenset({"resume", "job_version", "knowledge_document"}),
+        frozenset(
+            {
+                ("resume", "resume-1", "1"),
+                ("job_version", "job-version-1", "1"),
+                ("knowledge_document", "knowledge-1", "1"),
+            }
+        ),
+    )
+
+    class Index(_FinalResolutionIndex):
+        def search(self, *args):
+            return super().search(*args) + [_retrieved_chunk("guidance-cite", "knowledge_document", "knowledge-1")]
+
+    class Explanation:
+        def generate(self, scope, resume_id, job_version_id, rule_result, hits):
+            # Actual first validation may already reject an unsupported claim;
+            # final resolution must not recount its status when no new claim drops.
+            return GroundedExplanationService._validate(
+                GroundedModelOutput(
+                    summary=GroundedClaim(
+                        text="PRIVATE",
+                        citation_ids=["already-gone" if boundary == "prior_rejection" else "guidance-cite"],
+                    ),
+                    strengths=[]
+                    if boundary == "all"
+                    else [GroundedClaim(text="PRIVATE", citation_ids=["resume-cite"])],
+                ),
+                hits,
+            )
+
+    service = MatchingService(
+        SimpleNamespace(),
+        explanation_service=Explanation(),
+        source_index=Index(),
+        embedder=_Embedder(),
+        uow=SimpleNamespace(),
+    )
+    [result] = service._add_grounded_guidance(
+        scope,
+        "resume-1",
+        [SimpleNamespace(job_version_id="job-version-1", jd_text="PRIVATE")],
+        [_hybrid_recommendation()],
+    )
+    assert result.semantic_score == 80
+    assert {item["id"] for item in result.citations} == {"resume-cite", "job-cite"}
+    assert result.grounded_explanation["summary"] is None
+    assert len(result.grounded_explanation["strengths"]) == (0 if boundary == "all" else 1)
+    assert result.grounding_status == ("empty_model_output" if boundary == "all" else "rejected_unsupported_claims")
+    data = metrics(reader)
+    assert "recruitmatch.citation.rejection" in data
+    assert sum(point.value for point in data["recruitmatch.citation.rejection"].data.data_points) == 1
+    assert all(
+        point.attributes["operation"] == "match_explanation"
+        for point in data["recruitmatch.citation.rejection"].data.data_points
+    )
+    if boundary == "all":
+        assert data["recruitmatch.model.fallback"].data.data_points[0].value == 1
+        assert data["recruitmatch.model.fallback"].data.data_points[0].attributes["error.code"] == "invalid_citation"
+    else:
+        assert "recruitmatch.model.fallback" not in data
+    runtime.force_flush()
+    assert sum(span.name == "citation.validate" for span in exporter.get_finished_spans()) == 3
+
+
 def test_missing_owner_masks_an_enclosing_recorder(telemetry):
     from app.observability.events import record
 

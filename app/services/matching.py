@@ -308,6 +308,7 @@ class MatchingService:
         )
 
     @staticmethod
+    @observed("citation.validate", {"operation": "match_explanation"})
     def _resolved_guidance(explanation, resolved_ids):
         rejected = False
 
@@ -327,7 +328,15 @@ class MatchingService:
         questions = [kept for item in explanation.interview_questions if (kept := claim(item)) is not None]
         claims = [item for item in [summary, *strengths, *gaps, *risk_flags, *questions] if item is not None]
         used_ids = frozenset(citation_id for item in claims for citation_id in item.citation_ids)
+        # Count only new rejection at this final active-source validation, not
+        # the status of claims already rejected by the explanation generator.
+        if rejected:
+            record("citation.rejection", {"operation": "match_explanation", "error.code": "invalid_citation"})
         if rejected and not claims:
+            record(
+                "model.fallback",
+                {"operation": "match_explanation", "outcome": "fallback", "error.code": "invalid_citation"},
+            )
             status = "empty_model_output"
         elif rejected:
             status = "rejected_unsupported_claims"

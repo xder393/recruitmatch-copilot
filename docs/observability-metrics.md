@@ -41,6 +41,11 @@ It is not a physical request counter. Disabled AI is not a failed request.
 `citation.rejection` counts one validation event containing any rejected evidence
 or claims, not individual claims. Partial rejection may still yield a useful
 result. Final active-source validation remains authoritative.
+Final explanation validation counts only newly discarded claims: partial
+survivors add one rejection event but no fallback; losing all remaining guidance
+adds one fallback. An earlier rejected status without another dropped claim is
+not counted again. These observations use `operation=match_explanation`, separate
+from semantic-score validation at `operation=matching.run`.
 `vector.search.results` records the result count of each successful search;
 duration includes failed searches too. Embedding spans cover one batch or query,
 never one span per chunk. Artifact count/duration cover each put/get/delete,
@@ -97,6 +102,8 @@ Beat recovery uses fresh roots with `queued_stale`, `lease_expired`, `retry_due`
 or `cleanup_pending`. Operational state and authorized business audit/model
 trace-sink payloads are not exported. Stdout is bounded JSON diagnostics without
 raw messages, URLs, exception text/stacks, model content or task arguments.
+Supported Compose Worker/Beat commands use Celery's global `--quiet` option:
+startup banners write directly to stdout, bypassing configured JSON handlers.
 
 Task2 tests cover real SDK readers and public instrumentor seams. Backend
 ingestion, real broker-to-prefork continuity, multi-writer/restart queries and
