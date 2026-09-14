@@ -1,6 +1,7 @@
 """Deployment boundaries; live probes are requested separately from unit tests."""
 
 import json
+import re
 from pathlib import Path
 
 import yaml
@@ -82,3 +83,40 @@ def test_provisioning_resolves_four_dashboards_to_only_metrics_and_traces():
                 assert panel["datasource"]["uid"] in {"prometheus", "tempo"}
             if panel["type"] == "timeseries":
                 assert panel["fieldConfig"]["defaults"]["noValue"] == "Unknown / no data"
+
+
+def test_dashboard_legends_identify_retained_query_dimensions():
+    raw_dimensions = {
+        "recruitmatch:queue_depth:latest": {"source_type", "deployment_environment_name"},
+        "recruitmatch:queue_oldest_age_seconds:latest": {"source_type", "deployment_environment_name"},
+        'up{job="otel-collector"}': {"job", "instance"},
+        "otelcol_exporter_queue_size / otelcol_exporter_queue_capacity": {"exporter", "job", "instance"},
+        'ALERTS{alertstate="firing"}': {
+            "alertname",
+            "deployment_environment_name",
+            "source_type",
+            "operation",
+            "exporter",
+            "job",
+            "instance",
+        },
+    }
+    for path in (ROOT / "ops/grafana/dashboards").glob("*.json"):
+        for panel in json.loads(path.read_text())["panels"]:
+            for target in panel.get("targets", []):
+                if "expr" not in target:
+                    continue
+                expr = target["expr"]
+                groups = re.findall(r"sum by\s*\(([^)]+)\)", expr)
+                if groups:
+                    dimensions = set(groups[0].replace(" ", "").split(",")) - {"le"}
+                elif expr in raw_dimensions:
+                    dimensions = raw_dimensions[expr]
+                elif expr.startswith("recruitmatch:"):
+                    dimensions = {"source_type", "deployment_environment_name"}
+                else:
+                    dimensions = set()
+                legend = target["legendFormat"]
+                assert set(re.findall(r"{{\s*(\w+)\s*}}", legend)) == dimensions, panel["title"]
+                if not dimensions:
+                    assert legend == "Mean retrieval results (all environments)"

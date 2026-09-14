@@ -34,6 +34,8 @@ restore() {
 }
 trap restore EXIT
 trap 'exit 130' INT TERM
+compose run --rm --no-deps -v "$evidence:/evidence" test-telemetry python -m tests.observability.dashboard_probe /evidence/http-ratio.test.yml
+compose run --rm --no-deps -v "$evidence:/evidence:ro" --entrypoint promtool prometheus test rules /evidence/http-ratio.test.yml
 sh scripts/verify_telemetry_alerts.sh "$evidence"
 run business --output before
 owned worker

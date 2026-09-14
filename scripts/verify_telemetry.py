@@ -106,8 +106,14 @@ def verify_parentage(body, trace_id, parent_id):
         return result
 
     server = next(
-        s for s in output if s.get("kind") == "SPAN_KIND_SERVER" and s["resource"]["service.name"] == "recruitmatch-api"
+        (
+            s
+            for s in output
+            if s.get("kind") == "SPAN_KIND_SERVER" and s["resource"]["service.name"] == "recruitmatch-api"
+        ),
+        None,
     )
+    assert server is not None, "missing_http_server_span"
     assert hex_id(server["parentSpanId"]) == parent_id, "incoming_w3c_parent_lost"
     process = next(s for s in output if s["name"] == "resume.process")
     chain = ancestors(process)
@@ -232,6 +238,24 @@ def verify_business():
         eventually(lambda url=url: httpx.get(url, timeout=5).status_code == 200, label="backend_prerequisite")
     flow = BusinessFlow()
     try:
+        names = [
+            "recruitmatch_task_started_total",
+            "recruitmatch_task_completed_total",
+            "recruitmatch_task_duration_seconds_count",
+            "recruitmatch_model_request_total",
+            "recruitmatch_model_tokens_total",
+            "recruitmatch_vector_indexed_chunks_total",
+        ]
+        match_name = "recruitmatch_match_completed_total"
+        # Snapshot all existing writers before this flow submits any work. New
+        # series start at zero; stable writers cannot reuse earlier contributions.
+        baselines = {}
+        for name in [*names, match_name]:
+            service = "api" if name == match_name else "worker"
+            totals = Counter()
+            for row in query(f'{name}{{job="recruitmatch-{service}"}}'):
+                totals[row["metric"]["instance"]] += float(row["value"][1])
+            baselines[name] = totals
         flow.setup()
         with ThreadPoolExecutor(max_workers=4) as executor:
             uploads = list(executor.map(flow.upload, range(8)))
@@ -253,45 +277,46 @@ def verify_business():
         assert len(worker_writers) >= 2, "prefork_children_not_exercised"
         matched = flow.available()
         assert matched["results"]
-        names = [
-            "recruitmatch_task_started_total",
-            "recruitmatch_task_completed_total",
-            "recruitmatch_task_duration_seconds_count",
-            "recruitmatch_model_request_total",
-            "recruitmatch_model_tokens_total",
-            "recruitmatch_vector_indexed_chunks_total",
-        ]
         metric_evidence = {}
+
+        def contribution(name, writer, minimum, label):
+            baseline = baselines[name][writer]
+
+            def increased():
+                rows = query(f'{name}{{instance="{writer}"}}')
+                current = sum(float(row["value"][1]) for row in rows)
+                delta = current - baseline
+                assert rows and delta >= minimum, "current_flow_contribution_missing"
+                return {"baseline": baseline, "current": current, "delta": delta, "minimum": minimum}
+
+            metric_evidence[writer + "/" + name] = eventually(increased, label=label)
+
         for writer in sorted(worker_writers):
             for name in names:
-                expression = f'{name}{{instance="{writer}"}}'
-
                 minimum = deliveries[writer] * (18 if name == "recruitmatch_model_tokens_total" else 1)
-
-                def positive(expression=expression, minimum=minimum):
-                    rows = query(expression)
-                    assert rows and sum(float(row["value"][1]) for row in rows) >= minimum
-                    return rows
-
-                rows = eventually(positive, label="actual_worker_metric_" + name)
-                metric_evidence[writer + "/" + name] = sum(float(row["value"][1]) for row in rows)
+                contribution(name, writer, minimum, "actual_worker_metric_" + name)
             assert_private(query(f'{{instance="{writer}"}}'), flow.forbidden)
         for writer in api_writers:
-
-            def api_positive(writer=writer):
-                rows = query(f'recruitmatch_match_completed_total{{instance="{writer}"}}')
-                assert rows and sum(float(row["value"][1]) for row in rows) > 0
-                return rows
-
-            eventually(api_positive, label="actual_api_match_metric")
+            contribution(match_name, writer, 1, "actual_api_match_metric")
             assert_private(query(f'{{instance="{writer}"}}'), flow.forbidden)
+        dashboard = json.loads(Path("ops/grafana/dashboards/system-overview.json").read_text())
+        panel = next(panel for panel in dashboard["panels"] if panel["title"] == "HTTP 5xx ratio")
+
+        def http_ratio():
+            rows = query(panel["targets"][0]["expr"].replace("$__rate_interval", "1m"))
+            ratios = {row["metric"]["deployment_environment_name"]: float(row["value"][1]) for row in rows}
+            assert ratios.get("development") == 0, "successful_flow_http_ratio_not_zero"
+            return ratios
+
+        ratios = eventually(http_ratio, label="actual_dashboard_http_ratio")
         evidence = {
             "run_id": flow.run_id,
             "worker_writers": sorted(worker_writers),
             "api_writers": sorted(api_writers),
             "processed": len(uploads),
             "parentage_verified": True,
-            "metrics": metric_evidence,
+            "metric_deltas": metric_evidence,
+            "http_5xx_ratios": ratios,
             "trace_ids": [item[1] for item in uploads],
             "timestamp": time.time(),
         }

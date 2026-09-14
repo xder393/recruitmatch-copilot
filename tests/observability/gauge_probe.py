@@ -46,6 +46,12 @@ def observe_snapshot(runtime, poller, writer, expected):
     return source_started
 
 
+def producer_writer(trace_id):
+    output = spans(trace(trace_id))
+    assert output, "missing_gauge_producer_span"
+    return output[0]["resource"]["service.instance.id"]
+
+
 def verify_gauges():
     from opentelemetry import trace as otel_trace
 
@@ -67,7 +73,7 @@ def verify_gauges():
         with activate(runtime), operation("beat.recover", {"recovery.reason": "queued_stale"}):
             trace_id = f"{otel_trace.get_current_span().get_span_context().trace_id:032x}"
         runtime.force_flush()
-        writer = eventually(lambda: spans(trace(trace_id))[0]["resource"]["service.instance.id"], label="gauge_writer")
+        writer = eventually(lambda: producer_writer(trace_id), label="gauge_writer")
         return runtime, writer, OperationalMetrics(runtime, sessionmaker(engine), heartbeats)
 
     try:

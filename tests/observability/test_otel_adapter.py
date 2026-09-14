@@ -351,25 +351,12 @@ def test_real_otlp_failures_are_private_across_runtime_shutdown(monkeypatch, cap
 
 
 def test_forked_worker_gets_a_new_process_runtime():
-    import os
+    from tests.observability.fork_probe import run_probe
 
-    owner = object()
-    inherited = configure_observability(Settings(), owner=owner)
-    read_fd, write_fd = os.pipe()
-    child = os.fork()
-    if child == 0:
-        os.close(read_fd)
-        runtime = configure_observability(Settings(), owner=owner)
-        os.write(write_fd, b"fresh" if runtime is not inherited else b"inherited")
-        os.close(write_fd)
-        os._exit(0)
-    os.close(write_fd)
-    try:
-        assert os.read(read_fd, 20) == b"fresh"
-    finally:
-        os.close(read_fd)
-        os.waitpid(child, 0)
-        shutdown_observability(owner=owner)
+    result = run_probe("disabled")
+    assert result["child_reaped"] is True
+    assert result["result"]["new_runtime"] is True
+    assert result["fork_warning_count"] == 0
 
 
 def test_stuck_exporter_does_not_block_shutdown():

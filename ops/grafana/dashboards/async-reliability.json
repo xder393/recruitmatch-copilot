@@ -41,7 +41,7 @@
         {
           "refId": "A",
           "expr": "sum by (task_type,deployment_environment_name) (rate(recruitmatch_task_completed_total[$__rate_interval]))",
-          "legendFormat": "{{source_type}} {{operation}} {{outcome}}"
+          "legendFormat": "{{task_type}} / {{deployment_environment_name}}"
         }
       ],
       "fieldConfig": {
@@ -77,7 +77,7 @@
         {
           "refId": "A",
           "expr": "sum by (task_type,deployment_environment_name) (rate(recruitmatch_task_failed_total[$__rate_interval]))",
-          "legendFormat": "{{source_type}} {{operation}} {{outcome}}"
+          "legendFormat": "{{task_type}} / {{deployment_environment_name}}"
         }
       ],
       "fieldConfig": {
@@ -113,7 +113,7 @@
         {
           "refId": "A",
           "expr": "sum by (task_type,deployment_environment_name) (rate(recruitmatch_task_retry_total[$__rate_interval]))",
-          "legendFormat": "{{source_type}} {{operation}} {{outcome}}"
+          "legendFormat": "{{task_type}} / {{deployment_environment_name}}"
         }
       ],
       "fieldConfig": {
@@ -149,7 +149,7 @@
         {
           "refId": "A",
           "expr": "histogram_quantile(0.95,sum by(le,deployment_environment_name) (rate(recruitmatch_task_duration_seconds_bucket[$__rate_interval])))",
-          "legendFormat": "{{source_type}} {{operation}} {{outcome}}"
+          "legendFormat": "{{deployment_environment_name}}"
         }
       ],
       "fieldConfig": {
@@ -185,7 +185,7 @@
         {
           "refId": "A",
           "expr": "sum by (source_type,deployment_environment_name) (rate(recruitmatch_lease_takeover_total[$__rate_interval]))",
-          "legendFormat": "{{source_type}} {{operation}} {{outcome}}"
+          "legendFormat": "{{source_type}} / {{deployment_environment_name}}"
         }
       ],
       "fieldConfig": {
@@ -221,7 +221,7 @@
         {
           "refId": "A",
           "expr": "sum by (deployment_environment_name) (rate(recruitmatch_lease_renew_failure_total[$__rate_interval]))",
-          "legendFormat": "{{source_type}} {{operation}} {{outcome}}"
+          "legendFormat": "{{deployment_environment_name}}"
         }
       ],
       "fieldConfig": {
@@ -257,7 +257,7 @@
         {
           "refId": "A",
           "expr": "recruitmatch:beat_tick_age_seconds:latest",
-          "legendFormat": "{{source_type}} {{operation}} {{outcome}}"
+          "legendFormat": "{{source_type}} / {{deployment_environment_name}}"
         }
       ],
       "fieldConfig": {
@@ -293,7 +293,7 @@
         {
           "refId": "A",
           "expr": "recruitmatch:worker_oldest_heartbeat_age_seconds:latest",
-          "legendFormat": "{{source_type}} {{operation}} {{outcome}}"
+          "legendFormat": "{{source_type}} / {{deployment_environment_name}}"
         }
       ],
       "fieldConfig": {
@@ -329,7 +329,7 @@
         {
           "refId": "A",
           "expr": "recruitmatch:artifact_cleanup_pending:latest",
-          "legendFormat": "{{source_type}} {{operation}} {{outcome}}"
+          "legendFormat": "{{source_type}} / {{deployment_environment_name}}"
         }
       ],
       "fieldConfig": {

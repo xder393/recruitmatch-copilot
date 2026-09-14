@@ -163,60 +163,18 @@ def test_real_celery_consumer_continues_validated_publisher_trace():
         runtime.shutdown()
 
 
-def test_enabled_worker_init_after_fork_rebinds_exported_writer(monkeypatch):
-    import os
-    import json
-    from app.tasks import celery_app as worker
-    from app.observability.instrumentation import activate
-    from app.observability.events import record
+def test_enabled_worker_init_after_fork_rebinds_exported_writer():
+    from tests.observability.fork_probe import run_probe
 
-    sinks = []
-
-    def configured(*args, **kwargs):
-        exporter = InMemorySpanExporter()
-        runtime = Observability(
-            Settings(telemetry_enabled=True), span_exporter=exporter, metric_reader=InMemoryMetricReader()
-        )
-        sinks.append((runtime, exporter))
-        return runtime
-
-    monkeypatch.setattr(worker, "configure_observability", configured, raising=False)
-    parent = configured()
-    read_fd, write_fd = os.pipe()
-    try:
-        with activate(parent):
-            record("task.started", {"task.type": "resume"})
-            parent.force_flush()
-            parent_id = sinks[0][1].get_finished_spans()[0].resource.attributes["service.instance.id"]
-            import warnings
-
-            # This specifically verifies the application's documented prefork contract.
-            with warnings.catch_warnings():
-                warnings.filterwarnings("ignore", message="This process.*multi-threaded", category=DeprecationWarning)
-                child = os.fork()
-            if child == 0:
-                os.close(read_fd)
-                signals.worker_process_init.send(sender=None)
-                record("task.started", {"task.type": "resume"})
-                runtime, exporter = sinks[-1]
-                runtime.force_flush()
-                spans = exporter.get_finished_spans()
-                result = {
-                    "new_runtime": runtime is not parent,
-                    "identity": spans[-1].resource.attributes["service.instance.id"],
-                }
-                os.write(write_fd, json.dumps(result).encode())
-                os.close(write_fd)
-                os._exit(0)
-            os.close(write_fd)
-            result = json.loads(os.read(read_fd, 1024))
-            _, status = os.waitpid(child, 0)
-            assert status == 0
-            assert result["new_runtime"]
-            assert result["identity"] != parent_id
-    finally:
-        os.close(read_fd)
-        parent.shutdown()
+    result = run_probe("enabled")
+    assert result["child_reaped"] is True
+    assert result["result"]["new_runtime"] is True
+    assert result["result"]["identity"] != result["parent_identity"]
+    # The inherited enabled SDK deliberately has a live batch thread at fork.
+    # Capture and verify this expected local warning, never suppress it globally.
+    assert "OtelBatchSpanRecordProcessor" in result["python_threads"]
+    assert result["native_threads"] >= 2
+    assert result["fork_warning_count"] == 1
 
 
 def test_invalid_w3c_context_and_retry_headers_never_carry_baggage():
