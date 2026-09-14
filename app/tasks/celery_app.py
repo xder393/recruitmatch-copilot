@@ -42,6 +42,13 @@ def worker_logging(**kwargs):
     setup_logging()
 
 
+@signals.celeryd_after_setup.connect
+def worker_control_logging(**kwargs):
+    from app.core.celery_logging import install_worker_control_logging
+
+    install_worker_control_logging()
+
+
 @signals.worker_process_init.connect
 def start_worker_telemetry(**kwargs):
     global _worker_scope

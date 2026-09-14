@@ -1,6 +1,36 @@
 rule_files: [/etc/prometheus/rules.yml]
 evaluation_interval: 5s
 tests:
+  - name: simultaneous exporter failure families preserve alert and summed rate
+    interval: 5s
+    input_series:
+      - series: 'otelcol_exporter_send_failed_spans{exporter="synthetic"}'
+        values: '0+5x24'
+      - series: 'otelcol_exporter_enqueue_failed_spans{exporter="synthetic"}'
+        values: '0+0x24'
+      - series: 'otelcol_exporter_enqueue_failed_metric_points{exporter="synthetic"}'
+        values: '0+10x24'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: CollectorExportFailure
+        exp_alerts:
+          - exp_labels: {exporter: synthetic, severity: warning}
+            exp_annotations: {summary: Collector cannot send or enqueue telemetry}
+  - name: simultaneous zero exporter families remain inactive
+    interval: 5s
+    input_series:
+      - series: 'otelcol_exporter_send_failed_spans{exporter="synthetic"}'
+        values: '0+0x24'
+      - series: 'otelcol_exporter_enqueue_failed_spans{exporter="synthetic"}'
+        values: '0+0x24'
+      - series: 'otelcol_exporter_send_failed_metric_points{exporter="synthetic"}'
+        values: '0+0x24'
+      - series: 'otelcol_exporter_enqueue_failed_metric_points{exporter="synthetic"}'
+        values: '0+0x24'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: CollectorExportFailure
+        exp_alerts: []
   - name: newest Beat zero replaces old positive and expires to unknown
     interval: 5s
     input_series:

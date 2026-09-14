@@ -1,0 +1,34 @@
+x-synthetic: &synthetic
+  TELEMETRY_ENABLED: "true"
+  TELEMETRY_E2E: "1"
+  AI_ENABLED: "true"
+  OPENAI_API_KEY: CP5_PRIVATE_CREDENTIAL_9dc850
+  OPENAI_BASE_URL: http://127.0.0.1:9
+  HF_HUB_OFFLINE: "1"
+  TRANSFORMERS_OFFLINE: "1"
+  HF_ENDPOINT: http://127.0.0.1:9
+  TASK_MODE: celery
+  RETRIEVAL_MIN_SCORE: "0"
+  DEPLOYMENT_ENVIRONMENT: development
+
+services:
+  api:
+    image: ${COMPOSE_PROJECT_NAME:-recruitmatch}-app-test
+    build:
+      target: test
+    ports: !reset []
+    environment: *synthetic
+    command: uvicorn tests.support.telemetry_runtime:create_api --factory --host 0.0.0.0 --port 8000
+  worker:
+    image: ${COMPOSE_PROJECT_NAME:-recruitmatch}-app-test
+    build:
+      target: test
+    environment: *synthetic
+    command: python -m tests.support.telemetry_runtime
+  beat:
+    image: ${COMPOSE_PROJECT_NAME:-recruitmatch}-app-test
+    build:
+      target: test
+    environment: *synthetic
+  grafana:
+    ports: !reset []

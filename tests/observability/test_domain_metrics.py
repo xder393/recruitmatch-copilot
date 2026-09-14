@@ -157,6 +157,27 @@ def test_operational_gauges_disappear_after_snapshot_expiry(telemetry, monkeypat
     )
 
 
+def test_replaced_sdk_snapshot_recovery_keeps_source_ttl_not_observation_ttl(telemetry, monkeypatch):
+    from app.observability.events import DomainEvent
+    import app.observability.otel as otel
+
+    runtime, _, reader = telemetry
+    now = [100.0]
+    monkeypatch.setattr(otel.time, "monotonic", lambda: now[0])
+    family = {"worker.live"}
+    runtime.recorder.replace_gauges(family, [DomainEvent("worker.live", {}, 1)])
+    assert metrics(reader)["recruitmatch.worker.live"].data.data_points[0].value == 1
+    runtime.recorder.replace_gauges(family, [])
+    assert "recruitmatch.worker.live" not in metrics(reader)
+    now[0] = 110
+    runtime.recorder.replace_gauges(family, [DomainEvent("worker.live", {}, 0)])
+    for observed_at in (116, 134.999):
+        now[0] = observed_at
+        assert metrics(reader)["recruitmatch.worker.live"].data.data_points[0].value == 0
+    now[0] = 135
+    assert "recruitmatch.worker.live" not in metrics(reader)
+
+
 def test_actual_matching_route_records_committed_recommendations_and_upload(matching_client, telemetry):
     client, resume_id = matching_client
     runtime, exporter, reader = telemetry

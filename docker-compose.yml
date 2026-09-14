@@ -237,6 +237,18 @@ services:
       - ./ops/minio:/init:ro
     restart: "no"
 
+  test-telemetry:
+    image: ${COMPOSE_PROJECT_NAME:-recruitmatch}-app-test
+    build: *test-build
+    profiles: ["test"]
+    environment:
+      TELEMETRY_ENABLED: "false"
+      TELEMETRY_E2E: "1"
+      TELEMETRY_HOST_EVIDENCE: /evidence/host.json
+    command: pytest tests/observability -q
+    healthcheck:
+      disable: true
+
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.160.0@sha256:799dc6cf12c96192af37b5bdba804da8c10b3bc563b43cb90c3f3c58d9572ad6
     command: ["--config=/etc/otelcol-contrib/config.yaml", "--feature-gates=ottl.set.allowNil"]

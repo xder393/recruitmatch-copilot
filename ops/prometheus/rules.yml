@@ -112,7 +112,7 @@
         },
         {
           "alert": "CollectorExportFailure",
-          "expr": "sum by(exporter) (rate({__name__=~\"otelcol_exporter_(send|enqueue)_failed_(spans|metric_points)\"}[1m])) > 0",
+          "expr": "sum by(exporter) (rate(otelcol_exporter_send_failed_spans[1m])) > 0 or sum by(exporter) (rate(otelcol_exporter_send_failed_metric_points[1m])) > 0 or sum by(exporter) (rate(otelcol_exporter_enqueue_failed_spans[1m])) > 0 or sum by(exporter) (rate(otelcol_exporter_enqueue_failed_metric_points[1m])) > 0",
           "for": "30s",
           "labels": {
             "severity": "warning"

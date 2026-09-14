@@ -80,6 +80,10 @@ end in `_seconds_bucket/_sum/_count`. `recruitmatch.match.score` renders as
 Pinned Collector internal counters have no `_total` suffix; its failure rule
 accepts independent send/enqueue series so an absent zero-failure series cannot
 hide the other failure type.
+Each failure family is rated separately before the alert branches are joined.
+The numeric dashboard assigns a temporary finite family label before combining
+and summing those rates, so simultaneous equal-label families neither collide
+nor undercount. These labels exist only in the query result, not ingestion.
 
 The six aggregate gauge recording rules choose the latest Beat producer per
 environment/source grouping and require a sample less than 30s old. This avoids
@@ -105,3 +109,60 @@ tests prove each rule can fire and that replacement gauges expire correctly.
 Task 4 separately verifies actual runtime Firing, API/broker/prefork parentage,
 end-to-end privacy, writer restart and Collector outage behavior. No production
 on-call notification system is claimed.
+
+## Repeatable synthetic end-to-end gate
+
+Use the public `.env.example` and the fixed disposable project below. This test
+composition serves real Uvicorn HTTP and uses PostgreSQL/pgvector, MinIO, Redis,
+Celery prefork with two children, and the normal instrumented model gateway.
+Only its injected client and normalized 512-dimensional embedder are synthetic;
+provider addresses are closed loopback endpoints and model downloads are offline.
+The override removes host ports, including API 8000. Do not use personal keys.
+
+```sh
+docker compose --env-file .env.example -p recruitmatch-cp5-sep14 build test-unit
+docker compose --env-file .env.example -p recruitmatch-cp5-sep14 -f docker-compose.yml -f tests/observability/compose.telemetry.yml up -d --no-build api worker beat otel-collector prometheus tempo
+sh scripts/verify_telemetry_host.sh
+```
+
+The host helper requires Docker Compose and `jq`. It validates exact project and
+service ownership and the runtime image, runs the isolated alert gate, verifies
+actual upload trace ancestry and writer-scoped metrics, restarts the owned Worker
+for writer replacement, and stops only the owned Collector for the outage. It
+always attempts Collector restoration, checks its real health extension, scans
+nonempty actual API/Worker/Beat logs, then runs `pytest tests/observability -q`.
+The printed temporary evidence directory includes synthetic authenticated test
+state; keep it local. There is no Docker socket mount or production test endpoint.
+
+The alert helper uses a separate fixed project `recruitmatch-cp5-alerts-sep14`,
+real pinned Prometheus and the production rule file. Its test exporter supplies
+bounded synthetic inputs after all ten rules are observed inactive. It waits
+for actual Firing, including the unchanged five-minute cleanup window. These
+inputs prove rule evaluation, not physical Collector saturation, backend faults,
+API load, or capacity. The child stack publishes no ports, has no recruiting
+database, and stores Prometheus samples on ephemeral tmpfs. It stops its owned
+services on exit. `sh scripts/verify_telemetry_alerts.sh` runs it independently.
+
+The gauge probe uses two real SDK owners and real PostgreSQL/Redis reads with a
+unique test heartbeat namespace in the separate `staging` telemetry environment.
+It checks old-positive/new-zero selection, failed-Redis unknown, and snapshot
+expiry while SDK exports remain active. This is SDK-owner replacement evidence;
+the Worker restart is separate actual process evidence. No Beat restart is
+claimed. Normal unit/integration lanes remain independent of telemetry backends.
+
+An explicit `test-telemetry` invocation fails for missing or stale host/alert
+evidence. To repeat it using a completed helper run, mount that printed directory
+read-only at `/evidence`. Evidence is bound to the source bytes in the test image
+and expires after one hour. Run ordinary integration tests before this gate:
+their existing fixtures reset the synthetic database, while this gate creates
+fresh unique tenants without deleting preexisting tenants.
+
+Celery 5.6.3 emits Worker shutdown text directly with `os.write`, bypassing its
+logger and `--quiet`. A narrowly scoped compatibility adapter binds only that
+diagnostic utility during the public Worker startup signal. It writes one
+pre-encoded, bounded JSON diagnostic to the original descriptor, without reading
+the message or acquiring logging locks in the signal handler. Celery's shutdown
+handlers, callbacks and task-completion behavior remain intact. This is a pinned
+compatibility binding, not a supported Celery logging API. Dependency upgrades
+must rerun the real prefork/SIGTERM test, including its in-flight task completion
+assertion. API/module imports alone do not install the binding.

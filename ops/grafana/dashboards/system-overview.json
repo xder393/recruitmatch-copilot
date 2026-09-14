@@ -328,7 +328,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by(exporter) (rate({__name__=~\"otelcol_exporter_(send|enqueue)_failed_(spans|metric_points)\"}[$__rate_interval]))",
+          "expr": "sum by(exporter) (label_replace(rate(otelcol_exporter_send_failed_spans[$__rate_interval]),\"failure_family\",\"send_spans\",\"exporter\",\".*\") or label_replace(rate(otelcol_exporter_send_failed_metric_points[$__rate_interval]),\"failure_family\",\"send_metrics\",\"exporter\",\".*\") or label_replace(rate(otelcol_exporter_enqueue_failed_spans[$__rate_interval]),\"failure_family\",\"enqueue_spans\",\"exporter\",\".*\") or label_replace(rate(otelcol_exporter_enqueue_failed_metric_points[$__rate_interval]),\"failure_family\",\"enqueue_metrics\",\"exporter\",\".*\"))",
           "legendFormat": "{{source_type}} {{operation}} {{outcome}}"
         }
       ],
