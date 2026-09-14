@@ -2,6 +2,8 @@
 
 更新：2026-09-14。**仅 Task 1 已验收；CP5 尚未完成。**
 
+后续确认：用户已批准遥测专用 `service.instance.id` 例外，现继续 Task 2。首次验收报告与控制记录保留当时“待确认”的历史状态，不表示批准被撤回。
+
 ## 已完成：OTel 适配器与隐私策略
 
 - 基线：`f297b0a509fca92b37de1be174e18a601ccfd64e`（已合并的 CP4）。
@@ -41,7 +43,7 @@ docker compose --env-file .env.example -p recruitmatch-cp5-sep14 run --rm --no-d
 
 ## 待确认与未完成项
 
-1. **设计确认：多进程指标身份。** 相同资源标识的多个累计指标写入者会发生冲突；单纯改为 Delta 也不能证明正确。已请求允许系统生成的遥测专用 `service.instance.id`，不关联租户、用户、简历、任务或 Worker 心跳 ID。尚未获批，尚未修改白名单；不能以强制单 Worker 替代冻结的 N Worker 能力。
+1. **已批准、待实现：多进程指标身份。** 用户已允许系统生成的遥测专用 `service.instance.id`，不关联租户、用户、简历、任务或 Worker 心跳 ID。实现与多实例/重启验证属于后续任务；不能以强制单 Worker 替代冻结的 N Worker 能力。批准边界已写入正式设计9.4。
 2. Task 2：实际框架/业务埋点、W3C 传播、JSON 日志、权威聚合指标；验证启用遥测时的 prefork 子进程和 API 中间件初始化顺序。
 3. 已登记 Minor：Histogram advisory 当前被丢弃，HTTP 埋点需要明确的亚秒 Bucket，之后才能验收有意义的 P95 图表。
 4. Task 3/4：真实后端、四张 Dashboard、告警 Firing、PII 查询检查与 Collector 停止后的业务隔离测试。

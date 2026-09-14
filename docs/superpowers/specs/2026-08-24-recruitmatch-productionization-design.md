@@ -650,6 +650,8 @@ retrieval.strategy
 recovery.reason
 ```
 
+**2026-09-14 已批准的最小例外：** 允许 OTel Resource 的 `service.instance.id` 作为遥测写入实例标识，以区分 API、Worker/prefork 子进程及 Beat 的累计指标写入者。标识由系统随机生成，与租户、用户、简历、岗位、任务、主机名及 Worker 心跳 ID 无关，也不从这些值散列派生；不接受请求、任务载荷或环境变量提供的实例标识。每个实际 SDK 写入实例在其生命周期内保持同一标识，新实例/子进程使用新标识，不能每请求或每事件生成。此字段仅进入受控 Resource；不得据此放开任意 Span/Event 属性或业务 Baggage。Prometheus 将其转换为技术 `instance` 标签时保留独立写入者语义，业务图表按低基数维度聚合。该例外不改变以下业务数据禁入规则，也不允许为规避指标冲突而取消 N Worker 能力。多实例和重启下的指标查询仍须实际验收。
+
 禁止写入普通日志、Metric Label、Trace Attribute 或 Baggage：
 
 ```text
