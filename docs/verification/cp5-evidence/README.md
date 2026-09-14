@@ -76,7 +76,7 @@ docker compose --env-file .env.example -p recruitmatch-cp5-sep14 run --rm --no-d
 ## 未完成项与既有边界
 
 1. **多进程指标身份及后端保留已验证，真实生命周期仍待完成。** 系统生成的 Resource-only `service.instance.id` 不关联任何业务身份；不能以强制单 Worker 替代 N Worker 能力。Task 4 要验证真实 Worker/Beat 重启、聚合和 Gauge 新鲜度。
-2. Task 1 的 Histogram advisory Minor 已在 Task 2 修复并覆盖亚秒 Bucket 测试；真实后端 P95 查询仍待验收。
+2. Task 1 的 Histogram advisory Minor 已在 Task 2 修复并覆盖亚秒 Bucket 测试；Task 3 已验证真实后端的指标命名、正向 Rate 和 P95 查询。
 3. Task 4：真实运行时告警 Firing、端到端 PII、跨 Broker/prefork Trace 与 Collector 停止后的业务隔离测试。
 4. 额外扩大 mypy 检查范围发现两个既有类型问题：`app/api/v1/resumes.py:30`、`app/api/v1/knowledge.py:54` 中可空文件名传给非空响应字段。在 CP4 基线镜像中已复现相同问题；本轮未修改这些文件。当前 CI 范围通过不等于整个仓库全量类型检查无问题。
 5. Task 3 两项非阻塞展示问题待最终审查处理：图例需匹配各查询保留的维度；有成功流量但无 5xx 序列时，错误率应显示零而不误显未知，真正无观测时仍保留未知。
