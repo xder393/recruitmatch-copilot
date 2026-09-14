@@ -7,13 +7,16 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 from sqlalchemy import (
+    BigInteger,
     Computed,
     CheckConstraint,
     DateTime,
     Enum,
     ForeignKey,
     ForeignKeyConstraint,
+    func,
     Integer,
+    Index,
     JSON,
     String,
     Text,
@@ -36,6 +39,7 @@ def _utcnow() -> datetime:
 class Resume(Base):
     __tablename__ = "resumes"
     __table_args__ = (
+        Index("ix_resumes_recovery_dispatch", "recovery_dispatch_at", "tenant_id", "id"),
         CheckConstraint("lifecycle_status IN ('active', 'deleted')", name="ck_resume_lifecycle"),
         UniqueConstraint("tenant_id", "sha256", name="uq_resume_tenant_hash"),
         ForeignKeyConstraint(
@@ -61,6 +65,17 @@ class Resume(Base):
     profile: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
     error_code: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     error_message: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    processing_attempts: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
+    processing_lease_epoch: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0", nullable=False)
+    processing_lease_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    processing_lease_owner: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    next_retry_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    recovery_dispatch_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    recovery_dispatch_token: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+    recovery_dispatch_error_code: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    queued_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow, server_default=func.now(), nullable=False
+    )
     search_index_status: Mapped[str] = mapped_column(String(30), default="pending", nullable=False)
     search_index_error_code: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     search_indexed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)

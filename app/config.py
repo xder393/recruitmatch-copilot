@@ -62,6 +62,14 @@ class Settings:
     database_url: str = "sqlite:///data/recruitmatch.db"
     task_mode: str = "inline"
     celery_broker_url: str = "redis://localhost:6379/0"
+    processing_lease_seconds: int = 300
+    processing_max_attempts: int = 5
+    task_soft_time_limit: int = 540
+    task_hard_time_limit: int = 600
+    redis_visibility_timeout: int = 900
+    retry_short_seconds: int = 30
+    retry_long_seconds: int = 300
+    retry_safety_margin_seconds: int = 30
 
     # —— 身份认证 ——
     jwt_secret: str = "dev-only-change-me-before-production"
@@ -91,6 +99,14 @@ class Settings:
             database_url=os.getenv("DATABASE_URL", cls.database_url).strip(),
             task_mode=os.getenv("TASK_MODE", cls.task_mode).strip(),
             celery_broker_url=os.getenv("CELERY_BROKER_URL", cls.celery_broker_url).strip(),
+            processing_lease_seconds=_get_int("PROCESSING_LEASE_SECONDS", cls.processing_lease_seconds),
+            processing_max_attempts=_get_int("PROCESSING_MAX_ATTEMPTS", cls.processing_max_attempts),
+            task_soft_time_limit=_get_int("TASK_SOFT_TIME_LIMIT", cls.task_soft_time_limit),
+            task_hard_time_limit=_get_int("TASK_HARD_TIME_LIMIT", cls.task_hard_time_limit),
+            redis_visibility_timeout=_get_int("REDIS_VISIBILITY_TIMEOUT", cls.redis_visibility_timeout),
+            retry_short_seconds=_get_int("RETRY_SHORT_SECONDS", cls.retry_short_seconds),
+            retry_long_seconds=_get_int("RETRY_LONG_SECONDS", cls.retry_long_seconds),
+            retry_safety_margin_seconds=_get_int("RETRY_SAFETY_MARGIN_SECONDS", cls.retry_safety_margin_seconds),
             jwt_secret=os.getenv("JWT_SECRET", cls.jwt_secret).strip(),
             access_token_minutes=_get_int("ACCESS_TOKEN_MINUTES", cls.access_token_minutes),
             ai_enabled=_get_bool("AI_ENABLED", cls.ai_enabled),
@@ -112,6 +128,31 @@ class Settings:
         return settings
 
     def validate(self) -> None:
+        if os.getenv("CELERY_RESULT_BACKEND"):
+            raise ConfigError("Celery result backend is disabled")
+        timings = (
+            self.processing_lease_seconds,
+            self.processing_max_attempts,
+            self.task_soft_time_limit,
+            self.task_hard_time_limit,
+            self.redis_visibility_timeout,
+            self.retry_short_seconds,
+            self.retry_long_seconds,
+            self.retry_safety_margin_seconds,
+        )
+        if any(type(value) is not int or value <= 0 for value in timings):
+            raise ConfigError("processing timing and attempt settings must be positive finite integers")
+        if self.processing_lease_seconds > 86400:
+            raise ConfigError("processing lease cannot exceed one day")
+        if not self.task_soft_time_limit < self.task_hard_time_limit:
+            raise ConfigError("processing soft time limit must precede hard time limit")
+        if (
+            self.redis_visibility_timeout
+            <= max(self.task_hard_time_limit, self.retry_short_seconds) + self.retry_safety_margin_seconds
+        ):
+            raise ConfigError("visibility timeout must exceed hard limit/countdown plus safety margin")
+        if self.retry_long_seconds <= self.retry_short_seconds:
+            raise ConfigError("long retry delay must exceed short retry delay")
         if self.ai_enabled and not self.api_key:
             raise ConfigError("启用 AI 时必须配置 OPENAI_API_KEY")
         if self.model_timeout_seconds <= 0 or self.model_max_retries < 0:

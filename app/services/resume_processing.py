@@ -1,21 +1,24 @@
-"""Resume extraction and profiling lifecycle orchestration."""
+"""Resume extraction and fenced profile/index publication."""
 
 from __future__ import annotations
 
 from typing import Protocol
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
+from uuid import uuid4
 import hashlib
 
 from app.core.exceptions import AppError
-from app.domain.enums import ResumeStatus
-from app.domain.artifacts import ArtifactStatus
 from app.artifacts.ports import ArtifactStore, ArtifactChecksumMismatch, ArtifactLengthMismatch, MAX_ARTIFACT_BYTES
 from app.artifacts.errors import storage_error_code
 from app.resumes.extractors import extract_text
-from app.resumes.schemas import ResumeProfile
+from app.resumes.schemas import ResumeProfile, Evidence
 from app.repositories.unit_of_work import UnitOfWorkFactory
-from app.retrieval.generations import SourceRef
-from app.retrieval.indexing import SourceIndexer, classify_index_failure
+from app.retrieval.generations import SourceRef, GenerationWriterError
+from app.retrieval.indexing import SourceIndexer, classify_index_failure, EmbeddingFailure
+from app.processing.outcomes import ClaimDisposition, ClaimedLease, LeaseOwnershipLost, ProcessDisposition
+from app.processing.renewal import LeaseRenewer
+from app.processing.retry import RetryPolicy, finish_failed_attempt
+from app.ai.evidence import evidence_resolves
 
 
 class ResumeParser(Protocol):
@@ -23,134 +26,193 @@ class ResumeParser(Protocol):
 
 
 class ResumeProcessingService:
-    lease_seconds = 300
-
     def __init__(
         self,
         uow_factory: UnitOfWorkFactory,
         artifact_store: ArtifactStore,
         parser: ResumeParser,
         source_indexer: SourceIndexer | None = None,
+        *,
+        lease_seconds: int = 300,
+        retry_policy: RetryPolicy | None = None,
+        timeout_errors: tuple[type[Exception], ...] = (TimeoutError,),
     ):
         self.uow_factory = uow_factory
         self.artifact_store = artifact_store
         self.parser = parser
         self.source_indexer = source_indexer
+        self.lease_seconds = lease_seconds
+        self.retry_policy = retry_policy or RetryPolicy()
+        self.timeout_errors = timeout_errors
 
-    def process(self, tenant_id: str, resume_id: str) -> bool:
+    def process(self, tenant_id: str, resume_id: str) -> ProcessDisposition:
+        duration = timedelta(seconds=self.lease_seconds)
         with self.uow_factory() as uow:
-            resume = uow.resumes.get(tenant_id, resume_id, include_deleted=True, for_update=True)
-            if (
-                resume is None
-                or resume.lifecycle_status != "active"
-                or resume.status in {ResumeStatus.SUCCEEDED, ResumeStatus.FAILED}
-            ):
-                return True
-            if resume.status is ResumeStatus.RUNNING and not self._lease_expired(resume.updated_at):
-                return False
-            if resume.status not in {ResumeStatus.QUEUED, ResumeStatus.RUNNING}:
-                return True
-            artifact = uow.artifacts.get(tenant_id, "resume", resume_id, resume.artifact_id, for_update=True)
-            if artifact is None or artifact.status != ArtifactStatus.AVAILABLE:
-                return True
-            resume.status = ResumeStatus.RUNNING
-            resume.updated_at = datetime.now(timezone.utc)
-            resume.error_code = None
-            resume.error_message = None
-            filename = resume.original_filename
-            location = uow.artifacts.resolve_location(tenant_id, "resume", resume_id, artifact.id)
-            expected_size, expected_sha = artifact.size_bytes, artifact.sha256
-            source_version = resume.sha256
-            next_generation = resume.active_index_generation + 1
-            uow.commit()
-
-        try:
-            content = self.artifact_store.read_bounded(location, MAX_ARTIFACT_BYTES)
-            if len(content) != expected_size:
-                raise ArtifactLengthMismatch()
-            if hashlib.sha256(content).hexdigest() != expected_sha:
-                raise ArtifactChecksumMismatch()
-        except Exception as exc:
-            self._mark_failed(tenant_id, resume_id, storage_error_code(exc).value, "无法读取简历文件")
-            return True
-
-        try:
-            text = extract_text(filename, content)
-            parse_result = (
-                self.parser.parse_with_metadata(text) if hasattr(self.parser, "parse_with_metadata") else None
+            claim = uow.leases.claim(
+                tenant_id,
+                "resume",
+                resume_id,
+                uuid4().hex,
+                duration=duration,
+                max_attempts=self.retry_policy.max_attempts,
             )
-            profile = parse_result.profile if parse_result is not None else self.parser.parse(text)
-        except AppError as exc:
-            self._mark_failed(tenant_id, resume_id, exc.code, exc.message)
-            return True
-        except Exception:
-            self._mark_failed(tenant_id, resume_id, "resume_processing_failed", "简历处理失败")
-            return True
-
-        with self.uow_factory() as uow:
-            resume = uow.resumes.get(tenant_id, resume_id, include_deleted=True, for_update=True)
-            if resume is None or resume.lifecycle_status != "active":
-                return True
-            artifact = uow.artifacts.get(tenant_id, "resume", resume_id, location.artifact_id, for_update=True)
-            if artifact is None or artifact.status != ArtifactStatus.AVAILABLE:
-                return True
-            resume.extracted_text = text
-            resume.profile = profile.model_dump(mode="json")
-            resume.status = ResumeStatus.SUCCEEDED
-            resume.error_code = None
-            resume.error_message = None
-            if parse_result is not None:
-                if parse_result.response is not None:
-                    uow.model_traces.succeeded(
-                        tenant_id,
-                        "resume_extract",
-                        resume_id,
-                        [resume_id],
-                        parse_result.request,
-                        parse_result.response,
-                    )
-                elif parse_result.error is not None:
-                    uow.model_traces.failed(
-                        tenant_id,
-                        "resume_extract",
-                        resume_id,
-                        [resume_id],
-                        parse_result.request,
-                        parse_result.error,
-                        parse_result.latency_ms,
-                    )
+            if claim.disposition != ClaimDisposition.CLAIMED:
+                uow.commit()
+                return ProcessDisposition(claim.disposition.value)
+            lease = claim.lease
+            assert lease is not None
+            resume = uow.resumes.get(tenant_id, resume_id)
+            artifact = uow.artifacts.get(tenant_id, "resume", resume_id, lease.artifact_id)
+            assert resume is not None and artifact is not None  # Exact rows locked by claim.
+            filename = resume.original_filename
+            location = uow.artifacts.resolve_location(tenant_id, "resume", resume_id, lease.artifact_id)
+            expected_size, expected_sha = artifact.size_bytes, artifact.sha256
+            source = SourceRef(tenant_id, "resume", resume_id, resume.sha256)
+            generation = resume.active_index_generation + 1
+            stored_text = resume.extracted_text
+            stored_profile = resume.profile
             uow.commit()
 
-        if self.source_indexer is not None:
-            source = SourceRef(tenant_id, "resume", resume_id, source_version)
-            try:
-                from app.knowledge.chunking import chunk_document
-
-                self.source_indexer.index(
-                    source, next_generation, chunk_document(text), document_id=location.artifact_id
-                )
-            except Exception as exc:
-                # Search enrichment must never roll back an otherwise valid
-                # resume; re-indexing can repair this side effect later.
+        try:
+            with LeaseRenewer(self.uow_factory, lease, duration=duration) as renewer:
                 try:
-                    self.source_indexer.fail(source, classify_index_failure(exc))
+                    already_parsed = self._has_parsed_state(stored_text, stored_profile)
+                except ValueError:
+                    renewer.ensure_owned()
+                    return self._mark_failed(lease, "resume_parsed_state_invalid")
+                if already_parsed:
+                    self._index_and_publish(lease, source, generation, stored_text, None, None, renewer)
+                    return ProcessDisposition.COMPLETED
+                try:
+                    content = self.artifact_store.read_bounded(location, MAX_ARTIFACT_BYTES)
+                    if len(content) != expected_size:
+                        raise ArtifactLengthMismatch()
+                    if hashlib.sha256(content).hexdigest() != expected_sha:
+                        raise ArtifactChecksumMismatch()
+                except self.timeout_errors:
+                    raise
+                except Exception as exc:
+                    renewer.ensure_owned()
+                    return self._mark_failed(lease, storage_error_code(exc).value)
+                renewer.ensure_owned()
+                try:
+                    text = extract_text(filename, content)
+                    parse_result = (
+                        self.parser.parse_with_metadata(text) if hasattr(self.parser, "parse_with_metadata") else None
+                    )
+                    profile = parse_result.profile if parse_result is not None else self.parser.parse(text)
+                except AppError as exc:
+                    renewer.ensure_owned()
+                    return self._mark_failed(lease, exc.code)
+                except self.timeout_errors:
+                    raise
                 except Exception:
-                    pass
+                    renewer.ensure_owned()
+                    return self._mark_failed(lease, "resume_processing_failed")
+                renewer.ensure_owned()
+                self._index_and_publish(lease, source, generation, text, profile, parse_result, renewer)
+            return ProcessDisposition.COMPLETED
+        except LeaseOwnershipLost:
+            return ProcessDisposition.LEASE_LOST
+        except self.timeout_errors:
+            return self._mark_failed(lease, "processing_timeout")
+
+    @staticmethod
+    def _has_parsed_state(text, profile) -> bool:
+        # Only successful atomic publication writes this pair. The immutable
+        # Artifact means ordinary recovery can infer index-only work durably.
+        if text is None and profile == {}:
+            return False
+        if not isinstance(text, str) or not text.strip() or not isinstance(profile, dict):
+            raise ValueError("resume_parsed_state_invalid")
+        if not ResumeProfile.model_fields.keys() <= profile.keys():
+            raise ValueError("resume_parsed_state_invalid")
+        parsed = ResumeProfile.model_validate(profile)
+        evidence: list[Evidence | None] = []
+        evidence.extend(item.evidence for item in parsed.skills)
+        evidence.extend(item.evidence for item in parsed.projects)
+        if parsed.experience_years is not None:
+            evidence.append(parsed.experience_evidence)
+        if parsed.education_level is not None:
+            evidence.append(parsed.education_evidence)
+        if parsed.schema_version != "1.0" or any(not evidence_resolves(text, item) for item in evidence):
+            raise ValueError("resume_parsed_state_invalid")
         return True
 
-    def _lease_expired(self, updated_at: datetime) -> bool:
-        timestamp = updated_at if updated_at.tzinfo is not None else updated_at.replace(tzinfo=timezone.utc)
-        return timestamp <= datetime.now(timezone.utc) - timedelta(seconds=self.lease_seconds)
+    def _index_and_publish(self, lease, source, generation, text, profile, parse_result, renewer):
+        count, index_error = None, None
+        if self.source_indexer is not None:
+            from app.knowledge.chunking import chunk_document
 
-    def _mark_failed(self, tenant_id: str, resume_id: str, code: str, message: str) -> None:
+            try:
+                renewer.ensure_owned()
+                self.source_indexer.reconcile_staging(source, generation, fencing_token=lease)
+                if not text:
+                    raise ValueError("source_text_missing")
+                count = self.source_indexer.stage(
+                    source, generation, chunk_document(text), document_id=lease.artifact_id, fencing_token=lease
+                )
+            except LeaseOwnershipLost:
+                raise
+            except (GenerationWriterError, EmbeddingFailure, ValueError) as exc:
+                if isinstance(exc.__cause__, self.timeout_errors):
+                    raise exc.__cause__ from None
+                index_error = classify_index_failure(exc)
+        renewer.ensure_owned()
+        try:
+            self._publish(lease, source, generation, count, index_error, text, profile, parse_result)
+        except LeaseOwnershipLost:
+            raise
+        except GenerationWriterError as exc:
+            # Failed activation rolls back publication. A fresh guarded transaction
+            # can still publish deterministic parsing, retaining any prior index.
+            if count is None:
+                raise
+            renewer.ensure_owned()
+            self._publish(lease, source, generation, None, classify_index_failure(exc), text, profile, parse_result)
+
+    def _publish(self, lease, source, generation, count, index_error, text, profile, parse_result):
         with self.uow_factory() as uow:
-            resume = uow.resumes.get(tenant_id, resume_id, include_deleted=True, for_update=True)
-            if resume is None or resume.lifecycle_status != "active":
-                return
-            artifact = uow.artifacts.get(tenant_id, "resume", resume_id, resume.artifact_id, for_update=True)
-            if artifact is None or artifact.status != ArtifactStatus.AVAILABLE:
-                return
-            resume.status = ResumeStatus.FAILED
-            resume.error_code = code
-            resume.error_message = message[:500]
+            with uow.leases.finalize_owned(lease):
+                resume = uow.resumes.get(lease.tenant_id, lease.source_id)
+                if resume is None or resume.sha256 != source.source_version:
+                    raise LeaseOwnershipLost("processing_source_version_changed")
+                if count is not None:
+                    assert self.source_indexer is not None
+                    uow.generations.activate(
+                        source,
+                        generation,
+                        expected_count=count,
+                        embedding_model=self.source_indexer.embedder.model_name,
+                        fencing_token=lease,
+                    )
+                elif index_error is not None:
+                    uow.generations.fail(source, index_error, fencing_token=lease)
+                if profile is not None:
+                    resume.extracted_text = text
+                    resume.profile = profile.model_dump(mode="json")
+                if parse_result is not None:
+                    if parse_result.response is not None:
+                        uow.model_traces.succeeded(
+                            lease.tenant_id,
+                            "resume_extract",
+                            lease.source_id,
+                            [lease.source_id],
+                            parse_result.request,
+                            parse_result.response,
+                        )
+                    elif parse_result.error is not None:
+                        uow.model_traces.failed(
+                            lease.tenant_id,
+                            "resume_extract",
+                            lease.source_id,
+                            [lease.source_id],
+                            parse_result.request,
+                            parse_result.error,
+                            parse_result.latency_ms,
+                        )
             uow.commit()
+
+    def _mark_failed(self, lease: ClaimedLease, code: str) -> ProcessDisposition:
+        with self.uow_factory() as uow:
+            return finish_failed_attempt(uow, lease, code, self.retry_policy)

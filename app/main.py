@@ -27,6 +27,7 @@ from app.matching.engine import MatchingEngine
 from app.matching.hybrid import HybridMatchingEngine
 from app.models import AuditLog, Job, JobTemplate, JobVersion, ModelTrace, Tenant, User  # noqa: F401
 from app.repositories.sqlalchemy_unit_of_work import SqlAlchemyUnitOfWorkFactory
+from app.repositories.unit_of_work import UnitOfWorkFactory
 from app.resumes.parser import HeuristicResumeParser
 from app.security.tokens import TokenSettings
 from app.services.ai_tracing import AITraceSink
@@ -37,6 +38,7 @@ from app.retrieval.generations import GenerationWriter
 from app.retrieval.indexing import SourceIndexer
 from app.retrieval.pgvector_index import PgVectorRecruitingIndex
 from app.retrieval.ports import RecruitingVectorIndex
+from app.operations.health import HealthService
 
 logger = get_logger(__name__)
 
@@ -52,6 +54,8 @@ def init_recruiting_state(
     retrieval_index: RecruitingVectorIndex | None = None,
     source_indexer: SourceIndexer | None = None,
     artifact_store: ArtifactStore | None = None,
+    uow_factory: UnitOfWorkFactory | None = None,
+    health: HealthService | None = None,
 ) -> None:
     """Initialize recruiting persistence once per application instance."""
     if getattr(app.state, "_recruiting_initialized", False):
@@ -59,6 +63,13 @@ def init_recruiting_state(
     engine, session_factory = create_engine_and_session(settings.database_url)
     app.state.database_engine = engine
     app.state.session_factory = session_factory
+    if health is None:
+        if engine.dialect.name != "postgresql":
+            raise RuntimeError("SQLite app composition requires an explicit health fake")
+        from app.operations.probes import build_health
+
+        health = build_health(settings)
+    app.state.health = health
     app.state.token_settings = TokenSettings(
         secret_key=settings.jwt_secret,
         access_token_minutes=settings.access_token_minutes,
@@ -87,9 +98,28 @@ def init_recruiting_state(
         if engine.dialect.name != "postgresql":
             raise RuntimeError("SQLite app composition requires an explicit generation fake")
         source_indexer = SourceIndexer(GenerationWriter(session_factory), embedder)
-    uow_factory = SqlAlchemyUnitOfWorkFactory(session_factory)
-    processor = ResumeProcessingService(uow_factory, artifact_store, parser, source_indexer=source_indexer)
-    knowledge_processor = KnowledgeProcessingService(uow_factory, artifact_store, source_indexer)
+    uow_factory = uow_factory or SqlAlchemyUnitOfWorkFactory(session_factory)
+    app.state.uow_factory = uow_factory
+    from app.processing.retry import RetryPolicy
+
+    retry_policy = RetryPolicy(
+        settings.processing_max_attempts, settings.retry_short_seconds, settings.retry_long_seconds
+    )
+    processor = ResumeProcessingService(
+        uow_factory,
+        artifact_store,
+        parser,
+        source_indexer=source_indexer,
+        lease_seconds=settings.processing_lease_seconds,
+        retry_policy=retry_policy,
+    )
+    knowledge_processor = KnowledgeProcessingService(
+        uow_factory,
+        artifact_store,
+        source_indexer,
+        lease_seconds=settings.processing_lease_seconds,
+        retry_policy=retry_policy,
+    )
     ai_trace_sink = AITraceSink(uow_factory)
     app.state.artifact_store = artifact_store
     app.state.resume_processor = processor
@@ -131,6 +161,8 @@ def create_app(
     retrieval_index: RecruitingVectorIndex | None = None,
     source_indexer: SourceIndexer | None = None,
     artifact_store: ArtifactStore | None = None,
+    uow_factory: UnitOfWorkFactory | None = None,
+    health: HealthService | None = None,
 ) -> FastAPI:
     settings = settings or Settings.load()
     setup_logging()
@@ -145,6 +177,8 @@ def create_app(
             retrieval_index,
             source_indexer,
             artifact_store,
+            uow_factory,
+            health,
         )
         yield
 

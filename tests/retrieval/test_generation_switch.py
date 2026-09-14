@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import math
 import os
 from queue import Queue
@@ -24,10 +24,9 @@ from app.models.resumes import Resume
 from app.models.artifacts import Artifact
 from app.domain.artifacts import ArtifactStatus
 from app.retrieval.generations import (
-    FencingNotSupportedError,
     GenerationConflictError,
     GenerationValidationError,
-    GenerationWriter,
+    GenerationWriter as ProductionGenerationWriter,
     IndexFailureCode,
     SourceNotFoundError,
     SourceRef,
@@ -35,6 +34,28 @@ from app.retrieval.generations import (
 )
 from app.retrieval.pgvector_index import PgVectorRecruitingIndex
 from app.retrieval.ports import SearchScope
+from app.processing.outcomes import LeaseOwnershipLost
+from app.repositories.sqlalchemy_unit_of_work import SqlAlchemyUnitOfWork
+
+
+class GenerationWriter(ProductionGenerationWriter):
+    """Pass the real lease explicitly acquired by seed_source to old test calls."""
+
+    def _token(self, source, kwargs):
+        kwargs.setdefault(
+            "fencing_token",
+            self.session_factory.claimed_leases.get((source.tenant_id, source.source_type, source.source_id)),
+        )
+        return kwargs
+
+    def stage(self, source, *args, **kwargs):
+        return super().stage(source, *args, **self._token(source, kwargs))
+
+    def activate(self, source, *args, **kwargs):
+        return super().activate(source, *args, **self._token(source, kwargs))
+
+    def fail(self, source, *args, **kwargs):
+        return super().fail(source, *args, **self._token(source, kwargs))
 
 
 TENANT = "generation-tenant"
@@ -87,6 +108,7 @@ def postgres_engine() -> Engine:
 @pytest.fixture
 def session_factory(postgres_engine: Engine):
     factory = sessionmaker(bind=postgres_engine, expire_on_commit=False)
+    factory.claimed_leases = {}
     with Session(postgres_engine) as session:
         session.execute(delete(RecruitingChunk))
         session.execute(delete(Resume))
@@ -167,6 +189,22 @@ def seed_source(
             )
             reference = SourceRef(tenant_id, source_type, source.id, source.checksum)
         session.add(source)
+        if source_type != "job_version" and not deleted:
+            session.flush()
+            artifact = Artifact(
+                id="artifact-owned" if source_type == "resume" else "artifact-knowledge",
+                tenant_id=tenant_id,
+                owner_type=source_type,
+                owner_id=source.id,
+                sha256="a" * 64,
+                media_type="text/plain",
+                size_bytes=10,
+                status=ArtifactStatus.AVAILABLE,
+            )
+            session.add(artifact)
+            session.flush()
+            source.artifact_id = artifact.id
+            source.status = ResumeStatus.QUEUED if source_type == "resume" else "uploaded"
         if active_generation:
             session.add(
                 RecruitingChunk(
@@ -185,6 +223,14 @@ def seed_source(
                 )
             )
         session.commit()
+        if source_type != "job_version" and not deleted:
+            lease = (
+                SqlAlchemyUnitOfWork(session)
+                .leases.claim(tenant_id, source_type, source.id, "generation-test", duration=timedelta(minutes=5))
+                .lease
+            )
+            session.commit()
+            factory.claimed_leases[(tenant_id, source_type, source.id)] = lease
     return reference
 
 
@@ -314,7 +360,7 @@ def test_stage_rejects_wrong_tenant_version_stale_generation_and_privacy_deleted
         deleted_reference,
     ]
     for bad_reference in bad_references:
-        with pytest.raises(SourceNotFoundError):
+        with pytest.raises((SourceNotFoundError, LeaseOwnershipLost)):
             writer.stage(bad_reference, 2 if bad_reference is not deleted_reference else 1, [staged_chunk("bad")])
     with pytest.raises(GenerationConflictError):
         writer.stage(reference, 1, [staged_chunk("stale")])
@@ -342,23 +388,6 @@ def test_stage_normalizes_only_source_owned_document_cleanup_keys(
     session_factory, source_type: str, document_mode: str, expected_document_id: str | None
 ) -> None:
     reference = seed_source(session_factory, source_type)
-    if source_type == "resume":
-        with session_factory() as session:
-            session.add(
-                Artifact(
-                    id="artifact-owned",
-                    tenant_id=reference.tenant_id,
-                    owner_type="resume",
-                    owner_id=reference.source_id,
-                    sha256="a" * 64,
-                    media_type="text/plain",
-                    size_bytes=10,
-                    status=ArtifactStatus.AVAILABLE,
-                )
-            )
-            session.flush()
-            session.get(Resume, reference.source_id).artifact_id = "artifact-owned"
-            session.commit()
     document_id = {
         "none": None,
         "source": reference.source_id,
@@ -531,7 +560,7 @@ def test_privacy_deleted_source_cannot_activate_previously_staged_rows(session_f
         )
         session.commit()
 
-    with pytest.raises(SourceNotFoundError):
+    with pytest.raises((SourceNotFoundError, LeaseOwnershipLost)):
         writer.activate(reference, 1, expected_count=1, embedding_model=MODEL)
 
     with session_factory() as session:
@@ -740,11 +769,11 @@ def test_fail_records_stable_code_and_preserves_generation_and_searchability(
 
 
 @pytest.mark.parametrize("operation", ["stage", "activate", "fail"])
-def test_non_null_fencing_token_fails_closed_without_mutation(session_factory, operation: str) -> None:
+def test_malformed_fencing_token_fails_closed_without_mutation(session_factory, operation: str) -> None:
     reference = seed_source(session_factory, "resume")
     writer = GenerationWriter(session_factory)
 
-    with pytest.raises(FencingNotSupportedError):
+    with pytest.raises(LeaseOwnershipLost):
         if operation == "stage":
             writer.stage(reference, 1, [staged_chunk("fenced")], fencing_token=7)
         elif operation == "activate":
@@ -770,7 +799,7 @@ def test_wrong_tenant_or_version_activation_cannot_mutate_the_real_source(sessio
     ]
 
     for wrong_reference in wrong_refs:
-        with pytest.raises(SourceNotFoundError):
+        with pytest.raises((SourceNotFoundError, LeaseOwnershipLost)):
             writer.activate(wrong_reference, 2, expected_count=1, embedding_model=MODEL)
 
     with session_factory() as session:

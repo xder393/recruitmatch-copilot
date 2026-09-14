@@ -227,10 +227,11 @@ class FakeGenerationWriter:
         self.staged: dict[tuple[SourceRef, int], list[StagedChunk]] = {}
 
     def stage(self, source, generation, chunks, *, fencing_token=None):
-        GenerationWriter._reject_unverifiable_fencing(fencing_token)
+        GenerationWriter._validate_fencing(source, fencing_token)
         GenerationWriter._validate_generation_number(generation)
         GenerationWriter._validate_chunks(chunks)
         with self.session_factory() as session:
+            self._check_lease(session, fencing_token)
             row = self._source(session, source)
             if not self._available(row, source):
                 raise SourceNotFoundError("tenant-qualified Source is missing or privacy-deleted")
@@ -280,7 +281,7 @@ class FakeGenerationWriter:
         return len(chunks)
 
     def activate(self, source, generation, *, expected_count, embedding_model, fencing_token=None):
-        GenerationWriter._reject_unverifiable_fencing(fencing_token)
+        GenerationWriter._validate_fencing(source, fencing_token)
         GenerationWriter._validate_generation_number(generation)
         chunks = self.staged.get((source, generation), [])
         if len(chunks) != expected_count:
@@ -289,6 +290,7 @@ class FakeGenerationWriter:
         if any(item.embedding_model != embedding_model for item in chunks):
             raise GenerationValidationError("staged generation is incomplete")
         with self.session_factory() as session:
+            self._check_lease(session, fencing_token)
             row = self._source(session, source)
             if not self._available(row, source):
                 raise SourceNotFoundError("source is unavailable")
@@ -304,10 +306,11 @@ class FakeGenerationWriter:
         self.index.replace_generation(source, generation, chunks)
 
     def fail(self, source, error_code: IndexFailureCode, *, fencing_token=None):
-        GenerationWriter._reject_unverifiable_fencing(fencing_token)
+        GenerationWriter._validate_fencing(source, fencing_token)
         if not isinstance(error_code, IndexFailureCode):
             raise GenerationValidationError("index failure code must be a stable IndexFailureCode value")
         with self.session_factory() as session:
+            self._check_lease(session, fencing_token)
             row = self._source(session, source)
             if not self._available(row, source):
                 raise SourceNotFoundError("source is unavailable")
@@ -316,13 +319,33 @@ class FakeGenerationWriter:
             session.commit()
 
     @staticmethod
+    def _check_lease(session, lease):
+        from tests.fakes.processing import FakeLeaseRepository
+        from app.processing.outcomes import LeaseOwnershipLost
+
+        if lease is not None and FakeLeaseRepository(session)._owned(lease) is None:
+            raise LeaseOwnershipLost()
+
+    def reconcile_staging(self, source, generation, *, fencing_token):
+        GenerationWriter._validate_fencing(source, fencing_token)
+        with self.session_factory() as session:
+            self._check_lease(session, fencing_token)
+            row = self._source(session, source)
+            if generation != row.active_index_generation + 1:
+                raise GenerationConflictError("not next generation")
+        return len(self.staged.pop((source, generation), []))
+
+    def bind(self, session, publications):
+        return FakeTransactionGenerationWriter(self, session, publications)
+
+    @staticmethod
     def _available(row, source) -> bool:
         if row is None or row.search_index_status == "deleted":
             return False
         if source.source_type == "resume":
             return row.status is not ResumeStatus.DELETED and row.deleted_at is None
         if source.source_type == "knowledge_document":
-            return row.status != "deleted"
+            return row.status not in {"deleted", "inactive"} and row.lifecycle_status == "active"
         return True
 
     @staticmethod
@@ -352,6 +375,42 @@ class FakeGenerationWriter:
                 KnowledgeDocument.checksum == source.source_version,
             )
         )
+
+
+class FakeTransactionGenerationWriter:
+    def __init__(self, writer, session, publications):
+        self.writer, self.session, self.publications = writer, session, publications
+
+    def _source(self, source, fencing_token):
+        from app.processing.outcomes import LeaseOwnershipLost
+
+        GenerationWriter._validate_fencing(source, fencing_token)
+        if fencing_token is None or self.session.info.get("processing_lease_guard") != fencing_token:
+            raise LeaseOwnershipLost()
+        row = self.writer._source(self.session, source)
+        if not self.writer._available(row, source):
+            raise SourceNotFoundError("source unavailable")
+        return row
+
+    def activate(self, source, generation, *, expected_count, embedding_model, fencing_token=None):
+        row = self._source(source, fencing_token)
+        chunks = self.writer.staged.get((source, generation), [])
+        if generation != row.active_index_generation + 1:
+            raise GenerationConflictError("not next generation")
+        if len(chunks) != expected_count or any(c.embedding_model != embedding_model for c in chunks):
+            raise GenerationValidationError("staged generation is incomplete")
+        if self.writer.activation_checkpoint:
+            self.writer.activation_checkpoint()
+        row.active_index_generation = generation
+        row.search_index_status = "ready"
+        row.search_index_error_code = None
+        row.search_indexed_at = datetime.now(timezone.utc)
+        self.publications.append(lambda: self.writer.index.replace_generation(source, generation, chunks))
+
+    def fail(self, source, error_code, *, fencing_token=None):
+        row = self._source(source, fencing_token)
+        row.search_index_status = "ready" if row.active_index_generation else "failed"
+        row.search_index_error_code = error_code.value
 
 
 def sqlite_retrieval_dependencies(database_url: str, embedder):

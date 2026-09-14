@@ -5,7 +5,9 @@ from __future__ import annotations
 from contextlib import AbstractContextManager
 from typing import Callable
 
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError, DisconnectionError, TimeoutError as PoolTimeoutError
+from app.processing.leases import LeaseRepository
+from app.retrieval.generations import TransactionGenerationWriter
 
 from app.repositories.feedback import FeedbackRepository
 from app.repositories.artifacts import ArtifactRepository
@@ -14,7 +16,7 @@ from app.repositories.jobs import JobRepository
 from app.repositories.knowledge import KnowledgeRepository
 from app.repositories.matching import MatchingRepository
 from app.repositories.model_traces import ModelTraceWriter
-from app.repositories.ports import RepositoryConflictError
+from app.repositories.ports import RepositoryConflictError, PersistenceUnavailable
 from app.repositories.resumes import ResumeRepository
 from app.repositories.unit_of_work import RecruitingUnitOfWork
 
@@ -30,6 +32,8 @@ class SqlAlchemyUnitOfWork(AbstractContextManager["SqlAlchemyUnitOfWork"], Recru
         self.feedback = FeedbackRepository(session)
         self.jobs = JobRepository(session)
         self.knowledge = KnowledgeRepository(session)
+        self.leases = LeaseRepository(session)
+        self.generations = TransactionGenerationWriter(session)
         self.matching = MatchingRepository(session)
         self.model_traces = ModelTraceWriter(session)
         self.resumes = ResumeRepository(session)
@@ -42,6 +46,8 @@ class SqlAlchemyUnitOfWork(AbstractContextManager["SqlAlchemyUnitOfWork"], Recru
             self.rollback()
         if self._owns_session:
             self._session.close()
+        if isinstance(exc_value, OperationalError | DisconnectionError | PoolTimeoutError):
+            raise PersistenceUnavailable("database_unavailable") from exc_value
 
     def commit(self) -> None:
         try:

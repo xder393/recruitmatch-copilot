@@ -152,6 +152,11 @@ class ArtifactReconciliationService:
                 elif source.status != "inactive":
                     source.status = "uploaded"
                     dispatch = True
+                if dispatch:
+                    source.processing_lease_owner = None
+                    source.processing_lease_expires_at = None
+                    source.next_retry_at = None
+                    source.queued_at = datetime.now(timezone.utc)
                 source.error_code = None
                 source.error_message = None
                 report.repaired += 1

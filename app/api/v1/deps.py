@@ -9,10 +9,16 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import AuthenticationError
+from app.core.exceptions import AuthorizationError
+from app.domain.enums import Role
 from app.repositories.sqlalchemy_unit_of_work import SqlAlchemyUnitOfWork
 from app.security.tokens import Principal, TokenSettings, decode_access_token
 
 _bearer = HTTPBearer(auto_error=False)
+
+
+def get_health(request: Request):
+    return request.app.state.health
 
 
 def get_db(request: Request) -> Generator[Session, None, None]:
@@ -62,4 +68,10 @@ def get_current_principal(
         raise AuthenticationError("请先登录")
     principal = decode_access_token(credentials.credentials, token_settings)
     request.state.principal = principal
+    return principal
+
+
+def get_admin_principal(principal: Principal = Depends(get_current_principal)) -> Principal:
+    if principal.role != Role.ADMIN:
+        raise AuthorizationError("需要管理员权限")
     return principal

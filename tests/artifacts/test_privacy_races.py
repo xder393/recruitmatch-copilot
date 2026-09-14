@@ -3,6 +3,7 @@
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
 from threading import Event
 from uuid import uuid4
+from datetime import timedelta
 
 import pytest
 from sqlalchemy import event, select, text
@@ -16,7 +17,8 @@ from app.models.matching import Feedback
 from app.core.exceptions import AppError
 from app.domain.enums import FeedbackAction
 from app.repositories.sqlalchemy_unit_of_work import SqlAlchemyUnitOfWork, SqlAlchemyUnitOfWorkFactory
-from app.retrieval.generations import GenerationWriter, SourceRef, StagedChunk, SourceNotFoundError
+from app.retrieval.generations import GenerationWriter, SourceRef, StagedChunk
+from app.processing.outcomes import LeaseOwnershipLost
 from app.resumes.schemas import ResumeProfile
 from app.services.resume_processing import ResumeProcessingService
 from app.services.resumes import ResumeService
@@ -128,6 +130,12 @@ def test_generation_activation_and_privacy_delete_cannot_resurrect_chunks(
     with Session(postgres_engine) as session:
         owner = session.get(Resume if kind == "resume" else KnowledgeDocument, owner_id)
         version = owner.sha256 if kind == "resume" else owner.checksum
+        lease = (
+            SqlAlchemyUnitOfWork(session)
+            .leases.claim(principal.tenant_id, kind, owner_id, "privacy-race", duration=timedelta(minutes=5))
+            .lease
+        )
+        session.commit()
     reference = SourceRef(principal.tenant_id, kind, owner_id, version)
     entered, release = Event(), Event()
 
@@ -136,7 +144,12 @@ def test_generation_activation_and_privacy_delete_cannot_resurrect_chunks(
         assert release.wait(10)
 
     writer = GenerationWriter(sessionmaker(postgres_engine), activation_checkpoint=checkpoint)
-    writer.stage(reference, 1, [StagedChunk(str(uuid4()), "PRIVATE_SENTINEL", 0, 16, [1.0] + [0.0] * 511, "fake")])
+    writer.stage(
+        reference,
+        1,
+        [StagedChunk(str(uuid4()), "PRIVATE_SENTINEL", 0, 16, [1.0] + [0.0] * 511, "fake")],
+        fencing_token=lease,
+    )
 
     def deleting():
         with Session(postgres_engine) as session:
@@ -150,13 +163,20 @@ def test_generation_activation_and_privacy_delete_cannot_resurrect_chunks(
 
     if delete_first:
         deleting()
-        with pytest.raises(SourceNotFoundError):
-            writer.activate(reference, 1, expected_count=1, embedding_model="fake")
-        with pytest.raises(SourceNotFoundError):
-            writer.stage(reference, 1, [StagedChunk(str(uuid4()), "NEW_PRIVATE", 0, 11, [1.0] + [0.0] * 511, "fake")])
+        with pytest.raises(LeaseOwnershipLost):
+            writer.activate(reference, 1, expected_count=1, embedding_model="fake", fencing_token=lease)
+        with pytest.raises(LeaseOwnershipLost):
+            writer.stage(
+                reference,
+                1,
+                [StagedChunk(str(uuid4()), "NEW_PRIVATE", 0, 11, [1.0] + [0.0] * 511, "fake")],
+                fencing_token=lease,
+            )
     else:
         with ThreadPoolExecutor(max_workers=2) as executor:
-            activation = executor.submit(writer.activate, reference, 1, expected_count=1, embedding_model="fake")
+            activation = executor.submit(
+                writer.activate, reference, 1, expected_count=1, embedding_model="fake", fencing_token=lease
+            )
             assert entered.wait(10)
             deletion = executor.submit(deleting)
             try:

@@ -40,3 +40,34 @@ that this image is free of other vulnerabilities. Do not substitute an older
 pre-fix image or use `latest`. Demo root/app passwords must be replaced outside
 local demonstrations. MinIO publishes no host ports and persists only its data
 volume; initializer configuration is ephemeral.
+
+## Client registry correction (2026-09-14)
+
+The CP4 PR's [integration build failed](https://github.com/xder393/recruitmatch-copilot/actions/runs/34802994122/job/103849472309)
+before tests started: Docker Hub denied resolution of the pinned `minio/mc`
+manifest (`insufficient_scope`). This was also reproduced by a fresh registry
+metadata request; a previously cached local image had hidden the availability
+problem. The error alone does not establish why Docker Hub denied access.
+
+All three client consumers (the test-image build stage, `minio-init`, and
+`minio-test-setup`) now use `quay.io/minio/mc`. The upstream release's
+[publication script](https://github.com/minio/mc/blob/RELEASE.2025-08-13T08-35-41Z/docker-buildx.sh)
+publishes to both Docker Hub and this Quay repository. A live Quay manifest query
+confirmed the **same** release `RELEASE.2025-08-13T08-35-41Z`, multi-platform digest
+`sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727`,
+and Linux amd64/arm64/ppc64le entries. This changes the registry only: no client
+upgrade, digest removal, third-party mirror, credentials, IAM changes, or server
+rollback. The maintenance and security limitations above still apply.
+
+The existing CI build plus two initializer runs and real MinIO IAM tests are the
+regression gate. Unit tests remain offline: they must not query a public registry.
+Local build cache reuse is not proof of a clean GitHub runner build; report the
+remote CI result separately.
+
+Local verification on 2026-09-14 used `.env.example` and the isolated Compose
+project `recruitmatch-ci-fix-20260914`: explicit pulls for both client services,
+`build bootstrap test-integration minio`, two successful bootstrap runs (30 then
+0 seeded templates), two successful initializer runs, 286 unit tests and 503 real
+PostgreSQL/MinIO/retrieval tests. Lock checking, Ruff, mypy and the Fake AI golden
+diff also passed. Build layers were reused; test data volumes were newly created.
+No real LLM calls or changes to existing application data were involved.

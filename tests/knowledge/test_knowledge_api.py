@@ -189,6 +189,8 @@ def test_source_backfill_repairs_existing_resume_and_job_indexes(client, knowled
         stored_resume = session.get(Resume, resume["id"])
         stored_job = session.get(JobVersion, job["versions"][0]["id"])
         stored_resume.search_index_status = "pending"
+        retained_profile = {**stored_resume.profile, "reviewed_marker": "retain-on-reindex"}
+        stored_resume.profile = retained_profile
         stored_job.search_index_status = "pending"
         session.commit()
 
@@ -202,4 +204,82 @@ def test_source_backfill_repairs_existing_resume_and_job_indexes(client, knowled
     assert _search(knowledge_app, tenant_id, "job_version", version["id"], str(version["version"]), "RAG")
     with knowledge_app.state.session_factory() as session:
         assert session.get(Resume, resume["id"]).search_index_status == "ready"
+        assert session.get(Resume, resume["id"]).profile == retained_profile
         assert session.get(JobVersion, job["versions"][0]["id"]).search_index_status == "ready"
+
+
+def test_reindex_invalidates_old_execution_without_resetting_epoch(client, knowledge_app):
+    from datetime import datetime, timedelta, timezone
+
+    class Dispatcher:
+        def dispatch_knowledge(self, tenant_id, document_id):
+            pass
+
+    _login(client, "Acme", "admin@acme.test")
+    document_id = _upload(client).json()["id"]
+    before = datetime.now(timezone.utc) - timedelta(seconds=1)
+    with knowledge_app.state.session_factory() as session:
+        row = session.get(KnowledgeDocument, document_id)
+        artifact_id = row.artifact_id
+        row.status = "processing"
+        row.processing_lease_epoch = 9
+        row.processing_attempts = 5
+        row.processing_lease_owner = "old"
+        row.processing_lease_expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+        row.next_retry_at = datetime.now(timezone.utc) + timedelta(hours=1)
+        row.error_code = "old_error"
+        session.commit()
+    knowledge_app.state.knowledge_dispatcher = Dispatcher()
+    assert client.post(f"/api/v1/knowledge-documents/{document_id}/reindex").status_code == 200
+    with knowledge_app.state.session_factory() as session:
+        row = session.get(KnowledgeDocument, document_id)
+        assert row.processing_lease_epoch == 9
+        assert row.processing_attempts == 0
+        assert row.status == "uploaded" and row.artifact_id == artifact_id
+        assert row.processing_lease_owner is None and row.processing_lease_expires_at is None
+        assert row.next_retry_at is None and row.error_code is None
+        assert row.queued_at.replace(tzinfo=timezone.utc) > before
+
+
+@pytest.mark.parametrize("repair_mode", ["invalid_parsed_pair", "no_indexer"])
+def test_source_backfill_reports_failed_repair_and_retains_prior_retrieval(client, knowledge_app, repair_mode):
+    from app.domain.enums import ResumeStatus
+    from app.resumes.parser import HeuristicResumeParser
+    from app.services.resume_processing import ResumeProcessingService
+
+    tenant_id = _login(client, "Repair Tenant", "repair@acme.test")
+    uploaded = client.post("/api/v1/resumes", files={"file": ("resume.txt", b"Python FastAPI", "text/plain")})
+    assert uploaded.status_code == 202
+    resume_id = uploaded.json()["id"]
+    with knowledge_app.state.session_factory() as session:
+        row = session.get(Resume, resume_id)
+        version, old_generation = row.sha256, row.active_index_generation
+        assert row.status == ResumeStatus.SUCCEEDED and old_generation == 1
+        if repair_mode == "invalid_parsed_pair":
+            row.profile = {}
+            session.commit()
+    old_hits = _search(knowledge_app, tenant_id, "resume", resume_id, version, "Python")
+    assert old_hits
+    if repair_mode == "no_indexer":
+        knowledge_app.state.resume_processor = ResumeProcessingService(
+            knowledge_app.state.uow_factory, knowledge_app.state.artifact_store, HeuristicResumeParser()
+        )
+
+    response = client.post("/api/v1/knowledge-documents/rebuild-sources")
+
+    assert response.status_code == 200
+    with knowledge_app.state.session_factory() as session:
+        row = session.get(Resume, resume_id)
+        assert row.active_index_generation == old_generation
+        assert row.search_index_status == "ready" and row.search_index_error_code is None
+        if repair_mode == "invalid_parsed_pair":
+            assert row.status == ResumeStatus.FAILED
+            assert row.error_code == "resume_parsed_state_invalid"
+            assert row.extracted_text == "Python FastAPI" and row.profile == {}
+        else:
+            assert row.status == ResumeStatus.SUCCEEDED
+    retained_hits = _search(knowledge_app, tenant_id, "resume", resume_id, version, "Python")
+    assert [(hit.citation_id, hit.generation) for hit in retained_hits] == [
+        (hit.citation_id, hit.generation) for hit in old_hits
+    ]
+    assert response.json() == {"resumes_indexed": 0, "job_versions_indexed": 0, "failed": 1}

@@ -103,6 +103,9 @@ def test_index_failure_classification_is_stable_and_not_all_embedding_failed():
 
 
 def test_fake_writer_shares_retry_and_invalid_generation_contract(tmp_path):
+    from datetime import timedelta
+    from tests.fakes.processing import FakeProcessingUnitOfWorkFactory
+    from tests.support.artifacts import attach_artifact
     from app.database import Base, create_engine_and_session
     from app.domain.enums import ResumeStatus
     from app.models.identity import Tenant
@@ -122,11 +125,17 @@ def test_fake_writer_shares_retry_and_invalid_generation_contract(tmp_path):
                 original_filename="resume.txt",
                 media_type="text/plain",
                 size_bytes=3,
-                status=ResumeStatus.SUCCEEDED,
+                status=ResumeStatus.QUEUED,
                 profile={},
             )
         )
+        session.flush()
+        attach_artifact(session, session.get(Resume, "resume-1"), b"RAG")
         session.commit()
+        version = session.get(Resume, "resume-1").sha256
+    with FakeProcessingUnitOfWorkFactory(factory)() as uow:
+        lease = uow.leases.claim("tenant-a", "resume", "resume-1", "fake-test", duration=timedelta(minutes=5)).lease
+        uow.commit()
     calls = 0
 
     def fail_once():
@@ -137,16 +146,16 @@ def test_fake_writer_shares_retry_and_invalid_generation_contract(tmp_path):
 
     index = FakeRecruitingVectorIndex(session_factory=factory)
     writer = FakeGenerationWriter(factory, index, activation_checkpoint=fail_once)
-    source = SourceRef("tenant-a", "resume", "resume-1", "sha")
+    source = SourceRef("tenant-a", "resume", "resume-1", version)
     vector = [1.0] + [0.0] * 511
     chunks = [StagedChunk("citation", "RAG", 0, 3, vector, "fake-512-v1")]
 
-    assert writer.stage(source, 1, chunks) == 1
+    assert writer.stage(source, 1, chunks, fencing_token=lease) == 1
     with pytest.raises(RuntimeError, match="transient activation"):
-        writer.activate(source, 1, expected_count=1, embedding_model="fake-512-v1")
-    assert writer.stage(source, 1, chunks) == 1
-    writer.activate(source, 1, expected_count=1, embedding_model="fake-512-v1")
+        writer.activate(source, 1, expected_count=1, embedding_model="fake-512-v1", fencing_token=lease)
+    assert writer.stage(source, 1, chunks, fencing_token=lease) == 1
+    writer.activate(source, 1, expected_count=1, embedding_model="fake-512-v1", fencing_token=lease)
     assert [item.citation_id for item in index._chunks] == ["citation"]
 
     with pytest.raises(GenerationValidationError, match="positive integer"):
-        writer.stage(source, 0, chunks)
+        writer.stage(source, 0, chunks, fencing_token=lease)
